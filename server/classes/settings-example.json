@@ -1,0 +1,18 @@
+{
+  "prod": {
+    "elasticsearch": {
+      "host": "xxx:9000",
+      "index": "xxx",
+      "subject_index": "xxx",
+      "suggest_index": "xxx"
+    }
+  },
+  "dev": {
+    "elasticsearch": {
+      "host": "xxx:9200",
+      "index": "xxx",
+      "subject_index": "xxx",
+      "suggest_index": "xxx"
+    }
+  }
+}

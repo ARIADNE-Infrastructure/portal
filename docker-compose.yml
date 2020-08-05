@@ -1,0 +1,16 @@
+version: '3'
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: server/docker/server.dockerfile
+    working_dir: /var/www/html
+    volumes:
+      - ./server/:/var/www/
+    ports:
+      - 80:80
+    environment:
+      XDEBUG_CONFIG: remote_host=docker.for.mac.localhost #for mac
+      ENV_IS_LOCAL: 1
+  

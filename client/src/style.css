@@ -1,0 +1,26 @@
+/* purgecss start ignore */
+@tailwind base;
+/* purgecss end ignore */
+@tailwind utilities;
+
+html {
+  @apply text-base;
+}
+
+body {
+  @apply font-base;
+  @apply bg-white;
+  @apply text-darkGray;
+}
+
+::placeholder {
+  opacity: 1;
+}
+.backface-hidden{
+  backface-visibility: hidden;
+}
+.break-word{
+  display: inline-block; /* ie */
+  word-break: break-all;
+  word-break: break-word;
+}
