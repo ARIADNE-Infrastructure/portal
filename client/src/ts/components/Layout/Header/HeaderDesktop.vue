@@ -5,7 +5,16 @@
     <div class="flex relative items-center max-w-screen-xl mx-auto h-4x">
     <template>
       <!-- logo -->
-      <header-logo class="absolute -bottom-base left-base" />
+      <router-link
+        to="/"
+        class="absolute -bottom-base left-base"
+      >
+        <img
+          :src="`${ assets }/logo.png`"
+          class="transition-opacity duration-300 hover:opacity-80"
+          alt="logo"
+        >
+      </router-link>
 
       <!-- search -->
       <div class="flex max-w-lg flex-1 ml-5x border-yellow border-b-3 items-center h-full p-base">
@@ -51,11 +60,9 @@
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import Search from '../../Form/Search.vue';
 import { MainMenuItem } from '../../../utils/interface';
-import HeaderLogo from './Logo.vue';
 
 @Component({
   components: {
-    HeaderLogo,
     Search,
   }
 })
@@ -68,6 +75,9 @@ export default class HeaderDesktop extends Vue {
 
   get items(): MainMenuItem[] {
     return this.$store.getters.mainNavigation();
+  }
+  get assets(): string {
+    return this.$store.getters.assets();
   }
 
   isActive (path: string): boolean {

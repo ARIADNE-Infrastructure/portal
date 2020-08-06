@@ -13,15 +13,21 @@ export default class State {
 
   fields = [
     { val: '', text: 'All fields' },
-    { val: 'subject', text: 'Subject' },
-    { val: 'title', text: 'Title' },
-    { val: 'time', text: 'Time' },
-    { val: 'location', text: 'Location' },
     { val: 'identifier', text: 'Identifier' },
-    { val: 'derivedSubject', text: 'Derived subject' },
-    { val: 'nativeSubject', text: 'Native subject' },
-    { val: 'subjectUri', text: 'Subject uri' }
+    { val: 'time', text: 'Time period' },
+    { val: 'location', text: 'Place' },
+    { val: 'title', text: 'Title' },
+    { val: 'nativeSubject', text: 'Original subject' },
   ]
+
+  aggTitles = {
+    archaeologicalResourceType: 'Resource type',
+    spatial: 'Place',
+    nativeSubject: 'Original subject',
+    derivedSubject: 'Subject',
+    temporal: 'Dating',
+    aatSubjects: 'Getty AAT Subjects'
+  }
 
   mainNavigation: MainMenuItem[] = [
     {

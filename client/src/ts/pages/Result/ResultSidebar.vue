@@ -1,20 +1,23 @@
-<!-- Front page -->
 <template>
   <div>
-    <h2 class="text-lg mb-md">Current search</h2>
+    <div class="hidden lg:block">
+      <h2 class="text-lg mb-lg">Current search</h2>
 
-    <search
-      color="blue"
-      bg="bg-blue"
-      hover="hover:bg-blue-80"
-      focus="focus:border-blue"
-      class="mb-xl"
-      :big="true"
-      :useCurrentSearch="true"
-      :showFields="true"
-    />
+      <search
+        color="blue"
+        bg="bg-blue"
+        hover="hover:bg-blue-80"
+        focus="focus:border-blue"
+        class="mb-xl"
+        :breakHg="true"
+        :big="true"
+        :useCurrentSearch="true"
+        :showFields="true"
+        v-on:submit="utils.blurMobile()"
+      />
+    </div>
 
-    <h2 class="text-lg mb-md" v-if="utils.objectIsNotEmpty(result)">
+    <h2 class="text-lg mb-md" v-if="utils.objectIsNotEmpty(result) && result.hits && result.hits.length">
       Filters
     </h2>
 
@@ -26,9 +29,16 @@
               v-on:click="setSearch(aggKey, bucket.key, false)"
               class="flex justify-between items-center text-white bg-blue hover:bg-blue-90 transition-all duration-300 cursor-pointer p-md border-b-base">
               <span class="flex-grow break-word pr-lg">
-                <b>{{ titles[aggKey] || utils.sentenceCase(utils.splitCase(aggKey)) }}</b>:
-                <span v-if="aggKey === 'subjectUri' && params.subjectLabel">{{ utils.sentenceCase(params.subjectLabel) }}</span>
-                <span v-else>{{ utils.sentenceCase(bucket.key) }}</span>
+                <b>{{ aggTitles[aggKey] || utils.sentenceCase(utils.splitCase(aggKey)) }}</b>:
+                <span v-if="aggKey === 'subjectUri' && params.subjectLabel">
+                  {{ utils.sentenceCase(params.subjectLabel) }}
+                </span>
+                <span v-else-if="aggKey === 'fields' && fields.some(f => f.val === bucket.key)">
+                  {{ fields.find(f => f.val === bucket.key).text }}
+                </span>
+                <span v-else>
+                  {{ utils.sentenceCase(bucket.key) }}
+                </span>
               </span>
               <span class="bg-white rounded-lg py-xs px-sm text-blue text-sm font-bold hover:text-red">
                 <i class="fa-times fas align-middle transition-color duration-300" />
@@ -60,7 +70,7 @@
           v-if="utils.objectIsNotEmpty(agg.buckets)"
         >
           <accordion
-            :title="titles[aggKey] || utils.sentenceCase(utils.splitCase(aggKey))"
+            :title="aggTitles[aggKey] || utils.sentenceCase(utils.splitCase(aggKey))"
             :initShow="hasActiveItem(aggKey, agg.buckets)"
             :hover="true"
           >
@@ -75,8 +85,15 @@
                   class="flex justify-between items-center text-white bg-blue hover:bg-blue-90 transition-all duration-300 cursor-pointer p-md border-t-base"
                 >
                   <span class="flex-grow break-word pr-lg">
-                    <span v-if="aggKey === 'subjectUri' && params.subjectLabel">{{ utils.sentenceCase(params.subjectLabel) }}</span>
-                    <span v-else>{{ utils.sentenceCase(bucket.key) }}</span>
+                    <span v-if="aggKey === 'subjectUri' && params.subjectLabel">
+                      {{ utils.sentenceCase(params.subjectLabel) }}
+                    </span>
+                    <span v-else-if="aggKey === 'fields' && fields.some(f => f.val === bucket.key)">
+                      {{ fields.find(f => f.val === bucket.key).text }}
+                    </span>
+                    <span v-else>
+                      {{ utils.sentenceCase(bucket.key) }}
+                    </span>
                   </span>
 
                   <span class="bg-white rounded-lg py-xs px-sm text-blue text-sm font-bold hover:text-red">
@@ -124,19 +141,18 @@ import TimeLine from '../../components/Form/TimeLine.vue';
 })
 export default class ResultSidebar extends Vue {
   utils: any = utils;
-  titles = {
-    archaeologicalResourceType: 'Resource type',
-    spatial: 'Place',
-    nativeSubject: 'Subject',
-    derivedSubject: 'Original subject',
-    temporal: 'Dating'
-  }
 
   get result () {
     return this.$store.getters.result();
   }
   get params () {
     return this.$store.getters.params();
+  }
+  get fields () {
+    return this.$store.getters.fields();
+  }
+  get aggTitles () {
+    return this.$store.getters.aggTitles();
   }
 
   getSortedAggs () {
@@ -145,7 +161,7 @@ export default class ResultSidebar extends Vue {
 
     startOrder.forEach((key: string) => sorted[key] = this.result.aggs[key]);
     for (let key in this.result.aggs) {
-      if (!sorted[key]) {
+      if (!sorted[key] && key !== 'geogrid') {
         sorted[key] = this.result.aggs[key];
       }
     }

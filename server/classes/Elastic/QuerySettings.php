@@ -15,14 +15,14 @@ class QuerySettings {
 
   public static function getSearchFieldGroups() {
     return [
-      'subject' => ['nativeSubject.prefLabel', 'aatSubjects.label', 'derivedSubject.prefLabel'],
       'time' => ['temporal.periodName'],
       'location' => ['spatial.placeName'],
       'identifier' => ['identifier', 'originalId'],
       'title' => ['title'],
       'nativeSubject' => ['nativeSubject.prefLabel'],
-      'derivedSubject' => ['derivedSubject.prefLabel'],
-      'subjectUri' => ['derivedSubject.source']
+      //'subject' => ['nativeSubject.prefLabel', 'aatSubjects.label', 'derivedSubject.prefLabel'],
+      //'derivedSubject' => ['derivedSubject.prefLabel'],
+      //'subjectUri' => ['derivedSubject.source']
     ];
   }
 

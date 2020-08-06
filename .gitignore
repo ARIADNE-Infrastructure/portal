@@ -6,3 +6,4 @@ npm-debug.log
 settings.json
 data
 logs/
+.vscode

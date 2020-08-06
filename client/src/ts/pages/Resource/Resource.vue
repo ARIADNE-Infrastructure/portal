@@ -56,16 +56,18 @@
             </div>
           </div>
 
-          <filtered-items
-            :items="resource.collection ? resource.collection.hits : null"
-            header="Resource has parts"
-            slotType="resource"
-          />
-          <router-link v-if="resource.collection && resource.collection.hits" :to="utils.paramsToString('/search', { q: 'isPartOf:' + resource.id })"
-            class="mb-sm block" :class="utils.linkClasses()">
-            <i class="fas fa-search mr-xs"></i>
-            All parts ({{ resource.collection.total }})
-          </router-link>
+          <div v-if="resource.collection && resource.collection.hits && resource.collection.hits.length">
+            <filtered-items
+              :items="resource.collection.hits"
+              header="Resource has parts"
+              slotType="resource"
+            />
+            <router-link v-if="resource.collection.total" :to="utils.paramsToString('/search', { q: 'isPartOf:' + resource.id })"
+              class="mb-sm block" :class="utils.linkClasses()">
+              <i class="fas fa-search mr-xs"></i>
+              All parts ({{ resource.collection.total }})
+            </router-link>
+          </div>
 
           <filtered-items
             :items="resource.partof"

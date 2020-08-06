@@ -6,10 +6,10 @@ use Log;
 use Exception;
 
 class Timeline {
-  
+
     const nrDefaultBuckets = 50;
-   
-    public static $initialRange = [-1000000,-100000,-10000,-1000,0,1000,1250,1500,1750];    
+
+    public static $initialRange = [-1000000,-100000,-10000,-1000,0,1000,1250,1500,1750];
     /**
      * Creates an elasticsearch aggregation query. Each of the intervals derived
      * from $range is taken separately. It
@@ -29,6 +29,10 @@ class Timeline {
             $c_year = date("Y");
             array_push(self::$initialRange, $c_year);
             $range = self::$initialRange;
+        } else {
+            for ($j = 0, $len = count($range); $j < $len; $j++) {
+                $range[$j] = intval($range[$j]);
+            }
         }
 
         $nrIntervals=sizeof($range)-1;

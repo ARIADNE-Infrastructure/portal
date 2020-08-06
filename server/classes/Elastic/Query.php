@@ -29,7 +29,7 @@ class Query {
    */
   public function getRecord ($recordId, $index) {
     $searchParams = [
-      'id' => intval($recordId),
+      'id' => preg_replace('/[^a-zA-Z0-9\-]/', '', $recordId),
       'index' => $this->settings->elasticsearch->index,
     ];
 
@@ -200,16 +200,25 @@ class Query {
   private function getCurrentQuery () {
     $query = ['aggregations' => QuerySettings::getSearchAggregations()];
 
-    $ghp = isset($_GET['ghp']) ? $_GET['ghp'] : 3;
+    $ghp = !empty($_GET['ghp']) ? intval($_GET['ghp']) : 3;
+    if (!is_int($ghp) || $ghp < 2) {
+      $ghp = 3;
+    } elseif ($ghp > 9) {
+      $ghp = 9;
+    }
 
-    $query['aggregations']['geogrid'] = ['geohash_grid' => [
-        'field' => 'spatial.location', 'precision' => intval($ghp), 'size' => 20000
-    ]];
+    $query['aggregations']['geogrid'] = [
+      'geohash_grid' => [
+        'field' => 'spatial.location',
+        'precision' => $ghp,
+        'size' => 6600
+      ]
+    ];
 
     // add timespan bucket aggregation
     $range = null;
-    if(isset($_GET['range'])) {
-      $range = explode(",", $_GET['range']);
+    if (!empty($_GET['range'])) {
+      $range = explode(',', $_GET['range']);
     }
 
     $query['from'] = $this->getFrom();
@@ -273,11 +282,12 @@ class Query {
     }
 
     foreach ($query['aggregations'] as $key => $aggregation) {
-
-        //if (Request::has($key)) {
-          if (isset($_GET[$key])) {
-
-            $values = Utils::getArgumentValues($key);
+        if (!empty($_GET[$key])) {
+            if (strpos($_GET[$key], '|') !== false) {
+              $values = explode('|', $_GET[$key]);
+            } else {
+              $values = array($_GET[$key]);
+            }
 
             if ($key != 'temporal') {
               $field = $aggregation['terms']['field'];
@@ -287,7 +297,7 @@ class Query {
 
             foreach ($values as $value) {
                 $fieldQuery = [];
-                $fieldQuery[$field] = $value;
+                $fieldQuery[$field] = Utils::escapeLuceneValue($value);
                 if ($key != 'temporal'){
                     $filters[] = ['term' => $fieldQuery];
                 } else {
@@ -305,15 +315,15 @@ class Query {
         }
     }
 
-    if (isset($_GET['range'])) {
+    if (!empty($_GET['range'])) {
         $range = explode(',', $_GET['range']);
         if (sizeof($range) > 1) {
             $filters[] =  [
                 'nested' => [
                     'path' => 'temporal',
                     'query' => Timeline::buildRangeQuery(
-                        $range[0],
-                        $range[sizeof($range)-1]
+                        intval($range[0]),
+                        intval($range[sizeof($range)-1])
                     )
                 ]
             ];
@@ -321,7 +331,7 @@ class Query {
     }
 
     // TODO: refactor so that ES service takes care of bbox parsing
-    if (isset($_GET['bbox'])) {
+    if (!empty($_GET['bbox'])) {
         $bbox = explode(',', $_GET['bbox']);
         $filters[] = [
             'geo_bounding_box' => [
@@ -344,6 +354,22 @@ class Query {
     }
 
     $query['query']['bool']['must'] = $innerQuery;
+
+    // Optimization for map search
+    if (!empty($_GET['mapq'])) {
+      $query['aggregations'] = [
+        'geogrid' => $query['aggregations']['geogrid'],
+        'viewport' => [
+          'geo_bounds' => [
+            'field' => 'spatial.location',
+            'wrap_longitude' => true,
+          ]
+        ]
+      ];
+      $query['_source'] = ['spatial'];
+      $query['query']['bool']['filter'][] = ['exists' => ['field' => 'spatial.location']];
+    }
+
     return $query;
   }
 

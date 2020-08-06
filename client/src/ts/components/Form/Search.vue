@@ -1,6 +1,7 @@
 <template>
   <form
     class="relative flex flex-col sm:flex-row w-full"
+    :class="{ 'lg:flex-col hg:flex-row': breakHg }"
     v-on:submit.prevent="submit"
     v-on:keydown.esc="leave"
     v-on-clickaway="leave"
@@ -8,6 +9,7 @@
     <!-- fields -->
     <base-select
       class="w-full sm:w-9x order-last sm:order-first"
+      :class="{ 'lg:w-full hg:w-9x lg:order-last hg:order-first': breakHg }"
       :color="color"
       :options="fields"
       v-if="showFields"
@@ -18,7 +20,7 @@
       <!-- text -->
       <input
         class="flex-1 px-sm outline-none border-gray border-base border-r-0 rounded-base rounded-r-0 placeholder-darkGray"
-        :class="`${ focus } ${ big ? 'py-sm' : 'py-xs' }${ autoFocus ? ' auto-focus' : '' }`"
+        :class="`${ focus } ${ big ? 'py-sm' : 'py-xs' }${ autoFocus ? ' auto-focus' : ''}`"
         type="text"
         placeholder="Start a new search..."
         v-model="newSearch"
@@ -76,6 +78,8 @@ export default class Search extends Vue {
   @Prop() big?: boolean;
   @Prop() autoFocus?: boolean;
   @Prop() hasAutocomplete?: boolean;
+  @Prop() breakHg?: boolean;
+
   utils = utils;
   timeout: any = false;
   autocomplete: Array<any> | string = '';
@@ -99,11 +103,12 @@ export default class Search extends Vue {
   }
 
   doAutocomplete() {
-    let search = this.newSearch.trim().toLowerCase();
-
     if (!this.hasAutocomplete) {
       return;
     }
+
+    let search = this.newSearch.trim().toLowerCase();
+
     if (!search) {
       this.autocomplete = '';
       return;
@@ -150,6 +155,8 @@ export default class Search extends Vue {
     if (!this.useCurrentSearch) {
       this.newSearch = '';
     }
+
+    this.$emit('submit');
   }
 
   @Watch('params', { immediate: true })

@@ -5,20 +5,6 @@ namespace Elastic;
 class Utils {
 
   /**
-   * Get a list of values for a specific key and returns them as an array
-   */
-  public static function getArgumentValues ($key) {
-
-    $arguments = $_GET; //Input::all();
-
-    if (array_key_exists($key, $arguments) && strpos(urldecode($arguments[$key]), '|') !== FALSE) {
-      return explode('|', urldecode($arguments[$key]));
-    } else {
-      return array($arguments[$key]);
-    }
-  }
-
-  /**
     * Escape lucene special chars
     */
   public static function escapeLuceneValue ($string) {

@@ -76,7 +76,7 @@ export default class FrontPage extends Vue {
 
   mounted() {
     let input: any = document.querySelector('.auto-focus');
-    if (input) {
+    if (input && !utils.isMobile()) {
       input.focus();
     }
   }

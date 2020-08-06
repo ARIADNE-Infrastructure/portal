@@ -27,6 +27,10 @@ export default <GetterTree<State, any>>{
     return state.fields;
   },
 
+  aggTitles: state => (): any => {
+    return state.aggTitles;
+  },
+
   mainNavigation: state => (): any[] => {
     return state.mainNavigation;
   },

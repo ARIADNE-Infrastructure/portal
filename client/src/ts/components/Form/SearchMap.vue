@@ -143,7 +143,9 @@ export default class SearchMap extends Vue {
 
     if (this.isMultiple) {
       if (result?.total?.value >= 100) {
-        heatPoints = result?.aggs?.geogrid?.buckets;
+        if (!this.map || this.map.getZoom() < 17) {
+          heatPoints = result?.aggs?.geogrid?.buckets;
+        }
       }
       result?.hits?.forEach((hit: any) => {
         hit.data?.spatial?.forEach((spat: any) => {
@@ -347,7 +349,7 @@ export default class SearchMap extends Vue {
     try {
       // @ts-ignore
       const url = process.env.apiUrl + '/search';
-      const res = await axios.get(utils.paramsToString(url, this.localData.params));
+      const res = await axios.get(utils.paramsToString(url, this.localData.params) + '&mapq=true');
 
       if (utils.objectIsNotEmpty(res?.data)) {
         return {

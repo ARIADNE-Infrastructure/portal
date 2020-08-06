@@ -91,6 +91,7 @@ module.exports = {
       'sm': '568px',
       'md': '768px',
       'lg': '1000px',
+      'hg': '1200px',
       'xl': '1440px',
     },
 

@@ -3,10 +3,12 @@
 	<div>
     <h1 class="text-2x mb-lg">ARIADNE's services</h1>
 
-    <input type="search" placeholder="Search among ARIADNE services.."
-      class="border-base border-darkGray w-full max-w-3xl p-sm focus:border-yellow outline-none rounded-base"
-      ref="serviceInput"
-      v-model="filter">
+    <form v-on:submit.prevent="utils.blurMobile()">
+      <input type="text" placeholder="Search among ARIADNE services.."
+        class="border-base border-gray w-full max-w-3xl p-sm focus:border-yellow outline-none rounded-base"
+        ref="serviceInput"
+        v-model="filter">
+    </form>
 
     <h2 v-if="!Object.values(filtered).some(a => a.length)" class="my-3x text-xl">
       No services matching "{{ filter.trim() }}"
@@ -45,7 +47,9 @@ export default class Services extends Vue {
   utils = utils;
 
   mounted () {
-    (this.$refs.serviceInput as any).focus();
+    if (!utils.isMobile()) {
+      (this.$refs.serviceInput as any).focus();
+    }
   }
 
   get services () {

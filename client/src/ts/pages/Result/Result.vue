@@ -1,20 +1,34 @@
 <template>
-	<div class="overflow-x-hidden">
+	<div class="overflow-x-hidden flex flex-col lg:flex-row">
     <!-- sidebar -->
-    <aside class="lg:float-left lg:w-1/3 lg:pr-lg block">
+    <aside class="lg:w-1/3 lg:pr-lg block order-last lg:order-first">
       <result-sidebar />
     </aside>
 
     <!-- main content -->
-    <section class="lg:float-left lg:w-2/3 lg:pl-lg block">
+    <section class="lg:w-2/3 lg:pl-lg block">
       <info class="py-base pt-none" />
+
+      <div class="lg:hidden">
+        <search
+          color="blue"
+          bg="bg-blue"
+          hover="hover:bg-blue-80"
+          focus="focus:border-blue"
+          class="mt-sm mb-xl"
+          :big="true"
+          :useCurrentSearch="true"
+          :showFields="true"
+          v-on:submit="utils.blurMobile()"
+        />
+      </div>
 
       <div class="md:flex mt-sm items-center justify-between pt-none">
         <paginator />
         <sort-order class="mt-lg md:mt-none" />
       </div>
 
-      <div class="my-base">
+      <div class="mb-base mt-xl">
         <p v-if="result.error" class="mt-xl text-red">
           {{ result.error }}
         </p>
@@ -43,7 +57,7 @@
               <div>
                 <div v-for="(agg, key) in getAggregations(res.data)" :key="key">
                   <div v-if="agg.data">
-                    <b>{{ agg.title || utils.sentenceCase(agg.id) }}</b>:
+                    <b>{{ aggTitles[agg.id] || utils.sentenceCase(agg.id) }}</b>:
                     <span v-html="agg.data"></span>
                   </div>
                 </div>
@@ -60,7 +74,7 @@
         </div>
       </div>
 
-      <paginator class="py-base" />
+      <paginator class="py-base" :scrollTop="true" />
     </section>
 
     <div class="clearfix mb-4x"></div>
@@ -74,6 +88,7 @@ import ResultSidebar from './ResultSidebar.vue';
 import Info from './Info.vue';
 import Paginator from './Paginator.vue';
 import SortOrder from './SortOrder.vue';
+import Search from '../../components/Form/Search.vue';
 
 @Component({
   components: {
@@ -81,6 +96,7 @@ import SortOrder from './SortOrder.vue';
     Info,
     Paginator,
     SortOrder,
+    Search,
   }
 })
 export default class Result extends Vue {
@@ -101,6 +117,9 @@ export default class Result extends Vue {
   }
   get loading () {
     return this.$store.getters.loading();
+  }
+  get aggTitles () {
+    return this.$store.getters.aggTitles();
   }
 
   setMeta () {
@@ -130,15 +149,15 @@ export default class Result extends Vue {
   getAggregations (data: any): Array<any> {
     let q: string = (this.params.q || '').trim();
     let aggs: any = [
-      { id: 'archaeologicalResourceType', prop: 'name', title: 'Resource type', always: true },
-      { id: 'spatial', prop: 'placeName', title: 'Place', always: true },
+      { id: 'archaeologicalResourceType', prop: 'name', always: true },
+      { id: 'spatial', prop: 'placeName', always: true },
       { id: 'publisher', prop: 'name', always: true },
-      { id: 'nativeSubject', prop: 'prefLabel', title: 'Subject', sentence: true, always: true },
+      { id: 'nativeSubject', prop: 'prefLabel', sentence: true, always: true },
+      { id: 'derivedSubject', prop: 'prefLabel', sentence: true },
       { id: 'keyword', sentence: true },
       { id: 'contributor', prop: 'name' },
-      { id: 'temporal', prop: 'periodName', title: 'Dating', sentence: true },
-      { id: 'derivedSubject', prop: 'prefLabel', title: 'Original subject', sentence: true },
-      { id: 'aatSubjects', param: 'subjectLabel', prop: 'label', title: 'Getty AAT Subjects', sentence: true }
+      { id: 'temporal', prop: 'periodName', sentence: true },
+      { id: 'aatSubjects', param: 'subjectLabel', prop: 'label', sentence: true }
     ];
 
     for (let i = 0; i < aggs.length; i++) {

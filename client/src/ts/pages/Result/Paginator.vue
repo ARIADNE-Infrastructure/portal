@@ -15,10 +15,13 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component, Prop, Watch } from 'vue-property-decorator';
+import { Vue, Component, Prop } from 'vue-property-decorator';
+import VueScrollTo from 'vue-scrollto';
 
 @Component
 export default class Paginator extends Vue {
+  @Prop() scrollTop?: boolean;
+
   get params () {
     return this.$store.getters.params();
   }
@@ -49,6 +52,9 @@ export default class Paginator extends Vue {
   changePage (page: any, can: boolean) {
     if (can) {
       this.$store.dispatch('setSearch', { page: page < 2 ? 0 : page })
+      if (this.scrollTop) {
+        VueScrollTo.scrollTo('body');
+      }
     }
   }
 

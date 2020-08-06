@@ -14,7 +14,16 @@
     >
       <div class="flex items-center h-4x">
         <!-- logo -->
-        <header-logo class="block p-base" />
+        <span
+          v-on:click="navigate('/')"
+          class="block p-base cursor-pointer"
+        >
+          <img
+            :src="`${ assets }/logo.png`"
+            class="transition-opacity duration-300 hover:opacity-80"
+            alt="logo"
+          >
+        </span>
 
         <!-- stacked menu toggle -->
         <div class="flex w-full justify-end h-full">
@@ -40,13 +49,14 @@
         >
           <div class="z-1003">
             <search
-              class="my-md px-base"
+              class="my-lg px-base"
               color="yellow"
               bg="bg-yellow"
               hover="hover:bg-yellow-80"
               focus="focus:border-yellow"
               :big="true"
               :useCurrentSearch="false"
+              v-on:submit="onSubmit"
             />
             <ul>
               <li
@@ -54,10 +64,10 @@
                 :key="item.path"
                 class="bg-lightGray"
               >
-                <router-link
-                  :to="item.path"
-                  :class="`${ item.hover } ${ item.border }`"
-                  class="transition-all duration-300 text-midGray2 border-b-3 block p-base text-center"
+                <span
+                  v-on:click="navigate(item.path)"
+                  :class="`${ item.hover } ${ item.border }` + (isActive(item.path) ? ` ${ item.bg } ${ item.border }` : '')"
+                  class="transition-all duration-300 text-midGray2 border-b-3 block p-base text-center cursor-pointer"
                 >
                   <i
                     :class="`fa-${ item.icon }`"
@@ -65,7 +75,7 @@
                   />
 
                   {{ item.name }}
-                </router-link>
+                </span>
               </li>
             </ul>
           </div>
@@ -76,21 +86,39 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Mixins } from 'vue-property-decorator';
+import { Component, Vue, Mixins, Watch } from 'vue-property-decorator';
 import AccordionMixin from '../../Form/AccordionMixin.vue';
 import { MainMenuItem } from '../../../utils/interface';
 import Search from '../../Form/Search.vue';
-import HeaderLogo from './Logo.vue';
+import utils from '../../../utils/utils';
 
 @Component({
   components: {
-    HeaderLogo,
     Search,
   }
 })
 export default class HeaderMobile extends Mixins(AccordionMixin) {
+  path: string = '';
+
+  mounted () {
+    this.updateMenuPath();
+  }
+
   get items(): MainMenuItem[] {
     return this.$store.getters.mainNavigation();
+  }
+  get assets() {
+    return this.$store.getters.assets();
+  }
+
+  navigate (path: string) {
+    this.$router.push(path);
+    this.show = false;
+  }
+
+  onSubmit () {
+    this.show = false
+    utils.blurMobile();
   }
 
   onEnter(el: any): void {
@@ -101,6 +129,16 @@ export default class HeaderMobile extends Mixins(AccordionMixin) {
   onLeave(el: any): void {
     document.body.classList.remove('overflow-y-hidden');
     this.leave(el);
+  }
+
+  isActive (path: string): boolean {
+    return this.path.includes(path) ||
+      (path.includes('search') && this.path.includes('resource'));
+  }
+
+  @Watch('$route')
+  updateMenuPath () {
+    this.path = this.$router.currentRoute.path;
   }
 }
 </script>

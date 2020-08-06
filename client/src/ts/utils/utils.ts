@@ -15,6 +15,19 @@ export default {
     return obj && typeof obj === 'object' && Object.keys(obj).length > 0;
   },
 
+  isMobile () {
+    return innerWidth <= 767 || 'ontouchstart' in window;
+  },
+
+  blurMobile () {
+    if (this.isMobile()) {
+      let focused: any = document.activeElement;
+      if (focused && typeof focused.blur === 'function') {
+        focused.blur();
+      }
+    }
+  },
+
   objectEquals (a: any, b: any) {
     let aArr = Object.getOwnPropertyNames(a),
         bArr = Object.getOwnPropertyNames(b);
