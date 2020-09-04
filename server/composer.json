@@ -2,7 +2,7 @@
   "name": "snd/ariadne-portal",
   "description": "Ariadne-portal",
   "require": {
-      "elasticsearch/elasticsearch": "~7.0",
-      "symfony/monolog-bundle": "3.5.0"
+      "elasticsearch/elasticsearch": "^7.9",
+      "symfony/monolog-bundle": "^3.5"
   }
 }
