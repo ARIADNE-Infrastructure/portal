@@ -1,14 +1,14 @@
 <template>
   <div>
     <div class="hidden lg:block">
-      <h2 class="text-lg mb-lg">Current search</h2>
+      <h2 class="text-lg mb-md">Current search</h2>
 
       <search
         color="blue"
         bg="bg-blue"
         hover="hover:bg-blue-80"
         focus="focus:border-blue"
-        class="mb-xl"
+        class="mb-2x"
         :breakHg="true"
         :big="true"
         :useCurrentSearch="true"
@@ -21,31 +21,31 @@
       Filters
     </h2>
 
-    <div v-if="utils.objectIsNotEmpty(result.aggs)">
-      <div v-for="(agg, aggKey) in result.aggs" v-bind:key="aggKey">
-        <div v-if="utils.objectIsNotEmpty(agg.buckets) && hasActiveItem(aggKey, agg.buckets)">
-          <div v-for="(bucket, key) in agg.buckets" v-bind:key="key" :class="key === agg.buckets.length - 1 ? 'mb-md' : ''">
-            <div v-if="isActive(aggKey, bucket.key)"
-              v-on:click="setSearch(aggKey, bucket.key, false)"
-              class="flex justify-between items-center text-white bg-blue hover:bg-blue-90 transition-all duration-300 cursor-pointer p-md border-b-base">
-              <span class="flex-grow break-word pr-lg">
-                <b>{{ aggTitles[aggKey] || utils.sentenceCase(utils.splitCase(aggKey)) }}</b>:
-                <span v-if="aggKey === 'subjectUri' && params.subjectLabel">
-                  {{ utils.sentenceCase(params.subjectLabel) }}
-                </span>
-                <span v-else-if="aggKey === 'fields' && fields.some(f => f.val === bucket.key)">
-                  {{ fields.find(f => f.val === bucket.key).text }}
-                </span>
-                <span v-else>
-                  {{ utils.sentenceCase(bucket.key) }}
-                </span>
-              </span>
-              <span class="bg-white rounded-lg py-xs px-sm text-blue text-sm font-bold hover:text-red">
-                <i class="fa-times fas align-middle transition-color duration-300" />
-              </span>
-            </div>
-          </div>
-        </div>
+    <div v-if="activeFilters.length" class="mb-lg">
+      <div v-for="(filter, key) in activeFilters" :key="key"
+        v-on:click="setSearch(filter.key, filter.bucket.key, false)"
+        class="flex justify-between items-center text-white bg-blue hover:bg-blue-90 group transition-all duration-300 cursor-pointer p-md border-b-base">
+        <span class="flex-grow break-word pr-lg">
+          <b>{{ aggTitles[filter.key] || utils.sentenceCase(utils.splitCase(filter.key)) }}</b>:
+          <span v-if="filter.key === 'subjectUri' && params.subjectLabel">
+            {{ utils.sentenceCase(params.subjectLabel) }}
+          </span>
+          <span v-else-if="filter.key === 'fields' && fields.some(f => f.val === filter.bucket.key)">
+            {{ fields.find(f => f.val === filter.bucket.key).text }}
+          </span>
+          <span v-else>
+            {{ utils.sentenceCase(filter.bucket.key) }}
+          </span>
+        </span>
+        <span class="bg-white rounded-lg py-xs px-sm text-blue text-sm font-bold group-hover:text-red">
+          <i class="fa-times fas align-middle transition-color duration-300" />
+        </span>
+      </div>
+
+      <div class="mt-sm cursor-pointer inline-block hover:text-red transition-color duration-300"
+        v-on:click="resetFilters">
+        <span class="mr-xs">Clear all filters</span>
+        <i class="fa-times fas align-middle transition-color duration-300 text-red" />
       </div>
     </div>
 
@@ -53,6 +53,7 @@
       title="Where"
       height="250px"
       :isMultiple="true"
+      :noZoom="utils.isMobile()"
     />
 
     <time-line
@@ -67,7 +68,7 @@
         v-bind:key="aggKey"
       >
         <div
-          v-if="utils.objectIsNotEmpty(agg.buckets)"
+          v-if="utils.objectIsNotEmpty(agg.buckets) && !Object.values(agg.buckets).every(b => b.key && utils.isInvalid(b.key))"
         >
           <accordion
             :title="aggTitles[aggKey] || utils.sentenceCase(utils.splitCase(aggKey))"
@@ -78,11 +79,11 @@
               v-for="(bucket, key) in agg.buckets"
               v-bind:key="key"
             >
-              <div v-if="bucket.key && bucket.key.trim()">
+              <div v-if="bucket.key && bucket.key.trim() && !utils.isInvalid(bucket.key)">
                 <div
                   v-if="isActive(aggKey, bucket.key)"
                   @click="setSearch(aggKey, bucket.key, false)"
-                  class="flex justify-between items-center text-white bg-blue hover:bg-blue-90 transition-all duration-300 cursor-pointer p-md border-t-base"
+                  class="flex justify-between items-center text-white bg-blue hover:bg-blue-90 group transition-all duration-300 cursor-pointer p-md border-t-base"
                 >
                   <span class="flex-grow break-word pr-lg">
                     <span v-if="aggKey === 'subjectUri' && params.subjectLabel">
@@ -96,7 +97,7 @@
                     </span>
                   </span>
 
-                  <span class="bg-white rounded-lg py-xs px-sm text-blue text-sm font-bold hover:text-red">
+                  <span class="bg-white rounded-lg py-xs px-sm text-blue text-sm font-bold group-hover:text-red">
                     <i class="fa-times fas align-middle transition-color duration-300" />
                   </span>
                 </div>
@@ -153,6 +154,35 @@ export default class ResultSidebar extends Vue {
   }
   get aggTitles () {
     return this.$store.getters.aggTitles();
+  }
+
+  get activeFilters () {
+    let filters = [];
+
+    if (utils.objectIsNotEmpty(this.result.aggs)) {
+      for (let aggKey in this.result.aggs) {
+        let agg = this.result.aggs[aggKey];
+        if (utils.objectIsNotEmpty(agg.buckets) && this.hasActiveItem(aggKey, agg.buckets)) {
+          for (let key in agg.buckets) {
+            let bucket = agg.buckets[key];
+            if (this.isActive(aggKey, bucket.key)) {
+              filters.push({
+                key: aggKey,
+                bucket: bucket,
+              });
+            }
+          }
+        }
+      }
+    }
+    return filters;
+  }
+
+  resetFilters () {
+    this.$store.dispatch('setSearch', {
+      clear: true,
+      q: this.params.q
+    })
   }
 
   getSortedAggs () {

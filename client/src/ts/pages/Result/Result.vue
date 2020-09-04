@@ -1,5 +1,5 @@
 <template>
-	<div class="overflow-x-hidden flex flex-col lg:flex-row">
+	<div class="overflow-x-hidden flex flex-col lg:flex-row min-h-360 hg:min-h-300">
     <!-- sidebar -->
     <aside class="lg:w-1/3 lg:pr-lg block order-last lg:order-first">
       <result-sidebar />
@@ -43,20 +43,20 @@
             v-for="(res, key) in result.hits"
             v-bind:key="key"
             :to="`/resource/${ res.id }`"
-            class="block border-t-base border-gray p-base transition-all duration-300 hover:bg-lightGray-60 link-trigger"
+            class="block border-t-base border-gray p-base transition-all duration-300 hover:bg-lightGray-60 group"
           >
             <div class="float-left" style="width:40px;margin-right:15px;">
               <img alt="icon" :src="`${ assets }/result/icon-${ getImgId(res.data) }.png`"
                 width="40" height="40">
             </div>
             <div class="float-left" style="width:calc(100% - 55px)">
-              <h3 class="text-blue font-bold mb-base" v-html="getMarked(res.data.title) || 'No title'"></h3>
+              <h3 class="text-blue font-bold mb-base group-hover:underline" v-html="getMarked(res.data.title) || 'No title'"></h3>
               <div v-if="!!res.data.description" class="mb-base">
                 <p v-html="getMarked(utils.cleanText(res.data.description, false).slice(0, 400)) + '..'"></p>
               </div>
               <div>
                 <div v-for="(agg, key) in getAggregations(res.data)" :key="key">
-                  <div v-if="agg.data">
+                  <div v-if="agg && agg.data">
                     <b>{{ aggTitles[agg.id] || utils.sentenceCase(agg.id) }}</b>:
                     <span v-html="agg.data"></span>
                   </div>
@@ -121,6 +121,9 @@ export default class Result extends Vue {
   get aggTitles () {
     return this.$store.getters.aggTitles();
   }
+  get resultAggs () {
+    return this.$store.getters.resultAggs();
+  }
 
   setMeta () {
     let title = 'Search';
@@ -147,22 +150,8 @@ export default class Result extends Vue {
   }
 
   getAggregations (data: any): Array<any> {
-    let q: string = (this.params.q || '').trim();
-    let aggs: any = [
-      { id: 'archaeologicalResourceType', prop: 'name', always: true },
-      { id: 'spatial', prop: 'placeName', always: true },
-      { id: 'publisher', prop: 'name', always: true },
-      { id: 'nativeSubject', prop: 'prefLabel', sentence: true, always: true },
-      { id: 'derivedSubject', prop: 'prefLabel', sentence: true },
-      { id: 'keyword', sentence: true },
-      { id: 'contributor', prop: 'name' },
-      { id: 'temporal', prop: 'periodName', sentence: true },
-      { id: 'aatSubjects', param: 'subjectLabel', prop: 'label', sentence: true }
-    ];
-
-    for (let i = 0; i < aggs.length; i++) {
-      let agg = aggs[i],
-          d = data[agg.id];
+    return this.resultAggs.map((agg: any) => {
+      let d = data[agg.id];
 
       if (d) {
         if (agg.id === 'archaeologicalResourceType') {
@@ -172,13 +161,16 @@ export default class Result extends Vue {
           if (!agg.prop || d.some((p: any) => p[agg.prop])) {
             let str = this.getMarked(this.joinMatching(d, agg));
             if (agg.always || str.includes('<span class="bg-')) {
-              aggs[i].data = str;
+              return {
+                id: agg.id,
+                data: str
+              };
             }
           }
         }
       }
-    }
-    return aggs;
+      return null;
+    });
   }
 
   joinMatching (data: any, agg: any): string {
@@ -190,13 +182,19 @@ export default class Result extends Vue {
     if (agg.prop) {
       data = data.filter((d: any) => d[agg.prop]).map((d: any) => String(d[agg.prop]));
     }
+    if (a.includes('|')) {
+      a = a.split('|');
+    }
 
     data.forEach((d: string) => {
       d = d.toLowerCase();
-      if ((q && d.includes(q)) || (a && d.includes(a))) {
-        newData.unshift(d);
-      } else {
-        newData.push(d);
+
+      if (!utils.isInvalid(d)) {
+        if ((q && d.includes(q)) || (a && (Array.isArray(a) ? a.some(p => d.includes(p)) : d.includes(a)))) {
+          newData.unshift(d);
+        } else {
+          newData.push(d);
+        }
       }
     });
 
@@ -213,10 +211,20 @@ export default class Result extends Vue {
     ];
 
     for (let key in this.params) {
-      if (this.params[key] && valid.includes(key)) {
-        q.push(this.params[key]);
+      let val = this.params[key];
+      if (val && valid.includes(key) && val.trim()) {
+        if (val.includes('|')) {
+          val.split('|').forEach((v: string) => {
+            if (v && v.trim()) {
+              q.push(v.trim());
+            }
+          });
+        } else {
+          q.push(val.trim());
+        }
       }
     }
+    q.sort((a: string, b: string) => b.length - a.length);
     return utils.getMarked(text, q.join('|'));
   }
 
@@ -227,9 +235,3 @@ export default class Result extends Vue {
   }
 }
 </script>
-
-<style>
-.link-trigger:hover h3{
-  text-decoration: underline;
-}
-</style>

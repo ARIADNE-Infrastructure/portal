@@ -37,13 +37,13 @@
       <div class="flex flex-col md:flex-row pt-xs">
         <router-link v-for="(link, key) in links" :key="key"
           :to="`/browse/${ link.id }`"
-          class="w-full lg:w-1/3 relative hover:opacity-80 transition-opacity duration-300 border-base border-white mb-2x md:mb-none"
+          class="w-full lg:w-1/3 relative mb-2x md:mb-none group"
           :class="{ 'md:mr-2x': !key, 'md:ml-2x': key === links.length - 1 }">
-          <span class="absolute top-sm left-sm bg-white px-md py-sm border-base border-blue transition-all duration-300 hover:bg-blue hover:text-white">
-            <i :class="link.icon"></i>
+          <span class="absolute z-1 top-sm left-sm bg-white px-md py-sm border-base border-blue transition-all duration-300 group-hover:bg-blue group-hover:text-white">
+            <i class="mr-xs" :class="link.icon"></i>
             {{ utils.sentenceCase(link.id) }}
           </span>
-          <img :src="`${ assets }/frontpage/${ link.id }.png`" :alt="link.id" class="w-full">
+          <img :src="`${ assets }/frontpage/${ link.id }.png`" :alt="link.id" class="w-full transition-opacity duration-300 group-hover:opacity-80 backface-hidden">
         </router-link>
       </div>
     </div>

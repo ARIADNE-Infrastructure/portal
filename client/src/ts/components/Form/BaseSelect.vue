@@ -1,6 +1,6 @@
 <template>
   <div
-    class="whitespace-no-wrap select-none bg-white"
+    class="whitespace-no-wrap select-none bg-white text-left"
   >
     <div
       class="border-base h-full flex justify-between items-center overflow-x-hidden"
@@ -26,7 +26,7 @@
     <div class="relative">
       <div
         v-if="open"
-        class="border-base absolute left-0 w-full bg-white border-t-0 z-1001 shadow-bottom"
+        class="border-base absolute left-0 w-full bg-white border-t-0 z-1003 shadow-bottom"
         :class="dropdownClass"
       >
         <ul

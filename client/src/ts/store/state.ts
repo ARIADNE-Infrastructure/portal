@@ -1,5 +1,3 @@
-import { MainMenuItem } from '../utils/interface';
-
 export default class State {
   title?: string = '';
   resource: any = null;
@@ -29,7 +27,7 @@ export default class State {
     aatSubjects: 'Getty AAT Subjects'
   }
 
-  mainNavigation: MainMenuItem[] = [
+  mainNavigation = [
     {
       'path': '/search',
       'name': 'Catalog',
@@ -80,6 +78,54 @@ export default class State {
     {
       id: 'what',
       icon: 'fas fa-bars',
+    }
+  ];
+
+  resultAggs = [
+    {
+      id: 'archaeologicalResourceType',
+      prop: 'name',
+      always: true
+    },
+    {
+      id: 'spatial',
+      prop: 'placeName',
+      always: true
+    },
+    {
+      id: 'publisher',
+      prop: 'name',
+      always: true
+    },
+    {
+      id: 'nativeSubject',
+      prop: 'prefLabel',
+      sentence: true,
+      always: true
+    },
+    {
+      id: 'derivedSubject',
+      prop: 'prefLabel',
+      sentence: true
+    },
+    {
+      id: 'keyword',
+      sentence: true
+    },
+    {
+      id: 'contributor',
+      prop: 'name'
+    },
+    {
+      id: 'temporal',
+      prop: 'periodName',
+      sentence: true
+    },
+    {
+      id: 'aatSubjects',
+      param: 'subjectLabel',
+      prop: 'label',
+      sentence: true
     }
   ];
 

@@ -283,11 +283,7 @@ class Query {
 
     foreach ($query['aggregations'] as $key => $aggregation) {
         if (!empty($_GET[$key])) {
-            if (strpos($_GET[$key], '|') !== false) {
-              $values = explode('|', $_GET[$key]);
-            } else {
-              $values = array($_GET[$key]);
-            }
+          $values = explode('|', $_GET[$key]);
 
             if ($key != 'temporal') {
               $field = $aggregation['terms']['field'];
@@ -297,7 +293,7 @@ class Query {
 
             foreach ($values as $value) {
                 $fieldQuery = [];
-                $fieldQuery[$field] = Utils::escapeLuceneValue($value);
+                $fieldQuery[$field] = Utils::escapeLuceneValue($value, false);
                 if ($key != 'temporal'){
                     $filters[] = ['term' => $fieldQuery];
                 } else {
@@ -382,7 +378,7 @@ class Query {
     if (!empty($record['spatial'])) {
       foreach ($record['spatial'] as $item) {
         if (!empty($item['location']) && !empty($item['location']['lat']) && !empty($item['location']['lon'])) {
-          $location = $item['location'];
+          $location = $item;
           break;
         }
       }
@@ -400,8 +396,8 @@ class Query {
             'geo_distance' => [
               'distance' => '50km',
               'spatial.location' => [
-                'lat' => $location['lat'],
-                'lon' => $location['lon']
+                'lat' => $location['location']['lat'],
+                'lon' => $location['location']['lon']
               ]
             ]
           ]
@@ -410,8 +406,8 @@ class Query {
       'sort' => [
         '_geo_distance' => [
           'spatial.location' => [
-            'lat' => $location['lat'],
-            'lon' => $location['lon']
+            'lat' => $location['location']['lat'],
+            'lon' => $location['location']['lon']
           ],
           'order' => 'asc',
           'unit' => 'km',
@@ -426,8 +422,17 @@ class Query {
     if (!empty($locations)) {
       foreach ($locations as $loc) {
         $loc = $loc['_source']['spatial'][0] ?? null;
-        if ($loc && ($loc['location']['lat'] !== $location['lat'] || $loc['location']['lon'] !== $location['lon'])) {
-          $ret[] = $loc;
+        if ($loc && !Utils::isLocationDoublet($location, $loc)) {
+          $doublet = false;
+          foreach ($ret as $r) {
+            if (Utils::isLocationDoublet($loc, $r)) {
+              $doublet = true;
+              break;
+            }
+          }
+          if (!$doublet) {
+            $ret[] = $loc;
+          }
         }
       }
     }

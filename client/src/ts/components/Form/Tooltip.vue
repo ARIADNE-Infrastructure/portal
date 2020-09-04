@@ -1,6 +1,6 @@
 <template>
-  <span class="inline-flex relative justify-center tooltip-trigger">
-    <span class="absolute transition-all duration-300 bg-darkGray-80 text-white p-sm z-neg opacity-0 whitespace-no-wrap tooltip-target"
+  <span class="inline-flex relative justify-center group">
+    <span class="absolute transition-opacity duration-300 bg-darkGray-80 text-white p-sm z-neg opacity-0 whitespace-no-wrap group-hover:opacity-100 group-hover:z-1005"
       :style="`top:calc(-100% - ${ top })`">
       {{ title }}
     </span>
@@ -17,10 +17,3 @@ export default class Tooltip extends Vue {
   @Prop() top!: string;
 }
 </script>
-
-<style>
-.tooltip-trigger:hover .tooltip-target {
-  opacity: 1;
-  z-index: 2000;
-}
-</style>

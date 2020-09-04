@@ -92,9 +92,9 @@ export default {
           word = this.escReg(word);
         }
 
-        return text.replace(new RegExp(word, 'ig'),
-          m => `<span class="bg-lightYellow">${ m }</span>`
-        );
+        return text.replace(new RegExp(word, 'ig'), (m: string) => {
+          return `<span class="bg-lightYellow">${ m }</span>`;
+        });
       }
       return text;
     }
@@ -119,6 +119,14 @@ export default {
       return striptags(text);
     }
     return '';
+  },
+
+  isInvalid (val: any): boolean {
+    if (val && typeof val === 'string') {
+      let invalid = ['not provided', 'unknown'];
+      return invalid.includes(val.toLowerCase());
+    }
+    return false;
   },
 
   linkClasses (): string {

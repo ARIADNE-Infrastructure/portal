@@ -20,9 +20,7 @@ export default <ActionTree<State, any>> {
       if (res?.data?.id) {
         data = res.data;
       }
-    } catch (ex) {
-      console.log(ex);
-    }
+    } catch (ex) {}
 
     context.commit('setResource', data);
     context.commit('setLoading', false);
@@ -38,9 +36,7 @@ export default <ActionTree<State, any>> {
       if (res?.data?.length && Array.isArray(res.data)) {
         data = res.data;
       }
-    } catch (ex) {
-      console.log(ex)
-    }
+    } catch (ex) {}
 
     context.commit('setAutocomplete', { data, query });
   },
@@ -121,13 +117,8 @@ export default <ActionTree<State, any>> {
         });
         context.commit('setLoading', false);
         return;
-
-      } else {
-        console.log(data);
       }
-    } catch (ex) {
-      console.log(ex);
-    }
+    } catch (ex) {}
 
     context.commit('setLoading', false);
     context.commit('setResult', {
@@ -148,13 +139,19 @@ export default <ActionTree<State, any>> {
       const words = res?.data;
 
       if (words && words.length) {
+        const max = Math.max.apply(null, words.map((word: any) => word.doc_count));
+
         context.commit('setWordCloud', words.map((word: any) => {
-          return [word.key, Math.max(10, Math.round(word.doc_count / 1000))];
+          let count = Math.round((word.doc_count / max) * 100);
+          if (count > 100) {
+            count = 100;
+          } else if (count < 10) {
+            count = 10;
+          }
+          return [word.key, count];
         }));
       }
-    } catch (ex) {
-      console.log(ex);
-    }
+    } catch (ex) {}
 
     context.commit('setLoading', false);
   },

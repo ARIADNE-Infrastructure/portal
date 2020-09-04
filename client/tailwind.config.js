@@ -25,6 +25,9 @@ function getColorsWithOpacity (colors) {
 }
 
 module.exports = {
+  future: {
+    removeDeprecatedGapUtilities: true,
+  },
   /**
    * Css purge is enabled
    * Read this: https://tailwindcss.com/docs/controlling-file-size/
@@ -43,6 +46,11 @@ module.exports = {
   },
   variants: {
     borderWidth: ['responsive', 'last', 'hover', 'focus'],
+    textColor: ['responsive', 'hover', 'focus', 'group-hover'],
+    backgroundColor: ['responsive', 'hover', 'focus', 'group-hover'],
+    opacity: ['responsive', 'hover', 'focus', 'group-hover'],
+    zIndex: ['responsive', 'hover', 'focus', 'group-hover'],
+    textDecoration: ['responsive', 'hover', 'focus', 'group-hover'],
   },
   theme: {
     fontFamily: {
@@ -176,6 +184,8 @@ module.exports = {
       '1001': 1001,
       '1002': 1002,
       '1003': 1003,
+      '1004': 1004,
+      '1005': 1005,
     },
 
     boxShadow: {
@@ -189,6 +199,14 @@ module.exports = {
       '1/2': '50%',
       '3/4': '75%',
       'full': '100%',
+    },
+
+    minHeight: {
+      '0': '0',
+      'full': '100%',
+      'screen': '100vh',
+      '300': '300px',
+      '360': '360px',
     }
   }
 }

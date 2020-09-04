@@ -148,7 +148,7 @@ export default class TimeLine extends Vue {
           plugins: {
             zoom: {
               pan: {
-                enabled: true,
+                enabled: !utils.isMobile(),
                 mode: 'x',
                 speed: 10,
                 threshold: 10,
@@ -157,7 +157,7 @@ export default class TimeLine extends Vue {
                 }
               },
               zoom: {
-                enabled: true,
+                enabled: !utils.isMobile(),
                 drag: false,
                 mode: 'x',
                 speed: 1,

@@ -3,13 +3,13 @@
     <!-- overlay -->
     <div
       v-if="show"
-      class="bg-black opacity-60 absolute w-full h-full z-1003"
+      class="bg-black opacity-60 absolute w-full h-full z-1005"
       @click="toggle"
     >
     </div>
 
     <header
-      class="fixed top-0 w-full bg-lightGray z-1003"
+      class="fixed top-0 w-full bg-lightGray z-1005"
       :class="{ 'border-b-base border-gray shadow-bottom': !show }"
     >
       <div class="flex items-center h-4x">
@@ -20,7 +20,7 @@
         >
           <img
             :src="`${ assets }/logo.png`"
-            class="transition-opacity duration-300 hover:opacity-80"
+            class="transition-opacity duration-300 hover:opacity-80 backface-hidden"
             alt="logo"
           >
         </span>
@@ -47,7 +47,7 @@
           v-show="show"
           class="ease-out duration-200 overflow-y-hidden"
         >
-          <div class="z-1003">
+          <div class="z-1005">
             <search
               class="my-lg px-base"
               color="yellow"
@@ -88,7 +88,6 @@
 <script lang="ts">
 import { Component, Vue, Mixins, Watch } from 'vue-property-decorator';
 import AccordionMixin from '../../Form/AccordionMixin.vue';
-import { MainMenuItem } from '../../../utils/interface';
 import Search from '../../Form/Search.vue';
 import utils from '../../../utils/utils';
 
@@ -104,7 +103,7 @@ export default class HeaderMobile extends Mixins(AccordionMixin) {
     this.updateMenuPath();
   }
 
-  get items(): MainMenuItem[] {
+  get items(): Array<any> {
     return this.$store.getters.mainNavigation();
   }
   get assets() {

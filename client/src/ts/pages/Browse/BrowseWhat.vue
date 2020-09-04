@@ -49,8 +49,6 @@ export default class BrowseWhat extends Vue {
   }
 
   startWordCloud () {
-    let maxWeight = Math.max.apply(null, this.wordCloud.map((c: any) => c[1]));
-
     let canvas: any = document.getElementById('cloud');
     canvas.width = innerWidth;
     canvas.height = Math.max(300, innerHeight - 100);
@@ -70,10 +68,10 @@ export default class BrowseWhat extends Vue {
           return size * canvas.width / 1024;
         },
         color (word: any, weight: number) {
-          if (weight > maxWeight - maxWeight / 3) {
+          if (weight >= 66) {
             return '#BB3921';
           }
-          if (weight > maxWeight / 5) {
+          if (weight >= 33) {
             return '#D5A03A';
           }
           return '#75A99D';

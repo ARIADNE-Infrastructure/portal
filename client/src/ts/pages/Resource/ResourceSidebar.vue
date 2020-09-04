@@ -78,6 +78,7 @@
       <filtered-items
         :items="resource.temporal"
         :class="itemClass"
+        filter="periodName,from,until"
         title="Dating">
         <span slot-scope="{ item }">
           <router-link v-if="item.periodName" :to="utils.paramsToString('/search', { temporal: item.periodName })" :class="utils.linkClasses()">{{ item.periodName }}</router-link><span v-if="item.from && item.until"><span v-if="item.periodName">: </span>{{ item.from + ' to ' +  item.until }}</span>
@@ -125,6 +126,29 @@
         <b :class="bClass">Modified:</b>
         {{ utils.formatDate(resource.modified) }}
       </div>
+
+      <filtered-items
+        :items="resource.hasMetadataRecord"
+        :class="itemClass"
+        :divider="true"
+        filter="xmlDoc,conformsTo"
+        title="Metadata record">
+        <div slot-scope="{ item, last }">
+          <div v-if="utils.validUrl(item.xmlDoc)" class="mt-sm" :class="{ 'border-b-base border-gray pb-md mb-md': !last }">
+            <a :href="item.xmlDoc" target="_blank" class="break-word" :class="utils.linkClasses()">
+              {{ item.xmlDoc }}
+            </a>
+          </div>
+          <div v-if="item.conformsTo && item.conformsTo.length && item.conformsTo[0]">
+            <div v-if="item.conformsTo[0].description" class="mt-sm whitespace-pre-line">
+              {{ utils.cleanText(item.conformsTo[0].description, true) }}
+            </div>
+            <div v-if="item.conformsTo[0].characterSet" class="mt-sm">
+              (Character set: {{ item.conformsTo[0].characterSet }})
+            </div>
+          </div>
+        </div>
+      </filtered-items>
     </section>
 
     <section>
@@ -204,9 +228,11 @@
         License information
       </h3>
 
-      <div v-if="resource.accessRights" :class="itemClass">
+      <div v-if="resource.accessRights && resource.accessRights !== resource.accessPolicy" :class="itemClass">
         <b :class="bClass">Access Rights:</b>
-        {{ resource.accessRights }}
+        <span :class="{ 'break-word': utils.validUrl(resource.accessRights) }">
+          {{ resource.accessRights }}
+        </span>
       </div>
 
       <div v-if="utils.validUrl(resource.accessPolicy)" :class="itemClass">
@@ -230,7 +256,9 @@
           </div>
           <div v-if="item.description" :class="itemClass">
             <b :class="bClass">Description:</b>
-            <div class="mt-sm">{{ item.description }}</div>
+            <div class="mt-sm whitespace-pre-line">
+              {{ utils.cleanText(item.description, true) }}
+            </div>
           </div>
           <div v-if="utils.validUrl(item.accessURL)" :class="itemClass">
             <b :class="bClass">Access URL:</b>

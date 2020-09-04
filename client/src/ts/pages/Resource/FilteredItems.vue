@@ -25,7 +25,7 @@
         </router-link>
       </span>
       <span v-else>
-        <slot :item="item"></slot>
+        <slot :item="item" :last="key === filtered.length - 1"></slot>
       </span>
     </div>
   </div>
@@ -57,7 +57,7 @@ export default class FilteredItems extends Vue {
     let filter = this.filter.split(',');
 
     return this.items.filter((item: any) => {
-      return filter.some((prop: string) => item[prop]);
+      return filter.some((prop: string) => item[prop] && !utils.isInvalid(item[prop]));
     });
   }
 

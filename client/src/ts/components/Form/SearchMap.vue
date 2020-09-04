@@ -56,7 +56,6 @@ export default class SearchMap extends Vue {
   heatMap: any = null;
   markers: Array<any> = [];
   localData: any = {};
-  localResult: any = null;
   isLocalLoading: boolean = false;
   canMoveChange: boolean = false;
   utils = utils;
@@ -208,12 +207,12 @@ export default class SearchMap extends Vue {
       this.setMarkers(spatials);
     }
 
-    await utils.delay(100);
+    await utils.delay(this.localData.result ? 100 : 300);
     this.canMoveChange = true;
   }
 
   setHeatMap (heatPoints: any) {
-    let max = heatPoints[0]['doc_count'],
+    let max = Math.max.apply(null, heatPoints.map((hp: any) => hp.doc_count || 0)),
         mapPoints = [],
         points = [];
 
@@ -231,7 +230,14 @@ export default class SearchMap extends Vue {
     }).addTo(this.map);
 
     if (!this.localData.result) {
-      this.map.fitBounds(L.latLngBounds(points));
+      this.map.fitBounds(L.latLngBounds(points), {
+        padding: L.point(25, 25)
+      });
+      if (!this.title) {
+        this.map.zoomOut(points.length < 35 ? 2 : 1, {
+          animate: false
+        });
+      }
     }
   }
 
@@ -254,9 +260,14 @@ export default class SearchMap extends Vue {
     });
 
     if (!this.localData.result) {
-      this.map.fitBounds(L.featureGroup(this.markers).getBounds(), { animate: false });
-      this.map.panTo(L.featureGroup(this.markers).getBounds().getCenter(), { animate: false });
-      if (!this.isMultiple && this.map.getZoom() >= 17) {
+      this.map.fitBounds(L.featureGroup(this.markers).getBounds(), {
+        animate: false,
+        padding: L.point(25, 25)
+      });
+      this.map.panTo(L.featureGroup(this.markers).getBounds().getCenter(), {
+        animate: false
+      });
+      if (!this.isMultiple) {
         this.map.zoomOut(1, { animate: false });
       }
     }
@@ -284,7 +295,8 @@ export default class SearchMap extends Vue {
       this.$store.dispatch('setSearch', {
         q: val,
         page: 0,
-        fields: 'location'
+        fields: 'location',
+        clear: true
       });
     });
 

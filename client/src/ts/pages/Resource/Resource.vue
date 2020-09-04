@@ -2,7 +2,7 @@
   <div class="mb-4x">
     <div v-if="utils.objectIsNotEmpty(params)" class="mb-2xl">
       <router-link :to="utils.paramsToString('/search', params)"
-        class="border-base border-midGray p-sm hover:bg-blue hover:text-white transition-all duration-300">
+        class="border-base border-midGray p-sm hover:bg-blue hover:border-blue hover:text-white transition-all duration-300">
         <i class="fas fa-long-arrow-alt-left mr-xs"></i>
         Back to search results
       </router-link>
@@ -25,7 +25,9 @@
 
           <h1 class="text-2x mb-md">{{ resource.title && resource.title.trim() ? resource.title : 'No title' }}</h1>
 
-          <div class="whitespace-pre-line mb-2x" v-html="utils.cleanText(resource.description, true).trim() || 'No description'"></div>
+          <div class="whitespace-pre-line mb-2x">
+            {{ utils.cleanText(resource.description, true) || 'No description' }}
+          </div>
 
           <div class="mb-2x">
             <div>
@@ -40,11 +42,11 @@
             </div>
             <div v-if="utils.validUrl(resource.landingPage)">
               <p :class="iconsClass">
-                <span :class="utils.linkClasses()" class="cursor-pointer" v-on:click="setCiting(true)">
+                <span :class="utils.linkClasses()" class="cursor-pointer" v-on:click="toggleCiting">
                   <i class="fas fa-link mr-xs text-blue"></i>
                   Cite
                 </span>
-                <input v-show="isCiting" ref="citeRef" type="text" :value="resource.landingPage" v-on:blur="setCiting(false)"
+                <input v-show="isCiting" ref="citeRef" type="text" :value="citationLink"
                   class="w-full border-base py-sm px-md mt-sm block border-yellow outline-none">
               </p>
               <p :class="iconsClass">
@@ -160,7 +162,7 @@ export default class Resource extends Vue {
           description: (this.resource.description || '').slice(0, 155)
         });
       } else {
-        this.$router.push('/404');
+        this.$router.replace('/404');
       }
     });
   }
@@ -186,22 +188,28 @@ export default class Resource extends Vue {
     return 'mt-md pt-md border-t-base border-gray';
   }
 
-  setCiting (val: boolean) {
-    if (!val) {
-      setTimeout(() => this.isCiting = false, 50);
-      return;
-    }
-    if (this.isCiting) {
-      return;
-    }
-    this.isCiting = true;
-    this.$nextTick(() => {
-      let citeRef = (this.$refs.citeRef as any);
-      citeRef.focus();
-      if (typeof citeRef.select === 'function') {
-        citeRef.select();
+  get citationLink () {
+    if (this.resource.originalId) {
+      const identifiers = ['doi:', 'hdl:', 'urn:', 'http://', 'https://'];
+      if (identifiers.some((id: string) => String(this.resource.originalId).startsWith(id))) {
+        return this.resource.originalId;
       }
-    });
+    }
+    return this.resource.landingPage;
+  }
+
+  toggleCiting () {
+    this.isCiting = !this.isCiting;
+
+    if (this.isCiting) {
+      this.$nextTick(() => {
+        let citeRef = (this.$refs.citeRef as any);
+        citeRef.focus();
+        if (typeof citeRef.select === 'function' && !utils.isMobile()) {
+          citeRef.select();
+        }
+      });
+    }
   }
 
   @Watch('$route')

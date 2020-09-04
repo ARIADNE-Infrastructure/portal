@@ -1,6 +1,6 @@
 <template>
   <header
-    class="hidden md:block fixed top-0 z-1003 top-0 bg-blue w-full h-4x bg-lightGray"
+    class="hidden md:block fixed top-0 z-1005 top-0 bg-blue w-full h-4x bg-lightGray"
   >
     <div class="flex relative items-center max-w-screen-xl mx-auto h-4x">
     <template>
@@ -11,7 +11,7 @@
       >
         <img
           :src="`${ assets }/logo.png`"
-          class="transition-opacity duration-300 hover:opacity-80"
+          class="transition-opacity duration-300 hover:opacity-80 backface-hidden"
           alt="logo"
         >
       </router-link>
@@ -59,7 +59,6 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import Search from '../../Form/Search.vue';
-import { MainMenuItem } from '../../../utils/interface';
 
 @Component({
   components: {
@@ -73,7 +72,7 @@ export default class HeaderDesktop extends Vue {
     this.updateMenuPath();
   }
 
-  get items(): MainMenuItem[] {
+  get items(): Array<any> {
     return this.$store.getters.mainNavigation();
   }
   get assets(): string {

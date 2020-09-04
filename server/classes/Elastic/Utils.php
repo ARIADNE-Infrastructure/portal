@@ -7,12 +7,21 @@ class Utils {
   /**
     * Escape lucene special chars
     */
-  public static function escapeLuceneValue ($string) {
-    $match = array('/', '\\');
-    $replace = array(' ', '\\\\');
-    $string = str_replace($match, $replace, $string);
+  public static function escapeLuceneValue ($str, $slashes = true) {
+    $lucene = '<>{}[]=&|!^?\\' . ($slashes ? '/' : '');
+    $str = str_replace(str_split($lucene), ' ', $str);
+    return trim(preg_replace('/\s+/', ' ', $str));
+  }
 
-    return $string;
+  /**
+   * Returns if locations are equals
+   */
+  public static function isLocationDoublet ($a, $b) {
+    $aLoc = $a['location'];
+    $bLoc = $b['location'];
+
+    return (round($aLoc['lat'], 4) === round($bLoc['lat'], 4) && round($aLoc['lon'], 4) === round($bLoc['lon'], 4)) ||
+      (!empty($a['placeName']) && !empty($b['placeName']) && strtolower($a['placeName']) === strtolower($b['placeName']));
   }
 
   /**

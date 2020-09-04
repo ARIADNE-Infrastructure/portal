@@ -17,13 +17,14 @@
       <div v-for="(items, title) in filtered" :key="title">
         <div v-if="items && items.length" class="border-t-base border-gray pt-xl pb-2x">
           <h2 class="text-xl mb-xl">{{ title }}</h2>
+
           <a v-for="(item, key) in items" :key="key"
             :href="item.url" target="_blank"
-            class="flex flex-col max-w-full lg:flex-row lg:items-start cursor-pointer service-trigger mb-2x pb-xl border-b-base border-gray lg:border-b-0">
+            class="flex flex-col max-w-full lg:flex-row lg:items-start cursor-pointer group mb-2x pb-xl border-b-base border-gray lg:border-b-0">
             <img :src="`${ assets }/services/${ item.img }`" :alt="item.img" width="360"
-              class="flex-shrink-0 backface-hidden transition-opacity duration-300 border-base border-gray p-sm rounded-base">
+              class="flex-shrink-0 backface-hidden transition-opacity duration-300 border-base border-gray p-sm rounded-base group-hover:opacity-80">
             <div class="mt-md lg:ml-xl lg:mt-none">
-              <h3 class="text-lg" v-html="utils.getMarked(item.title, filter)"></h3>
+              <h3 class="text-lg group-hover:underline" v-html="utils.getMarked(item.title, filter)"></h3>
               <p class="my-md" v-html="utils.getMarked(item.description, filter)"></p>
               <p>
                 <i class="fas fa-external-link-alt mr-xs text-blue"></i>
@@ -74,12 +75,3 @@ export default class Services extends Vue {
   }
 }
 </script>
-
-<style>
-.service-trigger:hover h3 {
-  text-decoration: underline;
-}
-.service-trigger:hover img {
-  opacity: 0.8;
-}
-</style>

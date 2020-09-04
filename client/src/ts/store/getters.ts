@@ -43,6 +43,10 @@ export default <GetterTree<State, any>>{
     return state.frontPageLinks;
   },
 
+  resultAggs: state => (): any[] => {
+    return state.resultAggs;
+  },
+
   assets: state => (): string => {
     return state.assetsDir;
   },
