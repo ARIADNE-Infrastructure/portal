@@ -7,3 +7,4 @@ settings.json
 data
 logs/
 .vscode
+server/html/static

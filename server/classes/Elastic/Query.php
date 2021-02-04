@@ -10,27 +10,66 @@ use Application\AppLogger;
 
 
 class Query {
-
+  private static $q = null;
   private $settings;
-  private $appLogger;
+  private $appLogger = null;
   private $client;
+  private $elasticEnv;
+  private $debugMode = false;
+  private $aggregationsReqFilter = []; // Aggregation filters from uri
 
   public function __construct() {
-    $this->settings = (new AppSettings())->getSettings();
-    $this->appLogger = new AppLogger();
 
+    // Get settings
+    $this->settings = (new AppSettings())->getSettings();
+
+    // Logger
+    if( $this->settings->environment->debugLog ) {
+      $this->appLogger = new AppLogger();
+      $this->debugMode = true;
+    }
+
+    // Set current Elastic environment - prod|dev according to environment->elasticsearchEnv from settings.json
+    $this->elasticEnv = $this->settings->elasticsearchEnv->{$this->settings->environment->elasticsearchEnv};
+
+    // Setup Elastic client
     $this->client = ClientBuilder::create()
-      ->setHosts([$this->settings->elasticsearch->host])
+      ->setHosts([$this->elasticEnv->host])
       ->build();
   }
 
   /**
-   * Get singel record from Elastic db
+   * Gets singleton instance
+   */
+  public static function instance () {
+    if (!self::$q) {
+      self::$q = new Query();
+    }
+    return self::$q;
+  }
+
+  /**
+   * Gets amounts of posts to return, default 10
+   */
+  public function getSize () {
+    $size = intval($_GET['size'] ?? 10);
+    if (is_int($size) && $size > 0 && $size <= 500) {
+      return $size;
+    }
+    return 10;
+  }
+
+  /**
+   * Get single record from Elastic db
    */
   public function getRecord ($recordId, $index) {
+    if (!Utils::isValidId($recordId)) {
+      exit;
+    }
+
     $searchParams = [
-      'id' => preg_replace('/[^a-zA-Z0-9\-]/', '', $recordId),
-      'index' => $this->settings->elasticsearch->index,
+      'id' => $recordId,
+      'index' => $this->elasticEnv->index,
     ];
 
     $record = $this->elasticDoGet($searchParams)['_source'];
@@ -49,15 +88,12 @@ class Query {
    */
   public function getAllRecords () {
     $searchParams = [];
-    $returnSize = 10;
-    if($returnSize!== '') {
-      $searchParams['size'] = $returnSize;
-      $searchParams['from'] = $this->getFrom();
+    $searchParams['size'] = $this->getSize();
+    $searchParams['from'] = $this->getFrom();
 
-      $sort = $this->getSort();
-      if ($sort) {
-        $searchParams['sort'] = $sort;
-      }
+    $sort = $this->getSort();
+    if ($sort) {
+      $searchParams['sort'] = $sort;
     }
     return $this->elasticDoSearch($searchParams)['hits'];
 
@@ -90,7 +126,7 @@ class Query {
     if ($q) {
       $query = [
         '_source' => ['prefLabel', 'prefLabels'],
-        'size' => 6,
+        'size' => 10,
         'query' => [
           'nested' => [
             'path' => 'prefLabels',
@@ -106,7 +142,7 @@ class Query {
         ]
       ];
 
-      $hits = $this->elasticDoSearch($query, $this->settings->elasticsearch->subject_index)['hits']['hits'];
+      $hits = $this->elasticDoSearch($query, $this->elasticEnv->subject_index)['hits']['hits'];
       $result = [];
 
       foreach ($hits as $hit) {
@@ -144,13 +180,6 @@ class Query {
         'id' => $hit['_id'],
         'data' => $hit['_source']
       ];
-    }
-
-    // Elastic returns that there can be more than 10k results, but crashes when navigating further than that
-    // So limit results to 10k
-    if (isset($result['hits']['total']['value']) && $result['hits']['total']['value'] > 10000) {
-      $result['hits']['total']['value'] = 10000;
-      $result['hits']['total']['relation'] = 'lg';
     }
 
     return [
@@ -199,30 +228,25 @@ class Query {
    */
   private function getCurrentQuery () {
     $query = ['aggregations' => QuerySettings::getSearchAggregations()];
+    $query['size'] = $this->getSize();
 
-    $ghp = !empty($_GET['ghp']) ? intval($_GET['ghp']) : 3;
-    if (!is_int($ghp) || $ghp < 2) {
-      $ghp = 3;
-    } elseif ($ghp > 9) {
-      $ghp = 9;
+    // Geogrid Hash precision
+    $ghp = isset($_GET['ghp']) ? $_GET['ghp'] : 4;
+    if($ghp>12) {
+      $ghp = 12; // Max allowed Elastic precision 
     }
 
-    $query['aggregations']['geogrid'] = [
-      'geohash_grid' => [
-        'field' => 'spatial.location',
-        'precision' => $ghp,
-        'size' => 6600
-      ]
-    ];
+    $query['aggregations']['geogrid'] = ['geohash_grid' => [
+      'field' => 'spatial.location', 'precision' => intval($ghp), 'size' => 10000
+    ]];
 
     // add timespan bucket aggregation
     $range = null;
     if (!empty($_GET['range'])) {
-      $range = explode(',', $_GET['range']);
+      $range = explode(",", $_GET['range']);
     }
 
     $query['from'] = $this->getFrom();
-    $query['aggregations']['range_buckets'] = Timeline::prepareRangeBucketsAggregation($range);
 
     $sort = $this->getSort();
     if ($sort) {
@@ -237,40 +261,39 @@ class Query {
         $_GET['q'] = '*';
       }
 
-        $field_groups = QuerySettings::getSearchFieldGroups();
+      $field_groups = QuerySettings::getSearchFieldGroups();
 
-        if(isset($_GET['fields']) && !empty($field_groups[$_GET['fields']])){
-            foreach ($field_groups[$_GET['fields']] as $field){
-                if($_GET['fields'] === 'time'){
-                    $innerQuery['bool']['should'][] = ['nested' => [
-                        'path' => 'temporal',
-                        'query' => [
-                            'bool' => [
-                                'must' => [
-                                    'match' => [
-                                        $field =>  Utils::escapeLuceneValue($_GET['q'])
-                                    ]
-                                ]
-                            ]
-                        ]
-                    ]];
-                }else{
-                    $innerQuery['bool']['should'][] = ['match' => [$field => Utils::escapeLuceneValue($_GET['q'])]];
-                }
-            }
-        } else {
+      if(isset($_GET['fields']) && !empty($field_groups[$_GET['fields']])){
+          foreach ($field_groups[$_GET['fields']] as $field){
+              if($_GET['fields'] === 'time'){
+                  $innerQuery['bool']['should'][] = ['nested' => [
+                      'path' => 'temporal',
+                      'query' => [
+                          'bool' => [
+                              'must' => [
+                                  'match' => [
+                                      $field =>  Utils::escapeLuceneValue($_GET['q'])
+                                  ]
+                              ]
+                          ]
+                      ]
+                  ]];
+              }else{
+                  $innerQuery['bool']['should'][] = ['match' => [$field => Utils::escapeLuceneValue($_GET['q'])]];
+              }
+          }
+      } else {
 
-            if($_GET['q'] == '*') {
-              $innerQuery = array('match_all'=> (object) array());
-            } else {
-              $innerQuery =  ['multi_match' => ['query' => Utils::escapeLuceneValue($_GET['q']) ]];
-            }
+          if($_GET['q'] == '*') {
+            $innerQuery = array('match_all'=> new \stdClass() );
+          } else {
+            $innerQuery =  ['multi_match' => ['query' => Utils::escapeLuceneValue($_GET['q']) ]];
+          }
 
-        }
+      }
     } else {
         //$innerQuery = ['match_all' => []];
-        $innerQuery = array('match_all'=> (object) array());
-
+        $innerQuery = array('match_all'=> new \stdClass());
     }
 
     $filters = [];
@@ -294,18 +317,20 @@ class Query {
             foreach ($values as $value) {
                 $fieldQuery = [];
                 $fieldQuery[$field] = Utils::escapeLuceneValue($value, false);
+                // Add value to beautify result
+                $this->aggregationsReqFilter[$key][] = Utils::escapeLuceneValue($value, false);
                 if ($key != 'temporal'){
-                    $filters[] = ['term' => $fieldQuery];
+                  $filters[] = ['term' => $fieldQuery];
                 } else {
-                    $filters[] = ['nested' => [
-                            'path' => 'temporal',
-                            'query' => [
-                                'bool'=> [
-                                    'must' => ['term' => $fieldQuery]
-                                ]
-                            ]
-                        ]
-                    ];
+                  $filters[] = ['nested' => [
+                          'path' => 'temporal',
+                          'query' => [
+                              'bool'=> [
+                                  'must' => ['term' => $fieldQuery]
+                              ]
+                          ]
+                      ]
+                  ];
                 }
             }
         }
@@ -351,22 +376,33 @@ class Query {
 
     $query['query']['bool']['must'] = $innerQuery;
 
-    // Optimization for map search
+    // RangeBuckets is not needed for Map search
+    if (empty($_GET['mapq'])) {
+      $query['aggregations']['range_buckets'] = Timeline::prepareRangeBucketsAggregation($range);
+    }
+
+    // Map search:
+    // 1. Viewport
+    // 2. Fetch only needed fields for each resource 
+    // 3. Fetch only resources with Spatial Data
     if (!empty($_GET['mapq'])) {
-      $query['aggregations'] = [
-        'geogrid' => $query['aggregations']['geogrid'],
-        'viewport' => [
+
+      // Viewport is needed only for Map search
+      $query['aggregations']['viewport'] = [
           'geo_bounds' => [
             'field' => 'spatial.location',
             'wrap_longitude' => true,
           ]
-        ]
       ];
-      $query['_source'] = ['spatial'];
+      // Fetch only fields needed for map. 
+      $query['_source'] = ['title','description','resourceType','publisher','archaeologicalResourceType','spatial'];
+      // Fetch only resources with spatial data
       $query['query']['bool']['filter'][] = ['exists' => ['field' => 'spatial.location']];
+
     }
 
     return $query;
+
   }
 
   /**
@@ -444,26 +480,73 @@ class Query {
    */
   private function getThematicallySimilarItems ($record, $recordId) {
     $matches = [];
+    $type = $_GET['thematical'] ?? '';
 
-    if (!empty($record['nativeSubject'])) {
-      foreach ($record['nativeSubject'] as $subject) {
-        if (!empty($subject['prefLabel'])) {
-          $matches[] = [
-            'match' => [
-              'nativeSubject.prefLabel' => $subject['prefLabel']
-            ]
-          ];
+    if ($type === 'title') {
+      if (!empty($record['title'])) {
+        $matches[] = [
+          'match' => [
+            'title' => Utils::escapeLuceneValue($record['title'])
+          ]
+        ];
+      }
+    } else if ($type === 'location') {
+      if (!empty($record['spatial'])) {
+        foreach ($record['spatial'] as $spatial) {
+          if (!empty($spatial['placeName'])) {
+            $matches[] = [
+              'match' => [
+                'spatial.placeName' => str_replace(["\r", "\n", "\t", "\v"], '', $spatial['placeName']),
+              ],
+            ];
+          }
         }
       }
-    }
-    if (!empty($record['temporal'])) {
-      foreach ($record['temporal'] as $temporal) {
-        if (!empty($temporal['periodName'])) {
-          $matches[] = [
-            'match' => [
-              'temporal.periodName' => str_replace(["\r", "\n", "\t", "\v"], '', $temporal['periodName'])
-            ]
-          ];
+    } else if ($type === 'subject') {
+      if (!empty($record['nativeSubject'])) {
+        foreach ($record['nativeSubject'] as $subject) {
+          if (!empty($subject['prefLabel'])) {
+            $matches[] = [
+              'match' => [
+                'nativeSubject.prefLabel' => str_replace(["\r", "\n", "\t", "\v"], '', $subject['prefLabel']),
+              ],
+            ];
+          }
+        }
+      }
+    } else if ($type === 'temporal') {
+      if (!empty($record['temporal'])) {
+        foreach ($record['temporal'] as $temporal) {
+          if (!empty($temporal['periodName'])) {
+            $matches[] = [
+              'match' => [
+                'temporal.periodName' => str_replace(["\r", "\n", "\t", "\v"], '', $temporal['periodName']),
+              ],
+            ];
+          }
+        }
+      }
+    } else { // default - subject & temporal
+      if (!empty($record['nativeSubject'])) {
+        foreach ($record['nativeSubject'] as $subject) {
+          if (!empty($subject['prefLabel'])) {
+            $matches[] = [
+              'match' => [
+                'nativeSubject.prefLabel' => str_replace(["\r", "\n", "\t", "\v"], '', $subject['prefLabel']),
+              ],
+            ];
+          }
+        }
+      }
+      if (!empty($record['temporal'])) {
+        foreach ($record['temporal'] as $temporal) {
+          if (!empty($temporal['periodName'])) {
+            $matches[] = [
+              'match' => [
+                'temporal.periodName' => str_replace(["\r", "\n", "\t", "\v"], '', $temporal['periodName']),
+              ],
+            ];
+          }
         }
       }
     }
@@ -473,7 +556,7 @@ class Query {
     }
 
     $params = [
-      '_source' => ['title'],
+      '_source' => ['title', 'archaeologicalResourceType'],
       'size' => 7,
       'query' => [
         'bool' => [
@@ -494,6 +577,7 @@ class Query {
     foreach ($result as $res) {
       $ret[] = [
         'id' => $res['_id'],
+        'type' => $res['_source']['archaeologicalResourceType'] ?? null,
         'title' => $res['_source']['title'] ?? null,
       ];
     }
@@ -514,7 +598,7 @@ class Query {
         $part = explode('/', $part);
         $part = end($part);
       }
-      if (is_numeric($part)) {
+      if (Utils::isValidId($part)) {
         $parts[] = ['match' => ['_id' => $part]];
       }
     }
@@ -581,19 +665,98 @@ class Query {
   }
 
   /**
+   * Gets info about a single aat subject
+   */
+  public function getSubject ($id) {
+    if (!Utils::isValidId($id)) {
+      exit;
+    }
+
+    $subject = $this->elasticDoGet([
+      'id' => $id,
+      'index' => $this->elasticEnv->subject_index,
+    ]);
+
+    $subject = $subject['_source'];
+    $subject['id'] = $id;
+    $subject['connectedTotal'] = $this->getTotalConnectedSubjects($id);
+    $subject['subSubjects'] = $this->getSubSubjects($id);
+
+    return $subject;
+  }
+
+  /**
+   * Returns subjects total amount of connected subjects
+   */
+  public function getTotalConnectedSubjects ($id) {
+    $params = [
+      'size' => 0,
+      'query' => [
+        'bool' => [
+          'filter' => [
+            'term' => [
+              'aatSubjects.id' => $id,
+            ],
+          ],
+        ],
+      ],
+    ];
+
+    return $this->elasticDoSearch($params)['hits']['total']['value'] ?? 0;
+  }
+
+  /**
+   * Returns subjects sub subjects
+   */
+  public function getSubSubjects ($id) {
+    $params = [
+      '_source'=> ['prefLabel'],
+      'size' => 100,
+      'query' => [
+        'bool' => [
+          'must' => [
+            'term' => [
+              'broader.id'=>[
+                'value' => $id,
+              ],
+            ],
+          ],
+        ],
+      ],
+    ];
+
+    $subs = $this->elasticDoSearch($params, $this->elasticEnv->subject_index)['hits']['hits'] ?? [];
+    $ret = [];
+
+    foreach ($subs as $sub) {
+      if (!empty($sub['_source']['prefLabel'])) {
+        $ret[] = [
+          'id' => $sub['_id'],
+          'prefLabel' => $sub['_source']['prefLabel'],
+        ];
+      }
+    }
+    return $ret;
+  }
+
+  /**
    * Get from Elastic host db
    */
   private function elasticDoGet ($searchParams) {
 
     try {
       $result = $this->client->get($searchParams);
-      $last = $this->client->transport->getLastConnection()->getLastRequestInfo();
-      $body = $last['request']['body'];
-      $this->appLogger->log->info('Get', ['Query' => json_decode($body)]);
+      if($this->debugMode) {
+        $this->appLogger->info( json_encode( $searchParams, JSON_UNESCAPED_SLASHES ) );
+      }
       return $result;
 
     } catch (\Exception $e) {
-      $this->appLogger->log->error('ERROR', ['Exception' => $e->getMessage()]);
+
+      if($this->debugMode) {
+        $this->appLogger->log->error('ERROR', ['Exception' => $e->getMessage()]);
+        $this->appLogger->info( json_encode( $searchParams, JSON_UNESCAPED_SLASHES ) );
+      }
       exit;
     }
   }
@@ -604,23 +767,58 @@ class Query {
    */
   private function elasticDoSearch ($searchParams, $index = null) {
     $searchParams['track_total_hits'] = true;
+
     $params = [
-      'index' => $index ?: $this->settings->elasticsearch->index,
-      'body' => $searchParams
+      'index' => $index ?: $this->elasticEnv->index,
+      'body'  => $searchParams,
     ];
 
     try {
       $result = $this->client->search($params);
-      $last = $this->client->transport->getLastConnection()->getLastRequestInfo();
-      $body = $last['request']['body'];
-      $this->appLogger->log->info('Search', ['Query' => json_decode($body)]);
-      return $result;
+
+      if($this->debugMode) {
+        $this->appLogger->info( json_encode( $searchParams, JSON_UNESCAPED_SLASHES ) );
+      }
+
+      $beautifiedResult = $this->aggsBucketsBeautifier($result);
+      return $beautifiedResult;
 
     } catch (\Exception $e) {
-      $this->appLogger->log->error('ERROR', ['Exception' => $e->getMessage()]);
+      if($this->debugMode) {
+        $this->appLogger->info( json_encode( $searchParams, JSON_UNESCAPED_SLASHES ) );
+        $this->appLogger->log->error('ERROR', ['Exception' => $e->getMessage()]);
+      }
       exit;
     }
 
   }
 
+  /**
+   * Beauitify result aggregations that have zero buckets.
+   *
+   * In cases where aggs has buckets[0] as result from Elastic we push
+   * {"key":"<aggregation_key_value>","doc_count":0} instead of returning a blank array
+   *
+   * This is manipulating Elastic resultsets and exist only so that frontend can filter and
+   * render chosen filters correctlly.
+   */
+  private function aggsBucketsBeautifier($result) {
+
+    if( isset($result['aggregations']) ) {
+      foreach($result['aggregations'] as $aggKey=>$aggValue) {
+        if(key_exists($aggKey, $this->aggregationsReqFilter)) {
+          if( empty($aggValue['buckets']) ) {
+            foreach($this->aggregationsReqFilter[$aggKey] as $key=>$value) {
+              // This means that buckets is an empty array.
+              // Put values into it to simplify client side rendering of chosen filters/aggs by user.
+              $result['aggregations'][$aggKey]['buckets'][] = array('key'=>$value, 'doc_count'=>0);
+            }
+          }
+        }
+      }
+    }
+    return $result;
+  }
+
 }
+

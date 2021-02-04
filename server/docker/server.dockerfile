@@ -12,7 +12,15 @@ RUN apt-get update && apt-get install -y \
     unzip
 
 # Copy the development PHP config from the PHP source.
-RUN cp /usr/src/php/php.ini-development /usr/local/etc/php/php.ini
+# PABLO - Why?
+#RUN cp /usr/src/php/php.ini-development /usr/local/etc/php/php.ini
+
+# Setup sendmail path to php
+# (https://r.je/sendmail-php-docker)  - See example for setup
+# RUN echo "sendmail_path=/usr/sbin/sendmail -t -i" >> /usr/local/etc/php/conf.d/sendmail.ini
+
+# Sendmail - Set restart command to docker-php-entrypoint
+# RUN sed -i '/#!\/bin\/sh/aservice sendmail restart' /usr/local/bin/docker-php-entrypoint
 
 # Delete the PHP source.
 RUN docker-php-source delete
@@ -34,13 +42,25 @@ RUN chown -R www-data:www-data /var/www/html
 # Set working directory.
 WORKDIR /var/www/html
 
+# Copy web content to container webroot
+COPY  ./server/html/ /var/www/html
+
+# Copy PHP backend
+COPY  ./server/classes/ /var/www/classes
+
+# PHP Composer stuff
+COPY ./server/composer.json /var/www/
+COPY ./server/composer.lock /var/www/
+RUN composer install -d /var/www/ --no-scripts;
+
+
 # Convenient stuff
 RUN echo 'alias ll="ls -la"' >> ~/.bashrc
 RUN apt-get install -y vim
 
-# Install xdebug.
-RUN pecl install xdebug \
-    && docker-php-ext-enable xdebug
+# Install xdebug. - Only for dev env.
+#RUN pecl install xdebug \
+#    && docker-php-ext-enable xdebug
 
 # Add xdebug configuration.
-COPY /server/docker/xdebug/xdebug.ini /usr/local/etc/php/conf.d/
+# COPY /server/docker/xdebug/xdebug.ini /usr/local/etc/php/conf.d/

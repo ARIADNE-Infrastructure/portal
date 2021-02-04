@@ -13,9 +13,11 @@ body {
   @apply text-darkGray;
 }
 
-::placeholder {
+input::placeholder, textarea::placeholder {
   opacity: 1;
+  color: #777;
 }
+
 .backface-hidden{
   backface-visibility: hidden;
 }
@@ -23,4 +25,12 @@ body {
   display: inline-block; /* ie */
   word-break: break-all;
   word-break: break-word;
+}
+
+/* leaflet override */
+.map--default .leaflet-control-container {
+  @apply relative;
+  @apply max-w-screen-xl;
+  @apply mx-auto;
+  @apply h-full;
 }

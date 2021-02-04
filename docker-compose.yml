@@ -1,7 +1,17 @@
+#
+# Settings for Ariadne Server Module
+#
+# NOTICE:
+# When deploying
+#   for prod/staging comment IN ariaden-client service
+#   for develpment comment OUT ariadne-client service
+#
+
+
 version: '3'
 
 services:
-  server:
+  ariadne-server:
     build:
       context: .
       dockerfile: server/docker/server.dockerfile
@@ -9,8 +19,4 @@ services:
     volumes:
       - ./server/:/var/www/
     ports:
-      - 80:80
-    environment:
-      XDEBUG_CONFIG: remote_host=docker.for.mac.localhost #for mac
-      ENV_IS_LOCAL: 1
-  
+      - 8080:80

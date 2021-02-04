@@ -1,4 +1,13 @@
 {
+  "environment": {
+    "debugLog": false,
+    "logPath": "xxx",
+    "elasticsearchEnv": "dev",
+    "contact": {
+      "email": "xxx@xxx.xxx",
+      "captchaSecret": "xxx"
+    }
+  },
   "prod": {
     "elasticsearch": {
       "host": "xxx:9000",

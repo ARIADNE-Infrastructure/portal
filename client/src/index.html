@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;700&display=swap">
   <link rel="stylesheet" href="<%= htmlWebpackPlugin.files.css %>">
-  <link rel="stylesheet" href="/fa/css/all.min.css">
   <link rel="icon" href="/assets/favicon.png">
   <title>Ariadne portal</title>
 </head>
@@ -15,5 +14,19 @@
     Loading..
   </div>
   <script async src="<%= htmlWebpackPlugin.files.js %>"></script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-WMFPG86SRL"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-WMFPG86SRL');
+  </script>
+  <script>
+    if (document.documentMode && /(msie)/i.test(navigator.userAgent)) {
+      document.getElementById('app').innerHTML = 'Sorry your browser does not support this web page. ' +
+        '<a href="microsoft-edge:' + location.protocol + '//' + location.host +
+        '" style="text-decoration:underline;color:blue">Try with edge</a>.'
+    }
+  </script>
 </body>
 </html>

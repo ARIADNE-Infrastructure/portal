@@ -24,20 +24,22 @@ function getColorsWithOpacity (colors) {
   return colors;
 }
 
+const isDevelopment = process.env.NODE_ENV === 'development';
+
 module.exports = {
   future: {
     removeDeprecatedGapUtilities: true,
   },
   /**
-   * Css purge is enabled
+   * Css purge is enabled by default
    * Read this: https://tailwindcss.com/docs/controlling-file-size/
    *
    * Minifies style.css from 1mb to ~30kb
-   * Causes some problems when adding new styles, or when trying to use already purged - to fix restart dev server
-   * Could perhaps only have this enabled for "production" - but easy to miss if things gets purged
+   * Causes some problems when adding new styles, or when trying to use already purged
+   * Use "npm run dev -- --no-purge" when developing for easier access to all classes
    */
   purge: {
-    enabled: true,
+    enabled: isDevelopment && process.argv.includes('--no-purge') ? false : true,
     content: [
       './src/**/*.html',
       './src/**/*.vue',
@@ -45,9 +47,11 @@ module.exports = {
     ]
   },
   variants: {
+    padding: ['responsive', 'last'],
+    margin: ['responsive', 'last'],
     borderWidth: ['responsive', 'last', 'hover', 'focus'],
     textColor: ['responsive', 'hover', 'focus', 'group-hover'],
-    backgroundColor: ['responsive', 'hover', 'focus', 'group-hover'],
+    backgroundColor: ['responsive', 'hover', 'focus', 'group-hover', 'disabled'],
     opacity: ['responsive', 'hover', 'focus', 'group-hover'],
     zIndex: ['responsive', 'hover', 'focus', 'group-hover'],
     textDecoration: ['responsive', 'hover', 'focus', 'group-hover'],
@@ -63,6 +67,7 @@ module.exports = {
       'md':   '.85rem',
       'mmd':  '.9rem',
       'base': '14px',
+      'hg':   '1.1rem',
       'lg':   '1.25rem',
       'xl':   '1.5rem',
       '2xl':  '1.75rem',
@@ -108,6 +113,7 @@ module.exports = {
       'none': '0',
       '1':    '1px',
       'xs':   '.25rem',
+      'xxs':  '.4rem',
       'sm':   '.5rem',
       'md':   '.75rem',
       'base': '1rem',
@@ -123,6 +129,8 @@ module.exports = {
       '8x':   '8rem',
       '9x':   '9rem',
       '10x':  '10rem',
+      '11x':  '11rem',
+      'toolbar': '350px',
     },
 
     borderWidth: {
@@ -172,6 +180,7 @@ module.exports = {
       '5xl':  '4rem',
       '-base': '-1rem',
       'full': '100%',
+      '1/2': '50%',
     },
 
     zIndex: {
@@ -186,11 +195,15 @@ module.exports = {
       '1003': 1003,
       '1004': 1004,
       '1005': 1005,
+      'max':  9999,
     },
 
     boxShadow: {
       'none': 'none',
       'bottom': '0 4px 2px -2px #ddd',
+      'bottomDark': '0 4px 2px -2px rgba(0, 0, 0, .3)',
+      'topLeft': '-4px -4px 4px rgba(0, 0, 0, 0.1)',
+      'full': '0 0 20px rgba(0, 0, 0, 0.3)',
     },
 
     minWidth: {
@@ -201,12 +214,21 @@ module.exports = {
       'full': '100%',
     },
 
+    maxHeight: {
+      '500': '500px',
+    },
+
     minHeight: {
       '0': '0',
       'full': '100%',
       'screen': '100vh',
       '300': '300px',
       '360': '360px',
+    },
+
+    lineHeight: {
+      '0': '0',
+      '1': '1',
     }
   }
 }
