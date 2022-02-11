@@ -1,27 +1,36 @@
 <template>
   <div>
-    <p v-if="!title && (!result.hits || !result.hits.length)">
+    <p v-if="!isLoading && !isLoadingGeneral && !title && (!searchResult.hits || !searchResult.hits.length)">
       No results found
     </p>
 
     <div
       v-show="title || chart"
-      class="w-max-full"
+      class="w-max-full relative"
     >
       <div :class="{ 'rounded-base mb-lg border-base border-gray': title }">
         <div v-if="title" class="rounded-base bg-lightGray items-center p-md flex justify-between">
           <span class="text-md">{{ title }}</span>
           <div class="flex items-center">
-            <help-tooltip v-if="isZoomed"
-              class="mr-xs" top="2.5rem"
-              :title="`Search range: ${ getSearchRange() }`">
+            <help-tooltip
+              v-if="isZoomed"
+              class="mr-xs"
+              top="-.25rem"
+              right="1.75rem"
+              :title="`Search range: ${ getSearchRange() }`"
+            >
               <i class="fas fa-search text-blue mr-xs transition-color cursor-pointer duration-300 hover:text-green"
-                @click.prevent="navigateToRange(false)">
+                @click.prevent="navigateToRange('/search')">
               </i>
             </help-tooltip>
-            <help-tooltip title="Show in fullscreen" top="2.5rem">
+
+            <help-tooltip
+              title="Show in fullscreen"
+              top="-.25rem"
+              right="2rem"
+            >
               <i class="fas fa-expand transition-color duration-300 hover:text-green px-sm cursor-pointer"
-                @click="navigateToRange(true)"></i>
+                @click="navigateToRange('/browse/when')"></i>
             </help-tooltip>
           </div>
         </div>
@@ -32,10 +41,10 @@
           >
             <div class="text-center">
               <div
-                v-if="result.error"
+                v-if="searchResult.error"
                 class="bg-white p-md text-mmd border-b-base border-red text-red rounded-t-base text-mmd"
               >
-                {{ result.error}}
+                {{ searchResult.error}}
               </div>
 
               <div class="bg-white p-md text-mmd rounded-t-base">
@@ -44,7 +53,7 @@
 
               <div
                 class="bg-yellow py-md px-base text-mmd text-white cursor-pointer hover:bg-green transition-color rounded-b-base duration-300"
-                @click="navigateToRange(false)"
+                @click="navigateToRange('/search')"
               >
                 <i class="fas fa-search mr-xs"></i>
                 Display as search result
@@ -52,6 +61,14 @@
             </div>
           </div>
         </div>
+
+        <div
+          class="absolute top-auto left-auto w-full h-full transition-opacity duration-300 cursor-default flex justify-center items-center"
+          :class="isLoading && !isLoadingGeneral ? 'z-max opacity-100' : 'z-neg opacity-0'"
+        >
+          <i class="fas fa-spinner fa-spin mr-xs text-2x text-darkGray"></i>
+        </div>
+
         <div class="py-sm">
           <canvas v-show="chart" ref="timelineRef"></canvas>
 
@@ -68,7 +85,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import { search, general } from "@/store/modules";
+import { generalModule, searchModule, timelineModule } from "@/store/modules";
 import utils from '@/utils/utils';
 import Chart from 'chart.js';
 import 'chartjs-plugin-zoom';
@@ -97,21 +114,29 @@ export default class FilterTimeLine extends Vue {
     window.addEventListener('resize', this.onResize);
   }
 
+  get isLoadingGeneral(): boolean {
+    return generalModule.getIsLoading;
+  }
+
   get isLoading(): boolean {
-    return general.getLoading;
+    return timelineModule.getLoading;
+  }
+
+  get searchResult(): any {
+    return searchModule.getResult;
   }
 
   get result(): any {
-    return search.getResult;
+    return timelineModule.getResult;
   }
 
   get params(): any {
-    return search.getParams;
+    return searchModule.getParams;
   }
 
   @Watch('isLoading')
   setTimeLine () {
-    const buckets = this.result?.aggs?.range_buckets?.range_agg?.buckets;
+    const buckets = this.result?.range_agg?.buckets;
     this.range = null;
     this.isZoomed = false;
 
@@ -165,7 +190,7 @@ export default class FilterTimeLine extends Vue {
             if (labels) {
               let label = labels[items[0]._index];
 
-              search.setSearch({
+              searchModule.setSearch({
                 range: this.getUnformatted(label, ','),
                 page: 0
               });
@@ -181,7 +206,7 @@ export default class FilterTimeLine extends Vue {
                 mode: 'x',
                 speed: 10,
                 threshold: 10,
-                onPanComplete: ({ chart }) => {
+                onPanComplete: ({ chart }: { chart: any }) => {
                   this.setRange(chart);
                 }
               },
@@ -192,7 +217,7 @@ export default class FilterTimeLine extends Vue {
                 speed: 1,
                 threshold: 4,
                 sensitivity: 0.1,
-                onZoomComplete: ({ chart }) => {
+                onZoomComplete: ({ chart }: { chart: any }) => {
                   this.setRange(chart);
                 }
               }
@@ -215,7 +240,7 @@ export default class FilterTimeLine extends Vue {
   }
 
   getData (buckets: any) {
-    let newBuckets = {}
+    let newBuckets: any = {}
 
     for (let key in buckets) {
       let arr = key.split(':');
@@ -297,23 +322,22 @@ export default class FilterTimeLine extends Vue {
     }
   }
 
-  navigateToRange (fullscreen: boolean) {
+  navigateToRange (path: string) {
+    let params = this.params;
+    params.path = path;
+
     let range = this.getSearchRange();
 
-    if (fullscreen) {
-      let params = this.params;
-      params.path = '/browse/when';
-
-      if (range && this.isZoomed) {
-        params.range = range;
-      }
-      search.setSearch(params);
-
-    } else {
-      search.setSearch({
-        path: '/search',
-      });
+    if (range && this.isZoomed) {
+      params.range = range;
     }
+
+    searchModule.setSearch(params);
+  }
+
+  @Watch('params', { immediate: true })
+  onParamsUpdate() {
+    timelineModule.setSearch();
   }
 }
 </script>

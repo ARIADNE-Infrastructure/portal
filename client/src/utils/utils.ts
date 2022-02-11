@@ -28,7 +28,17 @@ export default {
     }
   },
 
-  objectEquals (a: any, b: any) {
+  objectEquals (aRaw: any, bRaw: any, ignoreParams?: string[]) {
+    let a = { ...aRaw };
+    let b = { ...bRaw };
+
+    ignoreParams = ignoreParams ?? [];
+
+    for (const ignore of ignoreParams) {
+      delete a[ignore];
+      delete b[ignore];
+    }
+
     let aArr = Object.getOwnPropertyNames(a),
         bArr = Object.getOwnPropertyNames(b);
 
@@ -38,6 +48,7 @@ export default {
 
     for (let i = 0; i < aArr.length; i++) {
       let prop = aArr[i];
+
       if (a[prop] !== b[prop] && prop !== '__ob__') {
         return false;
       }
@@ -45,8 +56,24 @@ export default {
     return true;
   },
 
+  objectConvertNumbersToStrings (params: any) {
+    let newObject: any = this.getCopy(params);
+
+    if (params) {
+      for (const [key, value] of Object.entries(params)) {
+        const typedKey: any = key;
+        const typedValue: any = value;
+
+        newObject[typedKey] = typedValue === undefined ? '' : typedValue.toString();
+      }
+    }
+
+    return newObject;
+  },
+
   paramsToString (base: string, params: any) {
     let strParams = ''
+
     if (params) {
       for (let key in params) {
         strParams += `${ encodeURIComponent(key) }=${ encodeURIComponent(params[key]) }&`;
@@ -84,7 +111,7 @@ export default {
 
   getMarked (text: string, word: string): string {
     if (text) {
-      text = striptags(text.trim());
+      text = text.trim();
       word = word.trim();
 
       if (word) {
@@ -134,9 +161,26 @@ export default {
 
   sortListByValue (list: any[], key: string, order: string): any[] {
     if (order === 'asc') {
-      return list.sort((a, b) => (a[key] > b[key]) ? 1 : -1);
+      return [...list].sort((a, b) => (a[key] > b[key]) ? 1 : -1);
     }
 
-    return list.sort((a, b) => (a[key] < b[key]) ? 1 : -1);
+    return [...list].sort((a, b) => (a[key] < b[key]) ? 1 : -1);
+  },
+
+  groupListByKey (list: any[], key: string | number): any[] {
+    return list.reduce((hash, obj) => ({...hash, [obj[key]]:( hash[obj[key]] || [] ).concat(obj)}), {});
+  },
+
+  getGradient(opacity: number) {
+    let gradient: any = {};
+
+    for (let i = 1; i <= 10; i++) {
+      let key = Math.round(((opacity * i) / 10) * 100) / 100,
+        val = Math.round((1.0 - i / 10) * 240);
+
+      gradient[key] = `hsl(${val}, 90%, 50%)`;
+    }
+
+    return gradient;
   },
 };

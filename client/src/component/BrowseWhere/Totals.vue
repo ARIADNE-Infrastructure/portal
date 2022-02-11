@@ -17,7 +17,7 @@
       </div>
       <div v-else>
         <b>{{ totals }}</b>
-        resources in the current section
+        resources in the current view
       </div>
     </div>
   </div>
@@ -25,14 +25,14 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { search } from "@/store/modules";
+import { searchModule } from "@/store/modules";
 
 @Component
 export default class BrowseWhereTotals extends Vue {
   @Prop() data!: any;
 
   get result(): any {
-    return search.getResult;
+    return searchModule.getResult;
   }
 
   get totals() {

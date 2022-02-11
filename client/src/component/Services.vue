@@ -18,24 +18,33 @@
         <div v-if="items && items.length" class="border-t-base border-gray pt-xl pb-2x">
           <h2 class="text-lg mb-xl">{{ title }}</h2>
 
-          <b-link
-            v-for="(item, key) in items"
-            :key="key"
-            :href="item.url"
-            target="_blank"
-            class="flex flex-col max-w-full lg:flex-row lg:items-start cursor-pointer group mb-2x pb-xl border-b-base border-gray lg:border-b-0"
+          <div v-for="(item, key) in items" :key="key"
+            class="flex flex-col max-w-full lg:flex-row lg:items-start mb-2x pb-xl border-b-base border-gray lg:border-b-0"
           >
-            <img :src="`${ assets }/services/${ item.img }`" :alt="item.img" width="360"
-              class="flex-shrink-0 backface-hidden transition-opacity duration-300 border-base border-gray p-sm rounded-base group-hover:opacity-80">
+            <!-- img -->
+            <b-link :href="item.url" target="_blank" class="flex-shrink-0">
+              <img :src="`${ assets }/services/${ item.img }`" :alt="item.img" width="360"
+                class="backface-hidden transition-opacity duration-300 border-base border-gray p-sm hover:opacity-80">
+            </b-link>
+
             <div class="mt-md lg:ml-xl lg:mt-none text-mmd">
-              <h3 class="text-lg group-hover:underline" v-html="utils.getMarked(item.title, filter)"></h3>
-              <p class="mt-md mb-lg whitespace-pre-line" v-html="utils.getMarked(item.description, filter)"></p>
-              <p>
-                <i class="fas fa-external-link-alt mr-xs text-blue"></i>
-                <span class="break-word text-blue transition-colors duration-300 hover:text-darkGray hover:underline" v-if="item.url" v-html="utils.getMarked(item.url, filter)"></span>
+              <!-- title -->
+              <b-link :href="item.url" target="_blank" class="flex-shrink-0 hover:underline">
+                <h3 class="text-lg" v-html="utils.getMarked(item.title, filter)"></h3>
+              </b-link>
+
+              <!-- text -->
+              <p class="mt-md mb-lg whitespace-pre-line services-a-style" v-html="utils.getMarked(item.description, filter)"></p>
+
+              <!-- link -->
+              <p v-if="item.url">
+                <b-link :href="item.url" target="_blank" class="break-word text-blue hover:underline">
+                  <i class="fas fa-external-link-alt mr-xs"></i>
+                  <span v-html="utils.getMarked(item.url, filter)"></span>
+                </b-link>
               </p>
             </div>
-          </b-link>
+          </div>
         </div>
       </div>
     </div>
@@ -44,7 +53,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { general } from "@/store/modules";
+import { generalModule } from "@/store/modules";
 import utils from '@/utils/utils';
 import BLink from '@/component/Base/Link.vue';
 
@@ -64,15 +73,15 @@ export default class Services extends Vue {
   }
 
   get assets(): string {
-    return general.getAssetsDir;
+    return generalModule.getAssetsDir;
   }
 
   get filtered () {
-    let filter = this.filter.toLowerCase().trim(),
-        ret = {};
+    let filter = this.filter.toLowerCase().trim();
+    let ret: any = {};
 
-    for (let key in general.getServices) {
-      ret[key] = general.getServices[key].filter((s: any) => {
+    for (let key in generalModule.getServices) {
+      ret[key] = generalModule.getServices[key].filter((s: any) => {
         return s.title.toLowerCase().includes(filter) ||
           s.description.toLowerCase().includes(filter) ||
           s.url.toLowerCase().includes(filter);

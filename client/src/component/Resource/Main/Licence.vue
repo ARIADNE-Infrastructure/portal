@@ -2,7 +2,7 @@
   <div>
     <h3 class="text-lg font-bold mb-lg">
       <i class="fas fa-balance-scale mr-xs"></i>
-      License information
+      Licence information
     </h3>
 
     <div
@@ -36,7 +36,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { resource } from "@/store/modules";
+import { resourceModule } from "@/store/modules";
 
 import utils from '@/utils/utils';
 import BLink from '@/component/Base/Link.vue';
@@ -53,7 +53,7 @@ export default class ResourceMainLicence extends Vue {
   @Prop() bClass!: string;
 
   get resource(): any {
-    return resource.getResource;
+    return resourceModule.getResource;
   }
 }
 </script>

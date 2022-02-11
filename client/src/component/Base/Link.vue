@@ -9,10 +9,12 @@
     <slot />
   </a>
 
-  <a v-else-if="clickFn"
+  <a
+    v-else-if="clickFn"
     href="#"
     :class="classes"
-    v-on:click.prevent="clickFn">
+    v-on:click.prevent="clickFn"
+  >
     <slot />
   </a>
 
@@ -27,11 +29,11 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import { Component, Vue, Prop } from 'vue-property-decorator';
 
 @Component
 export default class BLink extends Vue {
-  private classes: string = '';
+  classes: string = '';
 
   @Prop() href?: string;
   @Prop() to?: string;

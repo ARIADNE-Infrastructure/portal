@@ -20,9 +20,8 @@
       <div class="flex max-w-lg flex-1 ml-5x border-yellow border-b-3 items-center h-full p-base">
         <filter-search
           color="yellow"
-          bg="bg-yellow"
-          hover="hover:bg-yellow-80"
-          focus="focus:border-yellow"
+          hoverStyle="hover:bg-yellow-80"
+          focusStyle="focus:border-yellow"
           :useCurrentSearch="false"
         />
       </div>
@@ -32,7 +31,7 @@
     <div class="flex flex-1 h-full xl:pr-base">
       <ul class="flex w-full">
         <li
-          v-for="item in general.getMainNavigation"
+          v-for="item in generalModule.getMainNavigation"
           :key="item.path"
           class="h-full flex-1 bg-lightGray"
         >
@@ -57,8 +56,8 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import { general } from "@/store/modules";
+import { Component, Vue, Watch } from 'vue-property-decorator';
+import { generalModule } from "@/store/modules";
 import BLink from '@/component/Base/Link.vue';
 import FilterSearch from '@/component/Filter/Search.vue';
 
@@ -69,7 +68,7 @@ import FilterSearch from '@/component/Filter/Search.vue';
   }
 })
 export default class LayoutDesktopHeader extends Vue {
-  general = general;
+  generalModule = generalModule;
   path: string = '';
 
   mounted () {
@@ -77,7 +76,7 @@ export default class LayoutDesktopHeader extends Vue {
   }
 
   get assets(): string {
-    return general.getAssetsDir;
+    return generalModule.getAssetsDir;
   }
 
   isActive (path: string): boolean {

@@ -51,16 +51,15 @@
             <filter-search
               class="my-lg px-base"
               color="yellow"
-              bg="bg-yellow"
-              hover="hover:bg-yellow-80"
-              focus="focus:border-yellow"
+              hoverStyle="hover:bg-yellow-80"
+              focusStyle="focus:border-yellow"
               :big="true"
               :useCurrentSearch="false"
               @submit="onSubmit"
             />
             <ul>
               <li
-                v-for="item in general.getMainNavigation"
+                v-for="item in generalModule.getMainNavigation"
                 :key="item.path"
                 class="bg-lightGray text-mmd"
               >
@@ -86,8 +85,8 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Mixins, Watch } from 'vue-property-decorator';
-import { general } from "@/store/modules";
+import { Component, Mixins, Watch } from 'vue-property-decorator';
+import { generalModule } from "@/store/modules";
 import utils from '@/utils/utils';
 
 import ListAccordionMixin from '@/component/List/AccordionMixin.vue';
@@ -99,7 +98,7 @@ import FilterSearch from '@/component/Filter/Search.vue';
   }
 })
 export default class LayoutMobileHeader extends Mixins(ListAccordionMixin) {
-  general = general;
+  generalModule = generalModule;
   path: string = '';
 
   mounted () {
@@ -107,7 +106,7 @@ export default class LayoutMobileHeader extends Mixins(ListAccordionMixin) {
   }
 
   get assets(): string  {
-    return general.getAssetsDir;
+    return generalModule.getAssetsDir;
   }
 
   navigate (path: string) {

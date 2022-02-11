@@ -25,11 +25,11 @@
         <filter-search
           class="max-w-2xl m-auto"
           color="yellow"
-          bg="bg-yellow"
-          hover="hover:bg-yellow-80"
-          focus="focus:border-yellow"
+          hoverStyle="hover:bg-yellow-80"
+          focusStyle="focus:border-yellow"
           :big="true"
-          :showFields="true"
+          :hasAutocomplete="true"
+          showFields="select"
         />
       </div>
     </div>
@@ -38,7 +38,6 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import utils from '@/utils/utils';
 import BLink from '@/component/Base/Link.vue';
 
 import FilterSearch from '@/component/Filter/Search.vue';
@@ -50,6 +49,5 @@ import FilterSearch from '@/component/Filter/Search.vue';
   }
 })
 export default class NotFound extends Vue {
-  utils = utils;
 }
 </script>

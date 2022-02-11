@@ -2,7 +2,14 @@
 
 namespace Elastic;
 
+use \geoPHP\geoPHP;
+
 class Utils {
+
+
+  private CONST TOP_LEFT = 315; // Bearing Degrees - North West
+  private CONST BOTTOM_RIGHT = 135; // Bearing Degrees - South East
+  private CONST POINT_EXTEND_KM = 0.5;
 
   /**
     * Escape lucene special chars
@@ -24,8 +31,8 @@ class Utils {
    * Returns if locations are equals
    */
   public static function isLocationDoublet ($a, $b) {
-    $aLoc = $a['location'];
-    $bLoc = $b['location'];
+    $aLoc = $a['geopoint'];
+    $bLoc = $b['geopoint'];
 
     return (round($aLoc['lat'], 4) === round($bLoc['lat'], 4) && round($aLoc['lon'], 4) === round($bLoc['lon'], 4)) ||
       (!empty($a['placeName']) && !empty($b['placeName']) && strtolower($a['placeName']) === strtolower($b['placeName']));
@@ -62,4 +69,6 @@ class Utils {
       }
     }
   }
+
 }
+

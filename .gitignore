@@ -8,3 +8,6 @@ data
 logs/
 .vscode
 server/html/static
+server/html/*
+!server/html/api/
+!server/html/.htaccess

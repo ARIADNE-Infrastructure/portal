@@ -3,16 +3,19 @@ import { Vue } from 'vue-property-decorator';
 import { VuexModule, Module, Mutation, Action, RegisterOptions } from "vuex-class-modules";
 import axios from 'axios';
 import utils from '@/utils/utils';
-import { Search } from './Search';
+import { GeneralModule } from './General';
+import { SearchModule } from './Search';
 import { titles, resultTitles, types } from './Aggregation/static';
 
 @Module
-export class Aggregation extends VuexModule {
-  private search: Search;
+export class AggregationModule extends VuexModule {
+  private generalModule: GeneralModule;
+  private searchModule: SearchModule;
 
-  constructor(search: Search, options: RegisterOptions) {
+  constructor(general: GeneralModule, searchModule: SearchModule, options: RegisterOptions) {
     super(options);
-    this.search = search;
+    this.searchModule = searchModule;
+    this.generalModule = general;
   }
 
   private options: any = {};
@@ -21,13 +24,42 @@ export class Aggregation extends VuexModule {
   private types: any[] = types;
 
   @Action
+  async setSearch(payload: any) {
+    if (payload.value.search) {
+
+      const searchParams = this.searchModule.getParams;
+      const params = { ...{ filterQuery: payload.value.search, filterName: payload.id }, ...searchParams };
+      const url = process.env.apiUrl + '/autocompleteFilter';
+
+      try {
+        const res = await axios.get(utils.paramsToString(url, params));
+        let data = res?.data?.filtered_agg;
+
+        if (utils.objectIsNotEmpty(data)) {
+          const value = { ...payload.value, ...{ data } };
+
+          this.updateOptions({ id: payload.id, value });
+        }
+      } catch (ex) {}
+    }
+    else {
+      this.updateOptions(payload);
+    }
+  }
+
+  @Action
+  setOptionsToDefault() {
+    this.clearOptions();
+  }
+
+  @Action
   setOptions(payload: any) {
     this.updateOptions(payload);
   }
 
   @Action
   setActive(payload: any) {
-    const params: any = this.search.getParams;
+    const params: any = this.searchModule.getParams;
 
     let { key, value, add } = payload;
 
@@ -46,7 +78,7 @@ export class Aggregation extends VuexModule {
       value = aggs.join('|');
     }
 
-    this.search.setSearch({ [key]: value, page: 0 });
+    this.searchModule.setSearch({ [key]: value, page: 0 });
   }
 
   @Mutation
@@ -57,6 +89,11 @@ export class Aggregation extends VuexModule {
     Vue.set(this.options, id, value);
   }
 
+  @Mutation
+  public clearOptions() {
+    this.options = {};
+  }
+
   get getTitles(): any {
     return this.titles;
   }
@@ -64,9 +101,9 @@ export class Aggregation extends VuexModule {
   get getTypes(): any[] {
     return this.types;
   }
-  
+
   get hasAggs(): boolean {
-    return utils.objectIsNotEmpty(this.search.getResult.aggs);
+    return utils.objectIsNotEmpty(this.searchModule.getResult.aggs);
   }
 
   get getResultTitle() {
@@ -83,23 +120,24 @@ export class Aggregation extends VuexModule {
 
   get getSorted() {
     const startOrder = [
-      'archaeologicalResourceType',
+      'ariadneSubject',
       'derivedSubject',
-      'keyword',
       'publisher',
       'contributor',
       'nativeSubject'
     ];
 
-    const result = this.search.getResult;
+    const result = this.searchModule.getResult;
 
     let sorted: any = {};
 
     if (this.hasAggs) {
+      const typesToSkip = ['fields', 'geogrid', 'bbox', 'ghp', 'range'];
+
       startOrder.forEach((key: string) => sorted[key] = result.aggs[key]);
 
       for (let key in result.aggs) {
-        if (!sorted[key] && key !== 'geogrid' && key !== 'bbox' && key !== 'ghp' && key !== 'range') {
+        if (!sorted[key] && !typesToSkip.includes(key)) {
           sorted[key] = result.aggs[key];
         }
       }
@@ -120,7 +158,7 @@ export class Aggregation extends VuexModule {
 
   get getIsActive() {
     return (key: string, bucketKey: string) => {
-      const params = this.search.getParams;
+      const params = this.searchModule.getParams;
 
       if (params[key]) {
         return params[key].split('|').some((k: any) => {

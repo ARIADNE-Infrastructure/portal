@@ -13,11 +13,21 @@
         <p class="inline sm:block mb-xs">
           ARIADNEplus is funded by the European Commission Horizon2020 programme under under Grant Agreement n. 823914.
         </p>
+
         <b-link
           to="/contact"
           class="hover:underline"
         >
           <i class="fas fa-envelope"></i> Contact
+        </b-link>
+
+        <span class="px-xs">|</span>
+
+        <b-link
+          to="/guide"
+          class="hover:underline"
+        >
+          <i class="fas fa-info-circle text-md"></i> ARIADNE portal guide
         </b-link>
       </div>
     </div>
@@ -26,7 +36,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { general } from "@/store/modules";
+import { generalModule } from "@/store/modules";
 import BLink from '@/component/Base/Link.vue';
 
 @Component({
@@ -36,7 +46,7 @@ import BLink from '@/component/Base/Link.vue';
 })
 export default class LayoutFooter extends Vue {
   get assets(): string  {
-    return general.getAssetsDir;
+    return generalModule.getAssetsDir;
   }
 }
 </script>

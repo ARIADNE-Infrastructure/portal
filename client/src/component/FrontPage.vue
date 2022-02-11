@@ -9,14 +9,13 @@
       >
 
       <filter-search
-        class="max-w-2xl m-auto"
+        class="mt-2x max-w-2xl m-auto"
         color="yellow"
-        bg="bg-yellow"
-        hover="hover:bg-yellow-80"
-        focus="focus:border-yellow"
+        hoverStyle="hover:bg-yellow-80"
+        focusStyle="focus:border-yellow"
         :big="true"
         :autoFocus="true"
-        :showFields="true"
+        showFields="radio"
         :useCurrentSearch="false"
         :hasAutocomplete="true"
       />
@@ -26,13 +25,30 @@
       <h1 class="text-2xl border-b-base border-red mb-md pb-xs">
         Welcome
       </h1>
-      <p class="text-mmd">Explore the digital resources and services that ARIADNE has brought together from across Europe for archaeological research, learning and teaching.</p>
+      <p class="text-mmd">
+        Explore the digital resources and services that ARIADNE has brought together from across the World for archaeological research, learning and teaching.
+      </p>
     </div>
 
     <div class="bg-white-80 pt-2x md:pb-2x px-2x mt-2x mb-base">
-      <h2 class="text-xl border-b-base border-red mb-md pb-sm">
-        Browse the Catalog
-      </h2>
+      <div class="flex items-center border-b-base border-red mb-md pb-sm">
+        <h2 class="text-xl">
+          Browse the Catalogue
+        </h2>
+
+        <help-tooltip
+          title="Click to view ARIADNE portal guide"
+          top="-.35rem"
+          left="2rem"
+        >
+          <b-link
+            href="guide"
+            class="mt-1 ml-sm"
+          >
+            <i class='fas fa-question-circle text-base'/>
+          </b-link>
+        </help-tooltip>
+      </div>
 
       <div class="flex flex-col md:flex-row pt-xs text-mmd">
         <b-link
@@ -61,15 +77,17 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { general } from "@/store/modules";
+import { generalModule } from "@/store/modules";
 import utils from '@/utils/utils';
 import BLink from '@/component/Base/Link.vue';
+import HelpTooltip from '@/component/Help/Tooltip.vue';
 
 import FilterSearch from '@/component/Filter/Search.vue';
 
 @Component({
   components: {
     BLink,
+    HelpTooltip,
     FilterSearch
   }
 })
@@ -89,11 +107,11 @@ export default class FrontPage extends Vue {
   }
 
   get links() {
-    return general.getFrontPageLinks;
+    return generalModule.getFrontPageLinks;
   }
 
   get assets(): string {
-    return general.getAssetsDir;
+    return generalModule.getAssetsDir;
   }
 
   get bgImage() {

@@ -73,8 +73,8 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import { resource, contact } from "@/store/modules";
+import { Component, Vue, Prop } from 'vue-property-decorator';
+import { resourceModule, contactModule } from "@/store/modules";
 import utils from '@/utils/utils';
 import BLink from '@/component/Base/Link.vue';
 
@@ -85,12 +85,13 @@ import BLink from '@/component/Base/Link.vue';
 })
 export default class ResourceLinks extends Vue {
   @Prop() resourceId!: string;
+
   isCiting: boolean = false;
   citationWidth: number = 0;
   utils = utils;
 
   get resource(): any {
-    return resource.getResource;
+    return resourceModule.getResource;
   }
 
   get citationStyle(): any {
@@ -116,8 +117,8 @@ export default class ResourceLinks extends Vue {
   }
 
   reportIssue () {
-    contact.clearMail();
-    contact.setSubject('Data quality issue resource #' + this.resourceId);
+    contactModule.clearMail();
+    contactModule.setSubject('Data quality issue resource #' + this.resourceId);
     this.$router.push('/contact');
   }
 

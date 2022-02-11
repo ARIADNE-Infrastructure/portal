@@ -34,16 +34,16 @@
       </div>
 
       <div v-if="item.modified" :class="itemClass">
-        <b :class="bClass">Modified:</b>
+        <b :class="bClass">Last updated:</b>
         {{ utils.formatDate(item.modified) }}
       </div>
     </div>
-  </resource-filtered-items> 
+  </resource-filtered-items>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { resource } from "@/store/modules";
+import { resourceModule } from "@/store/modules";
 import utils from '@/utils/utils';
 import BLink from '@/component/Base/Link.vue';
 
@@ -62,7 +62,7 @@ export default class ResourceMainDistribution extends Vue {
   @Prop() bClass!: string;
 
   get resource(): any {
-    return resource.getResource;
+    return resourceModule.getResource;
   }
 }
 </script>

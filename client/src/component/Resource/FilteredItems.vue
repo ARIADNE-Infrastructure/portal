@@ -1,15 +1,23 @@
 <template>
   <div v-if="this.filtered.length">
-    <h3 v-if="header" class="text-lg font-bold mt-2x mb-md">
+    <h3
+      v-if="header"
+      class="text-lg font-bold mt-2x mb-md"
+    >
       {{ header }}
     </h3>
 
-    <b v-if="title" class="mr-xs"
-      :class="filtered.length > 1 ? 'block mb-sm' : ''">
+    <b
+      v-if="title"
+      class="mr-xs"
+      :class="filtered.length > 1 ? 'block mb-sm' : ''"
+    >
       {{ title }}:
+      <slot name="helpIcon"></slot>
     </b>
 
-    <div v-for="(item, key) in filtered"
+    <div
+      v-for="(item, key) in filtered"
       :key="key"
       class="mb-sm"
       :class="{ 'inline': isSingleItem }"
@@ -32,12 +40,22 @@
 
           <span v-else-if="slotType === 'resource'">
             <span v-if="prop">{{ item[prop] }}</span>
-            <span v-else>{{ item.title || 'No title' }}</span>
+            <span v-else>{{ item.title.text || 'No title' }}</span>
           </span>
 
           <span v-else>
             {{ utils.sentenceCase(item) }}
           </span>
+        </b-link>
+
+        <b-link
+          v-if="getHomepage(item)"
+          :href="getHomepage(item)"
+          target="_blank"
+          class="hover:text-black group block mt-sm md:mt-none md:ml-md md:inline"
+        >
+          <i class="fa fa-home mr-xs text-blue group-hover:text-black"></i>
+          {{ item.institution ? item.institution : getHomepage(item) }}
         </b-link>
       </span>
 
@@ -54,7 +72,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { general, resource } from "@/store/modules";
+import { generalModule } from "@/store/modules";
 
 import utils from '@/utils/utils';
 import BLink from '@/component/Base/Link.vue';
@@ -93,7 +111,7 @@ export default class ResourceFilteredItems extends Vue {
   }
 
   get assets(): string {
-    return general.getAssetsDir;
+    return generalModule.getAssetsDir;
   }
 
   get filtered(): any[] {
@@ -102,7 +120,7 @@ export default class ResourceFilteredItems extends Vue {
     }
 
     let filter = this.filter.split(',');
-    let doublets = [];
+    let doublets: any[] = [];
 
     return this.itemsList.filter((item: any) => {
       if (filter.some((prop: string) => item[prop] && !utils.isInvalid(item[prop]))) {
@@ -115,7 +133,23 @@ export default class ResourceFilteredItems extends Vue {
     });
   }
 
+  getHomepage(item: any): string | null {
+    let homepage = item?.homepage;
+
+    if (this.slotType === 'person' && homepage) {
+      // make sure a protocol is set
+      if (!/http:|https:/.test(homepage)) {
+        homepage = `http://${ homepage }`;
+      }
+
+      return homepage;
+    }
+
+    return null;
+  }
+
   getUrl(item: any): string {
+
     if (this.slotType === 'resource' || this.slotType === 'subject') {
       return '/' + this.slotType + '/' + encodeURIComponent(item[this.prop || 'id']);
     }
@@ -123,8 +157,14 @@ export default class ResourceFilteredItems extends Vue {
     let params = {
       [this.query || 'q']: this.prop ? item[this.prop] : (this.filter ? item[this.filter] : item)
     }
-    if (this.query === 'subjectUri') {
-      params.subjectLabel = item.label.toLowerCase();
+
+    if (this.query === 'derivedSubjectId') {
+      if(item.id) {
+        let parts = item.id.split('/');
+        params = {
+          [this.query] : parts[parts.length-1]
+        }
+      }
     }
     if (this.fields) {
       params.fields = this.fields;

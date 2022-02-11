@@ -11,7 +11,13 @@
           class="fa-chevron-right fas mr-xs duration-200"
           :class="{ 'transform rotate-90': show }"
         />
-        {{ title }}
+
+        <template v-if="titleActive && titleInactive">
+          <template v-if="show">{{ titleActive }}</template>
+          <template v-else>{{ titleInactive }}</template>
+        </template>
+
+        <template v-else>{{ title }}</template>
       </div>
     </div>
 
@@ -31,13 +37,14 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Mixins, Prop, Watch } from 'vue-property-decorator';
-import { general } from "@/store/modules";
+import { Component, Mixins, Prop, Watch } from 'vue-property-decorator';
 import ListAccordionMixin from './AccordionMixin.vue';
 
 @Component
 export default class ListAccordion extends Mixins(ListAccordionMixin) {
-  @Prop() title!: string;
+  @Prop({ default: 'List' }) title?: string;
+  @Prop() titleActive?: string;
+  @Prop() titleInactive?: string;
   @Prop() initShow!: boolean;
   @Prop() hover?: boolean;
   @Prop() height?: number;

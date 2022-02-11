@@ -16,9 +16,8 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { search } from "@/store/modules";
+import { searchModule } from "@/store/modules";
 import BSelect from '@/component/Base/Select.vue';
-import utils from '@/utils/utils';
 
 @Component({
   components: {
@@ -27,29 +26,21 @@ import utils from '@/utils/utils';
 })
 export default class ResultSortOrder extends Vue {
   get params(): any {
-    return search.getParams;
+    return searchModule.getParams;
   }
 
   get options(): any[] {
-    return search.getSortOptions;
+    return searchModule.getSortOptions;
   }
 
-  get order() {
-    if (this.params.sort && this.params.order) {
-      return `${ this.params.sort }-${ this.params.order }`;
-    }
-
-    let paramsAmount = Object.keys(this.params).length;
-    if (!this.params.q && (paramsAmount < 2 || (paramsAmount === 2 && Number.isFinite(this.params.page)))) {
-      return 'issued-desc';
-    }
-    return '_score-desc';
+  get order(): string {
+    return `${ this.params.sort }-${ this.params.order }`;
   }
 
-  setOrder(orderStr: string) {
+  setOrder(orderStr: string): void {
     let arr = orderStr.split('-');
 
-    search.setSearch({
+    searchModule.setSearch({
       sort: arr[0],
       order: arr[1],
     });

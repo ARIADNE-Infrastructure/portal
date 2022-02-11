@@ -1,4 +1,4 @@
-FROM php:7.4-apache
+FROM php:8.1-apache
 
 LABEL maintainer="SND <team-it@snd.gu.se>"
 
@@ -11,9 +11,11 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip
 
-# Copy the development PHP config from the PHP source.
-# PABLO - Why?
-#RUN cp /usr/src/php/php.ini-development /usr/local/etc/php/php.ini
+# Install PHP extensions.
+RUN docker-php-ext-install opcache
+
+# Copy opcache config.
+COPY /server/docker/opcache/opcache.ini /usr/local/etc/php/conf.d/
 
 # Setup sendmail path to php
 # (https://r.je/sendmail-php-docker)  - See example for setup
@@ -35,6 +37,7 @@ RUN php -r "readfile('http://getcomposer.org/installer');" | php -- --install-di
 
 # Enable Apache mods.
 RUN a2enmod rewrite
+RUN a2enmod deflate
 
 # Set permissions for apache.
 RUN chown -R www-data:www-data /var/www/html
@@ -59,8 +62,8 @@ RUN echo 'alias ll="ls -la"' >> ~/.bashrc
 RUN apt-get install -y vim
 
 # Install xdebug. - Only for dev env.
-#RUN pecl install xdebug \
-#    && docker-php-ext-enable xdebug
+RUN pecl install xdebug \
+    && docker-php-ext-enable xdebug
 
 # Add xdebug configuration.
-# COPY /server/docker/xdebug/xdebug.ini /usr/local/etc/php/conf.d/
+COPY /server/docker/xdebug/xdebug.ini /usr/local/etc/php/conf.d/

@@ -1,27 +1,30 @@
 {
   "environment": {
-    "debugLog": false,
-    "logPath": "xxx",
-    "elasticsearchEnv": "dev",
+    "_about_logLevel": " Valid levels: NONE|DEBUG|INFO|NOTICE|WARNING|ERROR|CRITICAL|ALERT|EMERGENCY",
+    "logLevel": "DEBUG",
+    "logPath": "/var/www/logs/app.log",
+    "elasticsearchEnv": "staging",
+    "defaultLanguage": "en",
     "contact": {
       "email": "xxx@xxx.xxx",
       "captchaSecret": "xxx"
     }
   },
-  "prod": {
-    "elasticsearch": {
-      "host": "xxx:9000",
-      "index": "xxx",
-      "subject_index": "xxx",
-      "suggest_index": "xxx"
-    }
-  },
-  "dev": {
-    "elasticsearch": {
+  "elasticsearchEnv": {
+    "prod": {
       "host": "xxx:9200",
       "index": "xxx",
-      "subject_index": "xxx",
-      "suggest_index": "xxx"
+      "subject_index": "xxx"
+    },
+    "staging": {
+      "host": "xxx:9200",
+      "index": "xxx",
+      "subject_index": "xxx"
+    },
+    "dev": {
+      "host": "xxx:9200",
+      "index": "xxx",
+      "subject_index": "xxx"
     }
   }
 }

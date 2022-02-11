@@ -10,17 +10,31 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
-import { search } from "@/store/modules";
+import { Component, Vue, Prop } from 'vue-property-decorator';
+import { searchModule, aggregationModule } from "@/store/modules";
+import utils from '@/utils/utils';
 
 @Component
 export default class FilterClear extends Vue {
+  @Prop() ignoreParams!: string[];
+
+  get params(): any {
+    return searchModule.getParams;
+  }
+
   get hasParams(): boolean {
-    return search.hasParams;
+    return !utils.objectEquals(this.params, { q: ''}, this.ignoreParams)
   }
 
   clearFilters(): void {
-    search.setSearch({ clear: true });
+    let clearParams: any = {clear: true};
+
+    if (this.params?.mapq) {
+      clearParams.mapq = true;
+    }
+
+    searchModule.setSearch(clearParams);
+    aggregationModule.setOptionsToDefault();
   }
 }
 </script>

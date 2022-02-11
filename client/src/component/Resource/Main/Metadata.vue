@@ -7,7 +7,16 @@
 
     <div v-if="resource.originalId" :class="itemClass">
       <b class="break-word" :class="bClass">Original ID:</b>
-      {{ resource.originalId }}
+      <b-link
+        v-if="utils.validUrl(resource.originalId)"
+        :href="resource.originalId"
+        target="_blank"
+        class="break-word"
+        :useDefaultStyle="true"
+      >
+        {{ resource.originalId }}
+      </b-link>
+      <span v-else>{{ resource.originalId }}</span>
     </div>
 
     <div v-if="utils.validUrl(resource.landingPage)" :class="itemClass">
@@ -24,8 +33,7 @@
     </div>
 
     <div v-if="resource.language" :class="itemClass">
-      <b :class="bClass">Language:</b>
-      {{ utils.sentenceCase(synonyms.getLanguage(resource.language)) }}
+      <b :class="bClass">Language:</b> {{ synonyms.getLanguage(resource.language) }}
     </div>
 
     <resource-filtered-items
@@ -36,11 +44,11 @@
     />
 
     <resource-filtered-items
-      :items="resource.archaeologicalResourceType ? [resource.archaeologicalResourceType] : null"
+      :items="resource.ariadneSubject"
       :class="itemClass"
       title="Resource type"
-      prop="name"
-      query="archaeologicalResourceType"
+      prop="prefLabel"
+      query="ariadneSubject"
       slotType="prop"
     />
 
@@ -49,27 +57,55 @@
       {{ resource.extent.join(', ') }}
     </div>
 
-    <resource-filtered-items
-      :items="resource.aatSubjects"
-      :class="itemClass"
-      filter="label"
-      prop="id"
-      query="subjectUri"
-      slotType="link"
-      title="Subject">
-      <span slot-scope="{ item }">
-        {{ item.label }} <span v-if="item.lang">({{ item.lang }})</span>
-      </span>
-    </resource-filtered-items>
+    <div class="flex border-b-base border-gray pb-md mb-md">
+      <div
+        v-if="resource.derivedSubject"
+        class="flex-1"
+      >
+        <resource-filtered-items
+          :items="resource.derivedSubject"
+          :class="itemClass"
+          filter="prefLabel"
+          prop="id"
+          query="derivedSubjectId"
+          slotType="link"
+          title="Subject - AAT"
+        >
+          <template v-slot:helpIcon>
+            <help-tooltip
+              title="Read more about AAT"
+              top="0"
+              left="1.25rem"
+            >
+              <a
+                href="https://www.getty.edu/research/tools/vocabularies/aat/about.html"
+                target="_blank"
+              >
+                <i class='fas fa-question-circle'/>
+              </a>
+            </help-tooltip>
+          </template>
 
-    <resource-filtered-items
-      :items="resource.nativeSubject"
-      :class="itemClass"
-      filter="prefLabel"
-      title="Original Subject"
-      query="nativeSubject"
-      slotType="prop"
-    />
+          <span slot-scope="{ item }">
+            {{ item.prefLabel }} <span v-if="item.lang">({{ item.lang }})</span>
+          </span>
+        </resource-filtered-items>
+      </div>
+
+      <div
+        v-if="resource.nativeSubject"
+        class="flex-1"
+      >
+        <resource-filtered-items
+          :items="resource.nativeSubject"
+          :class="itemClass"
+          filter="prefLabel"
+          title="Subject - Original"
+          query="nativeSubject"
+          slotType="prop"
+        />
+      </div>
+    </div>
 
     <resource-filtered-items
       :items="resource.keyword"
@@ -86,7 +122,16 @@
       title="Dating"
     >
       <span slot-scope="{ item }">
-        <b-link v-if="item.periodName" :to="utils.paramsToString('/search', { temporal: item.periodName })">{{ item.periodName }}</b-link><span v-if="item.from && item.until"><span v-if="item.periodName">: </span>{{ item.from + ' to ' +  item.until }}</span>
+        <b-link
+          v-if="item.periodName"
+          :to="utils.paramsToString('/search', { temporal: item.periodName })"
+        >
+          {{ utils.sentenceCase(item.periodName) }}{{ item.periodName ? ':' : '' }}
+        </b-link>
+
+        <template v-if="item.from && item.until">
+          {{ item.from + ' to ' +  item.until }}
+        </template>
       </span>
     </resource-filtered-items>
 
@@ -98,20 +143,28 @@
     >
       <span slot-scope="{ item }">
         <span v-if="item.placeName">
-          <b-link :to="utils.paramsToString('/search', { q: item.placeName, fields: 'location' })">{{ item.placeName }}</b-link><span v-if="item.country">, </span>
+          <b-link
+            :to="utils.paramsToString('/search', {placeName: item.placeName})"
+          >
+            {{ utils.sentenceCase(item.placeName) }}
+          </b-link>
         </span>
-        <b-link v-if="item.country" :to="utils.paramsToString('/search', { q: item.country, fields: 'location' })">
-          {{ utils.sentenceCase(item.country) }}
-        </b-link>
-        <i v-if="item.location">[{{ item.location.lat + ', ' + item.location.lon }}]</i>
       </span>
     </resource-filtered-items>
 
     <div v-if="resource.resourceType" :class="itemClass">
       <b :class="bClass">Type:</b>
 
-      <b-link :to="utils.paramsToString('/search', { q: resource.resourceType })">
+      <b-link :to="utils.paramsToString('/search', { resourceType: resource.resourceType })">
         {{ utils.sentenceCase(resource.resourceType) }}
+      </b-link>
+
+      <b-link
+        v-if="resource.has_type"
+        :href="resource.has_type.uri"
+        target="_blank"
+      >
+        ({{ utils.sentenceCase(resource.has_type.label) }})
       </b-link>
     </div>
 
@@ -124,13 +177,18 @@
       query="publisher"
     />
 
+    <div v-if="resource.wasCreated" :class="itemClass">
+      <b :class="bClass">Created:</b>
+      {{ utils.formatDate(resource.wasCreated) }}
+    </div>
+
     <div v-if="resource.issued" :class="itemClass">
       <b :class="bClass">Issued:</b>
       {{ utils.formatDate(resource.issued) }}
     </div>
 
     <div v-if="resource.modified" :class="itemClass">
-      <b :class="bClass">Modified:</b>
+      <b :class="bClass">Last updated:</b>
       {{ utils.formatDate(resource.modified) }}
     </div>
 
@@ -166,16 +224,18 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { resource } from "@/store/modules";
+import { resourceModule } from "@/store/modules";
 
 import utils from '@/utils/utils';
 import synonyms from '@/utils/synonyms';
 import BLink from '@/component/Base/Link.vue';
+import HelpTooltip from '@/component/Help/Tooltip.vue';
 import ResourceFilteredItems from '../FilteredItems.vue';
 
 @Component({
   components: {
     BLink,
+    HelpTooltip,
     ResourceFilteredItems,
   }
 })
@@ -187,7 +247,7 @@ export default class ResourceMainMetadata extends Vue {
   @Prop() bClass!: string;
 
   get resource(): any {
-    return resource.getResource;
+    return resourceModule.getResource;
   }
 }
 </script>

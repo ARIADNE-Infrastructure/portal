@@ -2,23 +2,29 @@
 /**
  * Synonyms
  */
+import ISO6391 from 'iso-639-1';
+import utils from './utils';
 
 export default {
 
   /**
-   * Languages are sometimes given in short names.
-   * We want to present them as whole names on screen.
-   * @param lang The language short name. Example, 'EN' will be translted to 'English'
+   * Languages are given as ISO6391-1.
+   * Present them as whole names on screen.
+   *
+   * @param lang The language short name. Example, 'EN|en' will be translted to 'English'
    */
   getLanguage(lang: string) {
-    enum Language {
-      EN   = "English",
-      SV   = "Swedish",
-      IT   = "Italian",
-      ES   = "Spanish",
-      CHA  = "Chalcatongo"
+
+    if(lang) {
+      if( (lang.trim() == 'und') || (lang.trim() == '')) {
+        return 'N/A';
+      }
+      //console.log(lang, utils.sentenceCase(ISO6391.getName(lang.trim().toLowerCase())));
+      // Native language representation - ISO6391.getNativeName(lang)
+      return utils.sentenceCase(ISO6391.getName(lang.trim().toLowerCase()));
     }
-    return Language[lang.toUpperCase() as keyof typeof Language];
+    return 'N/A';
+
   }
 
 }

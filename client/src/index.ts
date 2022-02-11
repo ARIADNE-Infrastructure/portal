@@ -9,6 +9,10 @@ import router from './router';
 import store from './store';
 import App from './App.vue';
 
+// vue img
+import VueImg from 'v-img';
+Vue.use(VueImg);
+
 // app
 new Vue({
   el: '#app',

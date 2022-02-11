@@ -42,7 +42,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { search, aggregation, resource } from "@/store/modules";
+import { searchModule, aggregationModule, resourceModule } from "@/store/modules";
 import utils from '@/utils/utils';
 
 @Component
@@ -50,30 +50,30 @@ export default class FilterActiveAggregations extends Vue {
   utils: any = utils;
 
   get result() {
-    return search.getResult;
+    return searchModule.getResult;
   }
 
   get params() {
-    return search.getParams;
+    return searchModule.getParams;
   }
 
   get fields() {
-    return resource.getFields;
+    return resourceModule.getFields;
   }
 
   get items () {
     let items = [];
 
-    if (aggregation.hasAggs) {
+    if (aggregationModule.hasAggs) {
       for (let aggKey in this.result.aggs) {
         let agg = this.result.aggs[aggKey];
-        const anyActive = aggregation.getAnyActive(aggKey, agg.buckets);
+        const anyActive = aggregationModule.getAnyActive(aggKey, agg.buckets);
 
         if (utils.objectIsNotEmpty(agg.buckets) && anyActive) {
           for (let key in agg.buckets) {
             let bucket = agg.buckets[key];
 
-            if (aggregation.getIsActive(aggKey, bucket.key)) {
+            if (aggregationModule.getIsActive(aggKey, bucket.key)) {
               items.push({
                 key: aggKey,
                 bucket: bucket,
@@ -88,18 +88,18 @@ export default class FilterActiveAggregations extends Vue {
   }
 
   resultAggTitle(key: string) {
-    return aggregation.getTitle(key);
+    return aggregationModule.getTitle(key);
   }
 
   clearAll () {
-    search.setSearch({
+    searchModule.setSearch({
       clear: true,
       q: this.params.q
     })
   }
 
   removeActive(key: string, value: any) {
-    aggregation.setActive({ key, value, add: false });
+    aggregationModule.setActive({ key, value, add: false });
   }
 }
 </script>

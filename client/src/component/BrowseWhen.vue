@@ -7,14 +7,14 @@
 
       <filter-search
         color="blue"
-        bg="bg-blue"
-        hover="hover:bg-blue-80"
-        focus="focus:border-blue"
+        hoverStyle="hover:bg-blue-80"
+        focusStyle="focus:border-blue"
         class="mb-lg pr-lg"
         :breakHg="true"
         :big="true"
         :useCurrentSearch="true"
-        :showFields="true"
+        showFields="select"
+        :hasAutocomplete="true"
         :stayOnPage="true"
         @submit="utils.blurMobile()"
       />
@@ -24,7 +24,9 @@
       <filter-aggregations max-height="490px" />
 
       <div class="pr-lg">
-        <filter-clear />
+        <filter-clear
+          :ignoreParams="['page', 'sort', 'order', 'mapq', 'bbox', 'size', 'ghp', 'loadingStatus', 'forceReload']"
+        />
       </div>
     </aside>
 
@@ -45,7 +47,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { search, aggregation } from "@/store/modules";
+import { searchModule } from "@/store/modules";
 import utils from '@/utils/utils';
 
 import FilterSearch from '@/component/Filter/Search.vue';
@@ -67,11 +69,11 @@ export default class BrowseWhen extends Vue {
   utils = utils;
 
   get result(): any {
-    return search.getResult;
+    return searchModule.getResult;
   }
 
   async created () {
-    await search.setSearch({
+    await searchModule.setSearch({
       fromRoute: true
     });
   }

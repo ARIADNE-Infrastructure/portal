@@ -3,22 +3,22 @@
     v-if="utils.objectIsNotEmpty(item.buckets) && !Object.values(item.buckets).every(b => b.key && utils.isInvalid(b.key))"
   >
     <list-accordion
-      :title="resultAggTitle(id)"
-      :initShow="resultAggAnyActive(id, item.buckets)"
-      :autoShow="resultAggAnyActive(id, item.buckets)"
+      :title="resultAggTitle"
+      :initShow="initShow"
+      :autoShow="resultAggAnyActive"
       :hover="true"
       :height="height"
     >
       <div ref="bucketList" class="relative">
         <filter-aggregation-options
           :id="id"
-          :title="resultAggTitle(id)"
+          :title="resultAggTitle"
           :shortSortNames="shortSortNames"
           @searchUpdate="setBucketListHeight"
         />
 
         <div
-          v-for="(bucket, key) in filteredAndSortedBuckets(id, item.buckets)"
+          v-for="(bucket, key) in filteredAndSortedBuckets"
           v-bind:key="key"
         >
           <div v-if="bucket.key && String(bucket.key).trim() && !utils.isInvalid(bucket.key)">
@@ -65,6 +65,20 @@
             </div>
           </div>
         </div>
+
+        <div
+          v-if="noBucketMatch(id)"
+          class="bg-red text-white p-sm text-md rounded-b-base"
+        >
+          No results found.
+        </div>
+
+        <div
+          v-else-if="hasMoreDocs"
+          class="bg-red text-white p-sm text-md rounded-b-base"
+        >
+          Some options are currently not visible. Use the search field above to narrow down this list.
+        </div>
       </div>
     </list-accordion>
   </div>
@@ -72,7 +86,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import { search, resource, aggregation, general } from "@/store/modules";
+import { searchModule, resourceModule, aggregationModule, generalModule } from "@/store/modules";
 import utils from '@/utils/utils';
 
 import ListAccordion from '@/component/List/Accordion.vue';
@@ -87,38 +101,38 @@ import FilterAggregationOptions from './Aggregation/Options.vue';
 export default class FilterAggregation extends Vue {
   utils: any = utils;
 
-  private height: number = 0;
+  height: number = 0;
 
   @Prop() id!: string;
   @Prop() item!: any;
   @Prop({ default: false }) shortSortNames?: boolean;
 
   get params(): any {
-    return search.getParams;
+    return searchModule.getParams;
   }
 
   get fields(): any {
-    return resource.getFields;
+    return resourceModule.getFields;
   }
 
   get isLoading(): boolean {
-    return general.getLoading;
+    return generalModule.getIsLoading;
   }
 
   get aggType(): any {
-    return aggregation.getTypes.find(type => type.id === this.id);
+    return aggregationModule.getTypes.find(type => type.id === this.id);
   }
 
-  resultAggTitle(key: string): string {
-    return aggregation.getTitle(key);
+  get resultAggTitle(): string {
+    return aggregationModule.getTitle(this.id);
   }
 
-  resultAggAnyActive(key: string, items: string[]): boolean {
-    return aggregation.getAnyActive(key, items);
+  get resultAggAnyActive(): boolean {
+    return aggregationModule.getAnyActive(this.id, this.item.buckets);
   }
 
   resultAggIsActive(key: string, bucketKey: string): boolean {
-    return aggregation.getIsActive(key, bucketKey);
+    return aggregationModule.getIsActive(key, bucketKey);
   }
 
   getFilterText(text: string) {
@@ -128,33 +142,53 @@ export default class FilterAggregation extends Vue {
     return utils.sentenceCase(text);
   }
 
-  filteredAndSortedBuckets(id: string, list: any[]): any {
-    let result = list;
-    const options = aggregation.getOptionsById(id);
+  noBucketMatch(id: string): boolean {
+    const options = aggregationModule.getOptionsById(id);
 
-    // options not yet set; return as is
-    if (!options) {
-      return result;
+    return options?.data?.buckets?.length === 0 ? true : false;
+  }
+
+  get hasMoreDocs(): number {
+    const options = aggregationModule.getOptionsById(this.id);
+    let count;
+
+    if (options?.search) {
+      count = options?.data?.sum_other_doc_count;
+    }
+    else {
+      count = this.item.sum_other_doc_count;
     }
 
-    // options set; get params
-    const { search, sortBy, sortOrder } = options;
+    return count ?? 0;
+  }
 
-    // run search filter
-    result = result.filter((item: any) => {
-      const key = String(item.key);
+  get initShow(): boolean {
+    const options = aggregationModule.getOptionsById(this.id);
 
-      return key.toLowerCase().includes(search.toLowerCase());
-    });
+    return options?.search || this.resultAggAnyActive;
+  }
 
-    // run ordering
-    result = utils.sortListByValue(result, sortBy, sortOrder);
+  get filteredAndSortedBuckets(): any[] {
+    let list = this.item.buckets;
+    const options = aggregationModule.getOptionsById(this.id);
 
-    return result;
+    if (options) {
+      let { search, sortBy, sortOrder, data } = options;
+
+      // replace list with search result
+      if (options?.search && data?.buckets) {
+        list = data.buckets;
+      }
+
+      // return sorted
+      return utils.sortListByValue(list, sortBy, sortOrder);
+    }
+
+    return list;
   }
 
   setActive(key: string, value: any, add: boolean): void {
-    aggregation.setActive({ key, value, add });
+    aggregationModule.setActive({ key, value, add });
   }
 
   setBucketListHeight(): void {
@@ -167,7 +201,7 @@ export default class FilterAggregation extends Vue {
     });
   }
 
-  @Watch('isLoading')
+  @Watch('filteredAndSortedBuckets', { deep: true })
   onLoadingChange() {
     this.setBucketListHeight();
   }

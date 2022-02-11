@@ -9,44 +9,46 @@
 
         <filter-search
           color="blue"
-          bg="bg-blue"
-          hover="hover:bg-blue-80"
-          focus="focus:border-blue"
+          hoverStyle="hover:bg-blue-80"
+          focusStyle="focus:border-blue"
           class="mb-lg"
           :breakHg="true"
           :big="true"
           :useCurrentSearch="true"
-          :clearSearch="true"
-          :showFields="true"
+          :hasAutocomplete="true"
+          showFields="select"
           @submit="utils.blurMobile()"
         />
       </div>
 
-      <result-map
+      <result-mini-map
         title="Where"
-        height="250px"
-        :isMultiple="true"
         :noZoom="utils.isMobile()"
       />
 
-      <filter-time-line title="When" v-if="utils.objectIsNotEmpty(result) && result.hits && result.hits.length" />
+      <filter-time-line
+        v-if="utils.objectIsNotEmpty(result) && result.hits && result.hits.length"
+        title="When"
+      />
     </div>
 
     <filter-aggregations />
 
     <div class="pr-lg">
-      <filter-clear />
+      <filter-clear
+        :ignoreParams="['page', 'sort', 'order', 'mapq', 'loadingStatus', 'forceReload']"
+      />
     </div>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { search, aggregation } from "@/store/modules";
+import { searchModule } from "@/store/modules";
 import utils from '@/utils/utils';
 
 import FilterSearch from '@/component/Filter/Search.vue';
-import ResultMap from './Map.vue';
+import ResultMiniMap from './MiniMap.vue';
 import FilterTimeLine from '@/component/Filter/TimeLine.vue';
 import FilterAggregations from '@/component/Filter/Aggregations.vue';
 import FilterClear from '@/component/Filter/Clear.vue';
@@ -54,7 +56,7 @@ import FilterClear from '@/component/Filter/Clear.vue';
 @Component({
   components: {
     FilterSearch,
-    ResultMap,
+    ResultMiniMap,
     FilterTimeLine,
     FilterAggregations,
     FilterClear,
@@ -64,7 +66,7 @@ export default class ResultSidebar extends Vue {
   utils: any = utils;
 
   get result(): any {
-    return search.getResult;
+    return searchModule.getResult;
   }
 }
 </script>

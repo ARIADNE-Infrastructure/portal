@@ -12,14 +12,14 @@
       <div class="lg:hidden">
         <filter-search
           color="blue"
-          bg="bg-blue"
-          hover="hover:bg-blue-80"
-          focus="focus:border-blue"
+          hoverStyle="hover:bg-blue-80"
+          focusStyle="focus:border-blue"
           class="mt-sm mb-xl"
           :big="true"
           :useCurrentSearch="true"
           :clearSearch="true"
-          :showFields="true"
+          :hasAutocomplete="true"
+          showFields="select"
           @submit="utils.blurMobile()"
         />
       </div>
@@ -40,7 +40,7 @@
 
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
-import { general, search } from "@/store/modules";
+import { generalModule, searchModule } from "@/store/modules";
 
 // base & utils
 import utils from '@/utils/utils';
@@ -68,12 +68,8 @@ import ResultSortOrder from './Result/SortOrder.vue';
 export default class Result extends Vue {
   utils = utils;
 
-  async mounted () {
-    await this.onRouteUpdate();
-  }
-
   get params(): any {
-    return search.getParams;
+    return searchModule.getParams;
   }
 
   setMeta () {
@@ -86,15 +82,15 @@ export default class Result extends Vue {
       title += ` (page ${ this.params.page })`;
     }
 
-    general.setMeta({
+    generalModule.setMeta({
       title: title,
       description: title,
     });
   }
 
-  @Watch('$route')
+  @Watch('$route', { immediate: true })
   async onRouteUpdate () {
-    await search.setSearch({ fromRoute: true });
+    await searchModule.setSearch({ fromRoute: true });
     this.setMeta();
   }
 }

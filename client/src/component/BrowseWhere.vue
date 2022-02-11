@@ -1,23 +1,54 @@
 <template>
 	<div>
-    <!-- <browse-where-map
-      class="absolute left-0 w-full"
-      style="height:calc(100vh - 11rem)"
-      height="calc(100vh - 11rem)"
-      @mapChange="mapChange"
-    /> -->
-
-    <browse-where-map-old
-      class="absolute left-0 w-full"
-      :isMultiple="true"
-      height="calc(100vh - 12rem)"
-      @mapChange="mapChange"
-    />
+    <browse-where-map @markerViewUpdate="inMarkerView = $event" />
 
     <div class="relative">
       <div class="absolute w-toolbar top-2xl right-0 text-center shadow-full z-1001">
         <!-- totals -->
         <browse-where-totals :data="data" />
+
+        <transition
+          v-on:before-enter="markerViewLeave" v-on:enter="markerViewEnter"
+          v-on:before-leave="markerViewEnter" v-on:leave="markerViewLeave"
+        >
+          <div
+            v-if="inMarkerView"
+            class="ease-out duration-200 overflow-hidden"
+          >
+            <ul class="flex justify-center text-mmd text-black border-t-base border-gray p-md bg-white">
+              <li class="flex items-center h-2x">
+                <img
+                  :src="mapUtils.markerType.point.marker"
+                  width="15"
+                  class="mr-sm"
+                  alt="Blue marker - Geo point"
+                >
+                Geo point
+              </li>
+
+              <li class="ml-lg flex items-center h-2x">
+                <img
+                  :src="mapUtils.markerType.point.shape"
+                  width="15"
+                  class="mr-sm"
+                  alt="Red marker - Geo shape"
+                >
+                Geo shape
+              </li>
+
+              <li class="ml-lg flex items-center h-2x">
+                <img
+                  :src="mapUtils.markerType.combo.marker"
+                  width="21"
+                  class="mr-sm"
+                  alt="Approximately location marker"
+                >
+                Approx. location
+              </li>
+
+            </ul>
+          </div>
+        </transition>
 
         <!-- display as search results -->
         <div
@@ -59,14 +90,14 @@
                   <div class="pr-lg">
                     <filter-search
                       color="blue"
-                      bg="bg-blue"
-                      hover="hover:bg-blue-80"
-                      focus="focus:border-blue"
+                      hoverStyle="hover:bg-blue-80"
+                      focusStyle="focus:border-blue"
                       class="mb-lg"
                       :breakHg="true"
                       :big="true"
                       :useCurrentSearch="true"
-                      :showFields="true"
+                      showFields="select"
+                      :hasAutocomplete="true"
                       :stayOnPage="true"
                       size="sm"
                       @submit="utils.blurMobile()"
@@ -82,7 +113,10 @@
                 </div>
               </div>
 
-              <filter-clear class="rounded-bl-0 rounded-t-0" />
+              <filter-clear
+                class="rounded-bl-0 rounded-t-0"
+                :ignoreParams="['page', 'sort', 'order', 'mapq', 'bbox', 'size', 'ghp', 'loadingStatus', 'forceReload']"
+              />
             </div>
           </div>
 
@@ -96,21 +130,21 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { search, general } from "@/store/modules";
+import { searchModule, generalModule } from "@/store/modules";
 import utils from '@/utils/utils';
+import mapUtils from '@/utils/map';
 
 import BrowseWhereMap from './BrowseWhere/Map.vue';
-import BrowseWhereMapOld from './BrowseWhere/Map.vue';
 import FilterSearch from '@/component/Filter/Search.vue';
 import FilterYears from '@/component/Filter/Years.vue';
 import FilterAggregations from '@/component/Filter/Aggregations.vue';
 import FilterClear from '@/component/Filter/Clear.vue';
 import BrowseWhereTotals from './BrowseWhere/Totals.vue';
+import router from '@/router';
 
 @Component({
   components: {
     BrowseWhereMap,
-    BrowseWhereMapOld,
     FilterSearch,
     FilterYears,
     FilterAggregations,
@@ -118,24 +152,42 @@ import BrowseWhereTotals from './BrowseWhere/Totals.vue';
     BrowseWhereTotals,
   }
 })
+
 export default class BrowseWhere extends Vue {
   utils = utils;
   data: any = null;
   view: any = false;
   showView: any = false;
+  inMarkerView: boolean = false;
+  mapUtils = mapUtils;
 
   created () {
-    search.setSearch({
-      fromRoute: true
+    // set an initial search based on current route (while still updating url)
+    searchModule.setSearch({
+      ...router.currentRoute.query,
+      ...{
+        clear: true,
+        forceReload: 'true',
+        mapq: 'true',
+        size: 500
+      }
     });
   }
 
+  markerViewEnter(el: any): void {
+    el.style.height = `${ el.scrollHeight}px`;
+  }
+
+  markerViewLeave(el: any): void {
+    el.style.height = '0px';
+  }
+
   get isLoading(): boolean {
-    return general.getLoading;
+    return generalModule.getIsLoading;
   }
 
   get params(): any {
-    return search.getParams;
+    return searchModule.getParams;
   }
 
   toggleView(view: any): void {
@@ -144,12 +196,9 @@ export default class BrowseWhere extends Vue {
     this.view = view;
   }
 
-  mapChange (data: any) {
-    this.data = data;
+  toSearch () {
+    searchModule.setSearch({ path: '/search', mapq: null});
   }
 
-  toSearch () {
-    search.setSearch({ path: '/search', mapq: null});
-  }
 }
 </script>

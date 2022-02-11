@@ -1,40 +1,66 @@
 // store/modules/MyStoreModule.ts
-import { Vue } from 'vue-property-decorator';
 import { VuexModule, Module, Mutation, Action, RegisterOptions } from "vuex-class-modules";
 import axios from 'axios';
 import utils from '@/utils/utils';
 import router from '@/router';
-import { General } from './General';
-import { sortOptions } from './Search/static';
+import { LoadingStatus, GeneralModule } from './General';
+import { sortOptions, helpTexts } from './Search/static';
+
+export interface helpText {
+  id: string,
+  title: string,
+  text: string,
+}
 
 @Module
-export class Search extends VuexModule {
-  private general: General;
+export class SearchModule extends VuexModule {
+  private generalModule: GeneralModule;
 
-  constructor(general: General, options: RegisterOptions) {
+  constructor(generalModule: GeneralModule, options: RegisterOptions) {
     super(options);
-    this.general = general;
+    this.generalModule = generalModule;
   }
 
+  private params: any = {};
   private result: any = {};
   private autocomplete: any = {};
-  private params: any = {};
   private sortOptions: any[] = sortOptions;
+  private helpTexts: helpText[] = helpTexts;
+
+  // minimap
+  private miniMapSearchParams: any = {};
+  private miniMapSearchResult: any = {};
 
   @Action
-  async setAutocomplete(query: string) {
+  async setAutocomplete(payload: any) {
+    let { type, q } = payload;
     let data: any = '';
 
     try {
       const url = process.env.apiUrl + '/autocomplete';
-      const res = await axios.get(utils.paramsToString(url, { q: query }));
+      const res = await axios.get(utils.paramsToString(url, { fields: type, q }));
 
-      if (res?.data?.length && Array.isArray(res.data)) {
+      if (res?.data?.hits.length && Array.isArray(res.data.hits)) {
         data = res.data;
       }
     } catch (ex) {}
 
-    this.updateAutocomplete({ data, query });
+    this.updateAutocomplete({ data, type, q });
+  }
+
+  // sets mini map search
+  @Action
+  async setMiniMapSearch(payload?: any) {
+    // update params
+    this.updateMiniMapSearchParams(payload);
+
+    // update result
+    try {
+      const url = process.env.apiUrl + '/search';
+      const res = await axios.get(utils.paramsToString(url, {...this.miniMapSearchParams, size: 500}));
+      this.updateMiniMapSearchResult(res?.data);
+    }
+    catch (ex) {}
   }
 
   @Action
@@ -79,23 +105,35 @@ export class Search extends VuexModule {
     }
     params.q = params.q.toLowerCase();
 
-
-    if (utils.objectEquals(params, currentParams) && path === currentPath) {
+    if (utils.objectEquals(params, currentParams) && path === currentPath && !payload?.forceReload) {
       return;
     }
 
-    this.general.updateLoading(true);
-    this.updateParams(params);
-
     if (updateUrl) {
-      router.push(utils.paramsToString(path, params));
+      // only update url if it's not identifcal to current
+      const stringParams = utils.objectConvertNumbersToStrings(params);
+
+      if (!utils.objectEquals(router.currentRoute.query, stringParams) || path !== currentPath) {
+        router.push(utils.paramsToString(path, params));
+      }
     }
 
-    if (!params.q && !params.sort && !params.order) {
-      params = utils.getCopy(params);
-      params.sort = 'issued';
-      params.order = 'desc';
+    if (path === '/search') {
+      // reset to default sorting if current option is disabled
+      if (params.sort && this.getSortOptionDisabled(params.q, params.sort)) {
+        params = { ...params, ...this.getDefaultSort(params.q) };
+      }
+
+      // set to default sorting if none is specified
+      else if (!params.sort) {
+        params = { ...params, ...this.getDefaultSort(params.q) };
+      }
     }
+
+    // default to locked loading status
+    this.generalModule.updateLoadingStatus(payload?.loadingStatus ?? LoadingStatus.Locked);
+
+    this.updateParams(params);
 
     const time = Date.now();
 
@@ -134,17 +172,27 @@ export class Search extends VuexModule {
           time: Math.round(((Date.now() - time) / 1000) * 100) / 100
         });
 
-        this.general.updateLoading(false);
+        this.generalModule.updateLoadingStatus(LoadingStatus.None);
 
         return;
       }
     } catch (ex) {}
 
-    this.general.updateLoading(false);
+    this.generalModule.updateLoadingStatus(LoadingStatus.None);
 
     this.updateResult({
       error: 'Internal error. Search failed..'
     });
+  }
+
+  @Mutation
+  updateMiniMapSearchParams(params: any) {
+    this.miniMapSearchParams = params;
+  }
+
+  @Mutation
+  updateMiniMapSearchResult(resultMap: any) {
+    this.miniMapSearchResult = resultMap;
   }
 
   @Mutation
@@ -159,16 +207,29 @@ export class Search extends VuexModule {
 
   @Mutation
   updateAutocomplete(res: any) {
-    this.autocomplete[res.query] = res.data;
+    this.autocomplete[res.type + res.q] = res.data;
   }
 
-  get hasParams(): boolean {
+  /**
+   * Used for displaying what user has filtered and/or search on.
+   * Not all uri params are valid for this.
+   */
+  get displayResultString(): string {
+
+    const valid = ['q', 'nativeSubject', 'ariadneSubject', 'derivedSubject',  'contributor', 'publisher', 'temporal'];
     const params = utils.getCopy(this.params);
-    const clear = ['mapq', 'bbox', 'size', 'ghp', 'zoomLevel', 'mapCenter'];
+    let display:string = '';
 
-    clear.forEach((item: any) => delete params[item]);
+    valid.forEach(function (value) {
+      let val:string = params[value];
+      if(val) {
+        val = val.replace('|',', ');
+        display += val.trim()+', ';
+      }
+    });
 
-    return JSON.stringify(params) !== JSON.stringify({ q: ''});
+    return display.substring(0, display.length-2);
+
   }
 
   get getParams(): any {
@@ -183,7 +244,58 @@ export class Search extends VuexModule {
     return this.autocomplete;
   }
 
+  get getDefaultSort(): any {
+    return (q: any) => {
+      if (q) {
+        return {
+          sort: '_score',
+          order: 'desc',
+        }
+      }
+
+      return {
+        sort: 'issued',
+        order: 'desc',
+      }
+    }
+  }
+
   get getSortOptions(): any[] {
-    return this.sortOptions;
+    return this.sortOptions.map((item: any) => {
+      const disabled = this.getSortOptionDisabled(this.params.q, item.val);
+      return { ...{ disabled }, ...item };
+    });
+  }
+
+  get getHelpTexts(): helpText[] {
+    return this.helpTexts;
+  }
+
+  get getSortOptionDisabled() {
+    return (q: any, option: string) => {
+      if (option.includes('_score')) {
+        if (!q) {
+          return true;
+        }
+
+        return false;
+      }
+
+      return false;
+    }
+  }
+
+  /**
+   * Get params for mini map residing on result page filters.
+   */
+  get getMiniMapSearchParams(): any {
+    return this.miniMapSearchParams;
+  }
+
+  /**
+   * Get results for mini map residing on result page filters.
+   */
+  get getMiniMapSearchResult() {
+    return this.miniMapSearchResult;
   }
 }

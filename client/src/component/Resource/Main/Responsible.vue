@@ -24,8 +24,8 @@
 
     <div v-if="resource.accrualPeriodicity" :class="itemClass">
       <b :class="bClass">Accrual Periodicity:</b>
-      <b-link :to="utils.paramsToString('/search', { q: resource.accrualPeriodicity })">
-        {{ resource.accrualPeriodicity }}
+      <b-link :to="utils.paramsToString('/search', {q: resource.accrualPeriodicity})">
+        {{resource.accrualPeriodicity}}
       </b-link>
     </div>
 
@@ -53,9 +53,8 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { resource } from "@/store/modules";
+import { resourceModule } from "@/store/modules";
 
-import utils from '@/utils/utils';
 import BLink from '@/component/Base/Link.vue';
 import ResourceFilteredItems from '../FilteredItems.vue';
 
@@ -67,19 +66,20 @@ import ResourceFilteredItems from '../FilteredItems.vue';
 })
 export default class ResourceMainResponsible extends Vue {
   persons = [
-    { prop: 'creator', title: 'Creator' },
+    { prop: 'creator', title: 'Creator', query: 'creator' },
     { prop: 'contributor', title: 'Contributor', query: 'contributor' },
-    { prop: 'owner', title: 'Owner' },
-    { prop: 'legalResponsible', title: 'Legal responsible' },
-    { prop: 'scientificResponsible', title: 'Scientific responsible' },
-    { prop: 'technicalResponsible', title: 'Technical responsible' },
+    { prop: 'owner', title: 'Owner', query: 'owner' },
+    { prop: 'responsible', title: 'Responsible', query: 'responsible' }
   ];
 
   @Prop() itemClass!: string;
   @Prop() bClass!: string;
 
   get resource(): any {
-    return resource.getResource;
+    return resourceModule.getResource;
   }
+
+
+
 }
 </script>

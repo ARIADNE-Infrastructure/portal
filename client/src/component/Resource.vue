@@ -22,25 +22,20 @@
 
       <div class="mb-2x">
         <resource-map
-          v-if="resource && resource.resourceType !== 'collection'"
+          v-if="resource"
           class="map--default"
         />
       </div>
 
       <article class="px-base mx-auto max-w-screen-xl lg:flex">
-        <div class="w-100 lg:w-2/3 lg:pr-2x">
-          <h1 class="text-2xl mb-md">
-            {{ resource.title && resource.title.trim() ? resource.title : 'No title' }}
-          </h1>
-
-          <!-- No whitespace between tags here -->
-          <div class="whitespace-pre-line mb-3x lg:mb-2x">{{ utils.cleanText(resource.description, true) || 'No description' }}</div>
-
-          <resource-links class="block lg:hidden" :resourceId="id" />
-          <resource-main />
+        <div class="w-full lg:w-2/3 lg:pr-2x">
+          <resource-title />
+          <resource-description class="mt-2x pt-xs mb-3x lg:mb-2x" />
+          <resource-links class="mt-lg block lg:hidden" :resourceId="id" />
+          <resource-main class="mt-lg" />
         </div>
 
-        <div class="w-100 lg:w-1/3 pt-sm lg:pl-2x lg:border-l-base border-gray">
+        <div class="w-full lg:w-1/3 pt-sm lg:pl-2x lg:border-l-base border-gray">
           <resource-links class="hidden lg:block" :resourceId="id" />
           <resource-sidebar :initResource="initResource" />
         </div>
@@ -51,12 +46,14 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import { search, general, resource } from "@/store/modules";
+import { searchModule, generalModule, resourceModule } from "@/store/modules";
 import utils from '@/utils/utils';
 import BLink from '@/component/Base/Link.vue';
 
 // unique
 import ResourceMap from './Resource/Map.vue';
+import ResourceTitle from './Resource/Title.vue';
+import ResourceDescription from './Resource/Description.vue';
 import ResourceLinks from './Resource/Links.vue';
 import ResourceMain from './Resource/Main.vue';
 import ResourceSidebar from './Resource/Sidebar.vue';
@@ -65,10 +62,12 @@ import ResourceSidebar from './Resource/Sidebar.vue';
   components: {
     BLink,
     ResourceMap,
+    ResourceTitle,
+    ResourceDescription,
     ResourceLinks,
     ResourceMain,
     ResourceSidebar,
-  }
+  },
 })
 export default class Resource extends Vue {
   @Prop() id!: string;
@@ -80,6 +79,7 @@ export default class Resource extends Vue {
   }
 
   async initResource (id: any, force: boolean = false) {
+
     id = String(id);
     this.forced = force;
 
@@ -87,34 +87,33 @@ export default class Resource extends Vue {
       return;
     }
 
-    await resource.setResource(id);
+    await resourceModule.setResource(id);
 
     this.$nextTick(() => {
       if (this.resource) {
-        general.setMeta({
-          title: (this.resource.title && this.resource.title.trim()) ? this.resource.title : 'No title',
-          description: (this.resource.description || '').slice(0, 155)
+        // Set document metadata
+
+        generalModule.setMeta({
+          title: (this.resource.title?.text && this.resource.title?.text.trim()) ? this.resource.title?.text : 'No title',
+          description: this.resource?.description?.text ? this.resource?.description?.text.slice(0, 155) : ''
         });
       } else {
         this.$router.replace('/404');
       }
     });
+
   }
 
   get isLoading(): boolean {
-    return general.getLoading;
+    return generalModule.getIsLoading;
   }
 
   get resource(): any {
-    return resource.getResource;
+    return resourceModule.getResource;
   }
 
   get params(): any {
-    return search.getParams;
-  }
-
-  get assets(): string {
-    return general.getAssetsDir;
+    return searchModule.getParams;
   }
 
   @Watch('$route')

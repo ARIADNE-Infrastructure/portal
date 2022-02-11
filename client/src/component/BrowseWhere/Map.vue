@@ -1,23 +1,28 @@
-<style>
-.leaflet-touch .leaflet-control-layers-toggle {
-    width: 30px;
-    height: 30px;
-}
-</style>
 <template>
-  <div v-show="map" class="mb-lg">
+  <div
+    v-show="map"
+    class="mb-lg absolute left-0 w-full"
+  >
+    <div
+      class="absolute w-full text-center text-white bg-red p-md z-1001 transition-opacity duration-300"
+      :class="{ 'opacity-0': !getIsAboveMaxNativeZoom }"
+    >
+      Please switch to another map view for a more optimal viewing experience.
+    </div>
+
     <!-- map -->
     <div ref="mapWrapper"></div>
   </div>
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, Watch } from "vue-property-decorator";
-import { search, general, resource } from "@/store/modules";
+import { Component, Vue, Watch } from "vue-property-decorator";
+import { searchModule, generalModule } from "@/store/modules";
+import { LoadingStatus } from "@/store/modules/General";
 
 import * as L from "leaflet";
 import Geohash from "latlon-geohash";
-import utils from "@/utils/utils";
+import mapUtils from "@/utils/map";
 
 // Leaflet stuff
 import "leaflet.heat";
@@ -27,43 +32,87 @@ import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 
-// Leaflet Draw api
+// WKT reader/helper for map
 import "leaflet-draw";
 import "leaflet-draw/dist/leaflet.draw.css";
 
+// WKT reader/helper for map
+import 'wicket/wicket-leaflet';
+import Wkt from 'wicket';
+
 import HelpTooltip from "@/component/Help/Tooltip.vue";
+
+// typing for available tile layers
+interface tileLayer {
+  [key: string]: L.TileLayer,
+}
 
 @Component({
   components: {
     HelpTooltip,
   },
 })
-export default class FilterSearchFullMap extends Vue {
-  @Prop() title?: string;
-  @Prop() height!: string;
-  @Prop() noZoom?: boolean;
-  @Prop() showInfo?: boolean;
-
+export default class BrowseWhereMap extends Vue {
   // Render cluster markers when this limit is reached
   markerThreshold: number = 500;
 
   map: any = null;
-  clusterMarkers = null;
-  heatMap = null;
-  drawLayer = null;
-  thisViewPort = null;
-  debugToConsole = false;
-  currentViewport = null;
+  clusterMarkers: L.MarkerClusterGroup | null = null;
+  heatMap: L.HeatLayer | null = null;
+  drawLayer: any = null;
+  thisViewPort: L.Rectangle | null = null;
+  currentViewport: any = null;
 
-  // ClusterMarkers - Custom style
-  blueMarkerIcon = L.icon({
-    iconUrl: `${this.assets}/leaflet/marker-icon-blue.png`,
-    iconSize: [25, 41],
-    iconAnchor: [12, 40],
-    shadowUrl: `${this.assets}/leaflet/marker-shadow.png`,
-    shadowSize: [41, 41],
-    shadowAnchor: [12, 40],
-  });
+  // available tile layers
+  tileLayer: tileLayer = {
+    'OSM': L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors',
+      maxNativeZoom: 19,
+      maxZoom: 20,
+      noWrap: true,
+    }),
+
+    'Open topo.': L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+      attribution: 'Map data: &copy;'
+        + ' <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        + ' contributors, <a href="http://viewfinderpanoramas.org">SRTM</a>'
+        + ' | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
+        + ' (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
+
+      maxNativeZoom: 17,
+      maxZoom: 20,
+    }),
+
+    'Google sat.': L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+      maxNativeZoom: 20,
+      maxZoom: 20,
+      subdomains:['mt0','mt1','mt2','mt3'],
+    }),
+
+    'Google terr.': L.tileLayer('http://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
+      maxNativeZoom: 20,
+      maxZoom: 20,
+      subdomains:['mt0','mt1','mt2','mt3'],
+    }),
+
+    'Google street': L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+      maxNativeZoom: 20,
+      maxZoom: 20,
+      subdomains:['mt0','mt1','mt2','mt3']
+    }),
+
+    'Google hybr.': L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+      maxNativeZoom: 20,
+      maxZoom: 20,
+      subdomains:['mt0','mt1','mt2','mt3']
+    }),
+  };
+
+  // current tile layer
+  currentTileLayer: L.TileLayer = this.tileLayer.OSM;
+
+  // current map zoom
+  currentZoom: number = 0;
 
   mounted() {
     this.setupMapBody();
@@ -74,23 +123,15 @@ export default class FilterSearchFullMap extends Vue {
   }
 
   get currentResultState(): any {
-    return search.getResult;
-  }
-
-  get resource(): any {
-    return resource.getResource;
+    return searchModule.getResult;
   }
 
   get params(): any {
-    return search.getParams;
-  }
-
-  get assets(): string {
-    return general.getAssetsDir;
+    return searchModule.getParams;
   }
 
   get isLoading(): any {
-    return general.getLoading;
+    return generalModule.getIsLoading;
   }
 
   @Watch("isLoading")
@@ -98,43 +139,28 @@ export default class FilterSearchFullMap extends Vue {
 
   @Watch("currentResultState")
   resultUpdateWatcher() {
-    // mapq null means thar user has landed on Map without filters.
-    // We need mapq to fetch correct map data from start.
-    if(!this.params.mapq) {
-      search.setSearch({
-        mapq: true
-      });
-    } else {
-      this.setMap();
-    }
+    this.setMap();
   }
 
   /**
    * Main function
    */
   async setMap() {
-
-    this.lcl("<<<<<<<<<< SET MAP >>>>>>>>>>");
-
+    //debugger;
     this.resetMap();
 
-    let geoBucketsCount = this.currentResultState.aggs?.geogrid?.buckets.length;
     let resourceHitsCount = this.currentResultState?.total?.value;
-    this.currentViewport = this.currentResultState?.aggs?.viewport;
-
-    this.lcl("BUCKETS COUNT: " + geoBucketsCount);
-    this.lcl("RESOURCE COUNT: " + resourceHitsCount);
-    this.lcl("CURRENT ZOOM: " + this.map.getZoom());
-    this.lcl("CURRENT VIEWPORT:");
-    this.lcl(this.currentViewport);
+    this.currentViewport = this.currentResultState?.aggs?.viewport?.thisBounds;
+    let inMarkerView: boolean = false;
 
     if (resourceHitsCount <= this.markerThreshold) {
+      inMarkerView = !inMarkerView;
       this.setupClusterMarkers();
-
     } else {
-      //this.setupClusterHeat();
       this.setupHeatMap();
     }
+
+    this.$emit('markerViewUpdate', inMarkerView);
 
     // Undefined mapZoom means that user has landed on map directly without filters
     if (!this.map.getZoom()) {
@@ -147,76 +173,98 @@ export default class FilterSearchFullMap extends Vue {
       this.thisViewPort = null;
     }
 
-    // For debug
-    // this.showResultViewport();
+    // Render current viewport
+    //this.showResultViewport();
 
     this.setupDrawCreated();
     this.setupOnMove();
-  }
 
-  async setupClusterHeat() {
-    this.lcl("--- SET CLUSTER HEAT --- ");
-    this.clusterMarkers = new L.MarkerClusterGroup();
-    let currentHeatPoints = this.currentResultState.aggs?.geogrid?.buckets;
-    let mapPoints = [];
-    let points = [];
-
-    currentHeatPoints.forEach((hp: any) => {
-
-      let decoded = Geohash.decode(hp["key"]);
-      mapPoints.push([decoded.lat, decoded.lon, hp["doc_count"]]);
-      points.push([decoded.lat, decoded.lon]);
-
-      let marker = L.marker(
-        new L.LatLng(decoded.lat, decoded.lon),
-        { icon: this.blueMarkerIcon }
-      );
-
-      this.clusterMarkers.addLayer(marker);
-
-    });
-
-    this.map.addLayer(this.clusterMarkers);
-
+    this.currentZoom = this.map?.getZoom() ?? 0;
   }
 
   /**
    * Set markers
    */
-  setMarker(heatpoint: any) {
+  setMarker(heatpoint: any): void {
     let decoded = Geohash.decode(heatpoint["key"]);
 
     // L.marker([decoded.lat, decoded.lon]).addTo(this.map)
     //   .bindPopup(decoded.lat + ' ' + decoded.lon + ' : ' + heatpoint['doc_count'] );
 
-    var icon = new L.Icon.Default();
+    const icon = new L.Icon.Default();
     icon.options.shadowSize = [0, 0];
-    var marker = new L.Marker([decoded.lat, decoded.lon], { icon: icon })
+
+    new L.Marker([decoded.lat, decoded.lon], { icon: icon })
       .addTo(this.map)
       .bindPopup(
         decoded.lat + " " + decoded.lon + " : " + heatpoint["doc_count"]
       );
   }
 
+
   /**
    * Creates clusters and markers and add to map as new layer.
    */
   async setupClusterMarkers() {
-    this.lcl("--- SET CLUSTER MARKERS --- ");
-    let resources = this.currentResultState.hits;
 
+    let resources = this.currentResultState.hits;
     this.clusterMarkers = new L.MarkerClusterGroup();
-    let markerGroup = [];
 
     resources.forEach((resource: any) => {
       resource.data.spatial.forEach((spatial: any) => {
-        let marker = L.marker(
-          new L.LatLng(spatial.location.lat, spatial.location.lon),
-          { icon: this.blueMarkerIcon }
-        );
-        marker.bindTooltip(resource.data.title);
-        marker.bindPopup(this.getMarkerPopup(resource, spatial));
-        this.clusterMarkers.addLayer(marker);
+
+        let markerType: any = mapUtils.markerType.point;
+        if(spatial.spatialPrecision || spatial.coordinatePrecision ) {
+          markerType = mapUtils.markerType.approx;
+        }
+
+        // console.log( markerType );
+
+        if (spatial?.geopoint) {
+
+          let marker = L.marker(
+            new L.LatLng(spatial.geopoint.lat, spatial.geopoint.lon),
+            { icon: mapUtils.getMarkerIconType(markerType.marker) }
+          );
+
+          marker.bindTooltip(resource.data.title.text);
+          marker.bindPopup(this.getMarkerPopup(resource));
+
+          this.clusterMarkers!.addLayer(marker);
+
+        } else if( spatial?.polygon || spatial?.boundingbox  ) {
+
+          // Create a new Wicket instance
+          // DOCS: http://arthur-e.github.io/Wicket/doc/out/Wkt.Wkt.html
+          const wkt = new Wkt.Wkt();
+          // Read in any kind of WKT string
+          let shape = spatial?.polygon || spatial?.boundingbox;
+          wkt.read(shape);
+
+          const feature = wkt.toObject({ color: 'red' });
+
+          // Add polygon to map, if needed
+          //this.clusterMarkers.addLayer(feature);
+
+          // Get center of current polygon
+          let polygonCenter = feature.getBounds().getCenter();
+          //console.log( markerType.shape );
+          let polygonMarker = L.marker(
+            new L.LatLng(polygonCenter.lat, polygonCenter.lng),
+            { icon: mapUtils.getMarkerIconType(markerType.shape) }
+          );
+
+          polygonMarker.bindTooltip(resource.data.title.text);
+          polygonMarker.bindPopup(this.getMarkerPopup(resource));
+
+          this.clusterMarkers!.addLayer(polygonMarker);
+
+        } else {
+          // Not Geopoint or Polygon
+          return;
+
+        }
+
       });
     });
 
@@ -224,61 +272,70 @@ export default class FilterSearchFullMap extends Vue {
 
   }
 
+  // Render cluster markers when this limit is reached
+  get getIsAboveMaxNativeZoom(): boolean {
+    const maxNativeZoom: number = this.currentTileLayer.options.maxNativeZoom ?? 0;
+
+    return this.currentZoom > maxNativeZoom ? true : false;
+  }
+
   /**
    * Build marker popup
    */
-  getMarkerPopup(resource: any, spatial: any): string {
+  getMarkerPopup(resource: any): string {
 
-    let description = resource.data.description;
+    let title = "<p><strong>"+resource.data.title.text+"</strong></p>";
+    let description = resource.data.description?.text;
+    let resourceLocationsLatLon = "";
+    let resourceLocation = "";
+    // @ts-ignore
+    let resourcePage = '<p><a href="'+process.env.ARIADNE_PUBLIC_PATH+'resource/'+ resource.id +'">View resource</a></p>';
+    let publishers = "";
+
+    // Resource description
     if(description) {
       if (description?.length > 100) {
         description = description.slice(0, 100) + '...';
       }
-      description = description + '<br><br>';
     } else {
-      description = '';
+      description = "";
     }
+    description = "<p>"+description+"</p>"
 
-    let publishers = "<strong>Publisher:</strong> <br>";
+    // Resource publishers
     for (let currentPublisher of resource.data.publisher) {
-      publishers += "&nbsp;" + currentPublisher.name + "<br>";
+      publishers += currentPublisher.name + "<br>";
+    }
+    publishers = "<p><strong>Publisher:</strong><br/>"+publishers+"</p>";
+
+    // Resource location
+    for (let resourceLocations of resource.data.spatial) {
+      if(resourceLocations.geopoint) {
+        resourceLocationsLatLon += resourceLocations.geopoint.lat + ":" + resourceLocations.geopoint.lon + "<br>";
+      }
+    }
+    if(!resourceLocationsLatLon) {
+      resourceLocation = '<p><strong>Resource location:</strong><br>Resource location is a geo-shape, see details on resource page.</p>';
+    } else {
+      resourceLocation = "<p><strong>Resource location:</strong><br>" + resourceLocationsLatLon + "</p>";
     }
 
-    let popup =
-      "<b>" + resource.data.title + "</b><br><br>" +
-      description +
-      publishers + "<br><br>" +
-      " Lat: " + spatial.location.lat + " Lng: " + spatial.location.lon + "<br><br>" +
-      '<a href="/resource/'+ resource.id +'">View resource</a>';
+    return title + description + publishers + resourceLocation + resourcePage;
 
-    return popup;
-  }
-
-  /**
-   * Custom gradients for heatmap
-   */
-  getGradient(opacity: number) {
-    let gradient = {};
-    for (let i = 1; i <= 10; i++) {
-      let key = Math.round(((opacity * i) / 10) * 100) / 100,
-        val = Math.round((1.0 - i / 10) * 240);
-      gradient[key] = `hsl(${val}, 90%, 50%)`;
-    }
-    return gradient;
   }
 
   /**
    * Setup heatmap with geogrids from aggs
    */
   async setupHeatMap() {
-    this.lcl("--- SET HEAT MAP ---");
 
-    let currentHeatPoints = this.currentResultState.aggs?.geogrid?.buckets;
+    let currentHeatPoints = this.currentResultState.aggs?.geogrid?.grids.buckets;
     let max = Math.max.apply(
       null,
       currentHeatPoints.map((hp: any) => hp.doc_count || 0)
     );
-    let mapPoints = [];
+
+    let mapPoints: any[] = [];
     let points = [];
 
     currentHeatPoints.forEach((hp: any) => {
@@ -298,7 +355,7 @@ export default class FilterSearchFullMap extends Vue {
         "0.75": "Yellow",
         "1": "Red",
       },
-      //gradient: this.getGradient(1),
+      //gradient: mapUtils.getGradient(1),
       minOpacity: 0.3,
     }).addTo(this.map);
   }
@@ -308,7 +365,6 @@ export default class FilterSearchFullMap extends Vue {
    * Event for drawing shapes on map
    */
   setupDrawCreated() {
-    this.lcl("Draw layer");
 
     this.map.on("draw:created", (shape: any) => {
 
@@ -320,11 +376,6 @@ export default class FilterSearchFullMap extends Vue {
 
       // Set drawn layer
       this.drawLayer = shape.layer;
-
-      if (this.drawLayer === "rectangle") {
-        //this.lcl("Rectangle drawn");
-      }
-
       this.map.fitBounds(this.drawLayer.getBounds());
 
     });
@@ -336,29 +387,26 @@ export default class FilterSearchFullMap extends Vue {
    */
   setupOnMove() {
 
-    this.lcl("--- SETUP ON-MOVE ---");
-
     let geoGridPrecision = this.map.getZoom(); // default grid precision
 
-    //Set grid precision to approx zoom level + 2 .
-    //Max geo grid precision is 12. Dont't step over that
+    // Set grid precision to approx zoom level + 2 .
+    // Max geo grid precision is 12. Dont't step over that
     if (!this.map.getZoom()) {
       geoGridPrecision = 12; // 12 is max Elastic geoGridPrecision
     } else {
       geoGridPrecision = this.map.getZoom() + 2;
     }
 
-    this.map.once("moveend", (ev: any) => {
+    this.map.once("moveend", () => {
       // Fetch search result with current boundingbox and set to store.
       if (this.getCurrentBoundingBox()) {
         let currentBBox = this.getCurrentBoundingBox();
-        search.setSearch({
+        searchModule.setSearch({
           bbox: currentBBox,
           size: this.markerThreshold,
           ghp: geoGridPrecision,
-          zoomLevel: this.map.getZoom(),
-          mapCenter: this.map.getCenter().lat + "," + this.map.getCenter().lng,
           clear: false,
+          loadingStatus: LoadingStatus.Background,
         });
       }
     });
@@ -370,15 +418,15 @@ export default class FilterSearchFullMap extends Vue {
   async setupMapBody() {
     // setup map div/css layer. Height is a prop set in BrowseWhere.vue
     let mapRef: any = this.$refs.mapWrapper;
-    mapRef.innerHTML = `<div id="map" style="height:${this.height};"></div>`;
+    mapRef.innerHTML = `<div id="map" style="height: calc(100vh - 12rem)"></div>`;
 
     this.map = L.map("map", {
       zoomControl: false,
-      scrollWheelZoom: !this.noZoom,
+      scrollWheelZoom: true,
       wheelDebounceTime: 300,
-      debounceMoveend: true,
-      detectRetina: true,
-      tap: false // This needs to be here for Safari users. If not the the marker popups don't work! TODO: test for tabs and smartphones! 
+      worldCopyJump: true,
+      maxBounds: L.latLngBounds([-90,-180],[90,180]),
+      tap: false // This needs to be here for Safari users. If not the the marker popups don't work! TODO: test for tabs and smartphones!
     });
 
     // Setup and add draw controls
@@ -386,23 +434,21 @@ export default class FilterSearchFullMap extends Vue {
     L.drawLocal.draw.toolbar.buttons.polygon = "Draw a polygon and zoom in";
     L.drawLocal.draw.toolbar.buttons.rectangle = "Draw a rectangle and zoom in";
 
-    var drawnItems = new L.FeatureGroup();
+    const drawnItems = new L.FeatureGroup();
     this.map.addLayer(drawnItems);
-    var drawControl = new L.Control.Draw({
+    const drawControl = new L.Control.Draw({
       position: "bottomright",
-      edit: false,
+
       draw: {
-        // polygon: {
-        //   allowIntersection: false,
-        //   showArea: true,
-        //   metric: ["km"],
-        // },
+        polyline: {
+           allowIntersection: false,
+           metric: true,
+        },
         marker: false,
-        polyline: false,
         circle: false,
-        circlemarker: false,
-        polygon: false,
+        circlemarker: false
       },
+
     });
     this.map.addControl(drawControl);
 
@@ -411,47 +457,19 @@ export default class FilterSearchFullMap extends Vue {
       drawControl: true,
     });
 
-    var osmTiles = L.tileLayer(
-      "https://{s}.tile.osm.org/{z}/{x}/{y}.png",
-      { attribution: '&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors' }
-    ).addTo(this.map);
+    // Add initial (OSM) tile layer to map
+    this.currentTileLayer.addTo(this.map);
 
-    var googleSatTiles = L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{
-    maxZoom: 20,
-    subdomains:['mt0','mt1','mt2','mt3']
-    });
+    // Add add tile layers to layer picker
+    L.control.layers(this.tileLayer, undefined, {position: 'bottomright'}).addTo(this.map);
 
-    var openTopoTiles = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-	    maxZoom: 17,
-	    attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
-    });
+    // update current tile layer variable on change
+    this.map.on('baselayerchange', (newLayer: L.LayersControlEvent) => {
+      const newLayerName: string = newLayer.name;
+      const layers: any = this.tileLayer;
 
-    var googleTerrainTiles = L.tileLayer('http://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}',{
-      maxZoom: 20,
-      subdomains:['mt0','mt1','mt2','mt3']
+      this.currentTileLayer = layers[newLayerName];
     });
-    var googleStreetsTiles = L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{
-      maxZoom: 20,
-      subdomains:['mt0','mt1','mt2','mt3']
-    });
-    var googleHybridTiles = L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',{
-      maxZoom: 20,
-      subdomains:['mt0','mt1','mt2','mt3']
-    });
-
-    L.control.layers (
-      {
-        'OSM': osmTiles,
-        'Open topo.': openTopoTiles,
-        'Google sat.': googleSatTiles,
-        'Google terr.': googleTerrainTiles,
-        'Google street': googleStreetsTiles,
-        'Google hybr.': googleHybridTiles
-      },
-      null,
-      {position: 'bottomright'}
-    ).addTo(this.map);
-
   }
 
 
@@ -460,58 +478,72 @@ export default class FilterSearchFullMap extends Vue {
    */
   centerMap() {
 
-    this.lcl("--- CENTER MAP ---");
+    if( this.params?.bbox ) {
 
-    let currentGeogridBuckets = this.currentResultState.aggs?.geogrid?.buckets;
-
-    if (this.currentViewport.bounds) {
-      // Center to Result viewport.
+      const bounds = this.params?.bbox.split(',');
       this.map.fitBounds(
         [
-          [
-            this.currentViewport.bounds.bottom_right.lat,
-            this.currentViewport.bounds.bottom_right.lon,
-          ],
-          [
-            this.currentViewport.bounds.top_left.lat,
-            this.currentViewport.bounds.top_left.lon,
-          ],
-        ],
-        {
-          padding: L.point(2, 2),
-        }
+          [bounds[0],bounds[1]],
+          [bounds[2],bounds[3]]
+        ]
       );
-    } else {
+
+    } else if(this.currentResultState.aggs?.geogrid) {
       // Center to Result geogrids.
-      let currentGeogridBuckets = this.currentResultState.aggs?.geogrid
-        ?.buckets;
+      let currentGeogridBuckets = this.currentResultState.aggs?.geogrid?.grids?.buckets;
 
       if (Object.keys(currentGeogridBuckets).length) {
-        let points = [];
+        let points: any[] = [];
         currentGeogridBuckets.forEach((hp: any) => {
           let decoded = Geohash.decode(hp["key"]);
           points.push([decoded.lat, decoded.lon]);
         });
         this.map.fitBounds(L.latLngBounds(points), {
-          padding: L.point(2, 2),
+          padding: L.point(10, 10),
         });
-      } else {
-        // Wo don't have geogrids or viewport. Center to whole world.
-        this.map.fitWorld();
-        this.map.setZoom(2);
       }
+
+    } else {
+      this.map.fitWorld();
+      this.map.setZoom(2);
     }
   }
 
   /**
    * Get current boundingbox set by map move events
+   * Returning coordinates as: upperLeft.lat, upperLeft.lng, lowerRight.lat, lowerRight.lng
+   * NOTICE: L.latLngBounds does NOT return the coordinates as upperLeft, lowerRight!!
    */
   getCurrentBoundingBox() {
-    let bounds = new L.latLngBounds(
-      this.map.getBounds().getSouthWest().wrap(),
-      this.map.getBounds().getNorthEast().wrap()
-    );
-    return bounds.toBBoxString();
+
+    const northWest = this.map.getBounds().getNorthWest();
+    const southEast = this.map.getBounds().getSouthEast();
+
+    // This might seem strange but wrap() doesn't work as intended.
+    // Wrapping lat/lng still givs strange results.
+
+    if(northWest.lat > 90 ) {
+      northWest.lat = 90;
+    }
+    if(northWest.lng < -180 ) {
+      northWest.lng = -180;
+    }
+    if(southEast.lat < -90 ) {
+      southEast.lat = -90;
+    }
+    if(southEast.lng > 180 ) {
+      southEast.lng = 180;
+    }
+
+    let latLng = [
+      northWest.lat,
+      northWest.lng,
+      southEast.lat,
+      southEast.lng
+    ];
+
+    return latLng.toString();
+
   }
 
 
@@ -519,8 +551,6 @@ export default class FilterSearchFullMap extends Vue {
    * Clear heat and marker layers
    */
   resetMap() {
-
-    this.lcl("--- RESET MAP ---");
 
     // Reset draw layer
     if (this.drawLayer) {
@@ -537,7 +567,7 @@ export default class FilterSearchFullMap extends Vue {
     // Reset marker layer
     if (this.clusterMarkers) {
       this.map.removeLayer(this.clusterMarkers);
-      this.clusterMarkers = [];
+      this.clusterMarkers = null;
     }
 
   }
@@ -547,9 +577,7 @@ export default class FilterSearchFullMap extends Vue {
    */
   showResultViewport() {
 
-    this.lcl('--- SHOW VIEWPORT ---');
-
-    if (this.currentViewport.bounds) {
+    if (this.currentViewport?.bounds) {
       this.thisViewPort = L.rectangle(
         [
           [
@@ -568,16 +596,10 @@ export default class FilterSearchFullMap extends Vue {
       );
       this.map.addLayer(this.thisViewPort);
     }
-  }
 
-  /**
-   * Local console logger
-   */
-  lcl(logMsg) {
-    if(this.debugToConsole) {
-      console.log( logMsg );
-    }
   }
 
 }
+
+
 </script>

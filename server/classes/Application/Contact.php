@@ -2,20 +2,23 @@
 
 namespace Application;
 
-use Elastic\AppSettings;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
-use Application\AppLogger;
 
 class Contact {
+  private $settings;
+  private $logger;
+
+  public function __construct ($settings, $logger) {
+    $this->settings = $settings;
+    $this->logger = $logger;
+  }
 
   /**
    * Process, validate and send mail
    */
-  public static function sendMail () {
-
-    $settings = (new AppSettings())->getSettings();
+  public function sendMail () {
     $ok = false;
     $error = '';
 
@@ -24,9 +27,9 @@ class Contact {
     $captcha = strip_tags(trim($_POST['captcha'] ?? ''));
 
     $subject = strip_tags(trim($_POST['subject'] ?? ''));
-    $subject = str_replace(["\n", "\r", ':'], '', $subject);
+    $subject = 'Ariadne Portal - ' . str_replace(["\n", "\r", ':'], '', $subject);
     if (!$subject) {
-      $subject = 'Mail from the Ariadne portal';
+      $subject = 'Mail from Ariadne Portal';
     }
 
     $fromEmail = filter_var(trim($_POST['email'] ?? ''), FILTER_SANITIZE_EMAIL);
@@ -41,15 +44,13 @@ class Contact {
     } else if (!$message) {
       $error = 'Please enter a message';
 
-    } else if (!$captcha || !self::validCaptcha($settings, $captcha)) {
+    } else if (!$captcha || !$this->validCaptcha($captcha)) {
       $error = 'Invalid captcha. Reload and try again';
 
     } else {
-
-      $mailResult = self::doSendMail($fromName, $fromEmail, $subject, $message, $settings );
+      $mailResult = $this->doSendMail($fromName, $fromEmail, $subject, $message);
       $ok = $mailResult['ok'];
       $error = $mailResult['error'];
-
     }
 
     return [
@@ -62,13 +63,13 @@ class Contact {
   /**
    * Validate Captcha
    */
-  public static function validCaptcha ($settings, $captcha) {
+  private function validCaptcha ($captcha) {
     $ch = curl_init('https://www.google.com/recaptcha/api/siteverify');
 
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, [
-      'secret' => $settings->environment->contact->captchaSecret,
+      'secret' => $this->settings->environment->contact->captchaSecret,
       'response' => $captcha,
     ]);
 
@@ -83,75 +84,67 @@ class Contact {
   /**
    * Send mail through relay
    */
-  private static function doSendMail($fromName, $fromEmail, $subject, $message, $settings) {
-
-
-    $appLogger = new AppLogger();
-
+  private function doSendMail ($fromName, $fromEmail, $subject, $message) {
     $SMTP_HOST      = getenv('SMTP_HOST');
     $SMTP_PORT      = getenv('SMTP_PORT');
     $SMTP_CHANNEL   = getenv('SMTP_CHANNEL');
     $SMTP_USER      = getenv('SMTP_USER');
     $SMTP_PASS      = getenv('SMTP_PASS');
 
-    if(!$SMTP_HOST || !$SMTP_PORT || !$SMTP_CHANNEL || !$SMTP_USER || !$SMTP_PASS ) {
+    if (!$SMTP_HOST || !$SMTP_PORT || !$SMTP_CHANNEL || !$SMTP_USER || !$SMTP_PASS ) {
 
-      if($settings->environment->debugMode) {
-        $appLogger->info( 'ERROR: Missing mandatory environment settings in mail system!' );
+      if (!empty($this->settings->environment->debugMode)) {
+        $this->logger->info('ERROR: Missing mandatory environment settings in mail system!');
       }
-      
+
       return [
         'ok' => false,
         'error' => 'ERROR: Missing mandatory settings in mail system!',
       ];
-      
     }
 
     // Instantiation and passing `true` enables exceptions
     $mail = new PHPMailer(true);
-    
+
     try {
-        //Server settings
-        // $mail->SMTPDebug = SMTP::DEBUG_SERVER;                // Enable verbose debug output
-        $mail->isSMTP();                                      // Send using SMTP
-        $mail->Host       = $SMTP_HOST;                       // Set the SMTP server to send through
-        $mail->SMTPAuth   = true;                             // Enable SMTP authentication
-        $mail->Username   = $SMTP_USER;                       // SMTP username
-        $mail->Password   = $SMTP_PASS;                       // SMTP password
-        //$mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;   // Enable TLS encryption; `PHPMailer::ENCRYPTION_SMTPS` encouraged
-        $mail->Port       = $SMTP_PORT;                       // TCP port to connect to, use 465 for `PHPMailer::ENCRYPTION_SMTPS` above
-        $mail->CharSet = 'UTF-8';
+      //Server settings
+      // $mail->SMTPDebug = SMTP::DEBUG_SERVER;                // Enable verbose debug output
+      $mail->isSMTP();                                      // Send using SMTP
+      $mail->Host       = $SMTP_HOST;                       // Set the SMTP server to send through
+      $mail->SMTPAuth   = true;                             // Enable SMTP authentication
+      $mail->Username   = $SMTP_USER;                       // SMTP username
+      $mail->Password   = $SMTP_PASS;                       // SMTP password
+      //$mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;   // Enable TLS encryption; `PHPMailer::ENCRYPTION_SMTPS` encouraged
+      $mail->Port       = $SMTP_PORT;                       // TCP port to connect to, use 465 for `PHPMailer::ENCRYPTION_SMTPS` above
+      $mail->CharSet = 'UTF-8';
 
-        //Recipients
-        $mail->setFrom($fromEmail, 'Ariadne Portal');
-        $mail->addReplyTo($fromEmail, $fromName);
-        $mail->addAddress($settings->environment->contact->email, $fromName);               
-        $mail->addCC($fromEmail);
+      //Recipients
+      $mail->setFrom($fromEmail, 'Ariadne Portal');
+      $mail->addReplyTo($fromEmail, $fromName);
+      $mail->addAddress($settings->environment->contact->email, $fromName);
+      $mail->addCC($fromEmail);
 
-        // Content
-        $mail->isHTML(true);  
-        $mail->Subject = $subject;
-        $mail->Body    = $message;
-        //$mail->AltBody = 'This is the body in plain text for non-HTML mail clients';
+      // Content
+      $mail->isHTML(true);
+      $mail->Subject = $subject;
+      $mail->Body    = $message;
+      //$mail->AltBody = 'This is the body in plain text for non-HTML mail clients';
 
-        $mail->send();
+      $mail->send();
 
-        return [
-          'ok' => true,
-          'error' => '',
-        ];
+      return [
+        'ok' => true,
+        'error' => '',
+      ];
 
     } catch (Exception $e) {
-
-        if($settings->environment->debugMode) {
-          $appLogger->info( $e );
-        }
-        return [
-          'ok' => false,
-          'error' => $mail->ErrorInfo,
-        ];
+      if (!empty($this->settings->environment->debugMode)) {
+        $this->logger->info($e);
+      }
+      return [
+        'ok' => false,
+        'error' => $mail->ErrorInfo,
+      ];
     }
-
   }
-  
 }

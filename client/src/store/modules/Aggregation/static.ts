@@ -1,15 +1,48 @@
 export const titles = {
-  archaeologicalResourceType: 'Resource type',
+  ariadneSubject: 'Resource type',
   spatial: 'Place',
   nativeSubject: 'Original subject',
   derivedSubject: 'Getty AAT Subjects',
   temporal: 'Dating',
   aatSubjects: 'Getty AAT Subjects',
+  accessPolicy: 'Access Policy',
+  accessRights: 'Access Rights',
+  accrualPeriodicity: 'Accrual Periodicity',
+  audience: 'Audince',
+  contactPoint: 'Contact Point',
+  contributor: 'Contributor',
+  creator: 'Creator',
+  description: 'Description',
+  distribution: 'Distribution',
+  extent: 'Extent',
+  hasItemMetadataStructure: 'Metadata Structure',
+  hasMetadataRecord: 'Metadata Record',
+  identifier: 'Identifier',
+  isPartOf: 'Part Of',
+  issued: 'Issued',
+  keyword: 'Keyword',
+  landingPage: 'Landing Page',
+  language: 'Language',
+  legalResponsible: 'Legal Responsible',
+  modified: 'Last updated',
+  originalId: 'Original ID',
+  owner: 'Owner',
+  packageId: 'Package ID',
+  placeName: 'Place Name',
+  postcode: 'Postcode',
+  providerId: 'Provider ID',
+  publisher: 'Publisher',
+  rdfAbout: 'RDF About',
+  resourceType: 'Resurce Type',
+  rights: 'Rights',
+  scientificResponsible: 'Scientific Responsible',
+  technicalResponsible: 'Technical Responsible',
+  title: 'Title',
 };
 
 // temporary separate titles for results
 export const resultTitles = {
-  archaeologicalResourceType: 'Resource type',
+  ariadneSubject: 'Resource type',
   spatial: 'Place',
   nativeSubject: 'Original subject',
   derivedSubject: 'Getty AAT Subjects',
@@ -19,8 +52,8 @@ export const resultTitles = {
 
 export const types = [
   {
-    id: 'archaeologicalResourceType',
-    prop: 'name',
+    id: 'ariadneSubject',
+    prop: 'prefLabel',
     always: true
   },
   {

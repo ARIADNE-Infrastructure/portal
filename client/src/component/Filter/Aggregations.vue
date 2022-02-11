@@ -37,7 +37,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { aggregation } from "@/store/modules";
+import { aggregationModule } from "@/store/modules";
 import FilterAggregation from './Aggregations/Aggregation.vue';
 
 @Component({
@@ -51,11 +51,11 @@ export default class FilterAggregations extends Vue {
   aggregationScrollPosition: number = 0;
 
   get hasAggs(): boolean {
-    return aggregation.hasAggs;
+    return aggregationModule.hasAggs;
   }
 
   get sortedAggs(): any {
-    return aggregation.getSorted;
+    return aggregationModule.getSorted;
   }
 
   get styles(): any {

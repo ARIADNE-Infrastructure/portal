@@ -3,7 +3,7 @@
   <div>
     <h2 class="text-2xl">
       Results
-      <span v-if="params.q">for "{{ params.q }}"</span>
+      <span v-if="displayResult">for "{{ displayResult }}"</span>
     </h2>
     <div v-if="result && result.total" class="text-md">
       Time: {{ result.time }}s.
@@ -17,16 +17,20 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { search } from "@/store/modules";
+import { searchModule } from "@/store/modules";
 
 @Component
 export default class ResultInfo extends Vue {
+
   get params(): any {
-    return search.getParams;
+    return searchModule.getParams;
   }
 
+  get displayResult() {
+    return searchModule.displayResultString;
+  }
   get result(): any {
-    return search.getResult;
+    return searchModule.getResult;
   }
 
   get resultRange() {

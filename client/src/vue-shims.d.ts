@@ -6,3 +6,9 @@ declare module "*.vue" {
 }
 
 declare module 'debounce';
+declare module 'vue-clickaway';
+declare module 'vue-slick-carousel';
+declare module 'v-img';
+declare module 'wicket';
+declare module 'wordcloud';
+declare module 'chart.js';

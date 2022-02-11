@@ -26,7 +26,25 @@
     </section>
 
     <section
-      v-if="resource.partof"
+      v-if="resource.isAboutResource && resource.isAboutResource.length"
+      :class="sectionClass"
+    >
+      <h3 class="text-lg font-bold mb-lg">
+        <i class="fas fa-copy mr-xs" />
+        Resource is about
+      </h3>
+
+      <resource-filtered-items :items="resource.isAboutResource">
+        <span slot-scope="{ item }">
+          <b-link :href="item.id" target="_blank" >
+            {{ item.title.text }}
+          </b-link>
+        </span>
+      </resource-filtered-items>
+    </section>
+
+    <section
+      v-if="resource.partOf && resource.partOf.length"
       :class="sectionClass"
     >
       <h3 class="text-lg font-bold mb-lg">
@@ -35,7 +53,7 @@
       </h3>
 
       <resource-filtered-items
-        :items="resource.partof"
+        :items="resource.partOf"
         slotType="resource"
       />
     </section>
@@ -61,14 +79,19 @@
       </p>
 
       <div v-if="resource.similar && resource.similar.length">
-        <div v-for="(similar, key) in resource.similar" :key="key"
-          class="mb-sm">
+        <div
+          v-for="(similar, key) in resource.similar" :key="key"
+          class="mb-sm"
+        >
           <b-link
-            :to="'/resource/' + encodeURIComponent(similar.id)">
+            :to="'/resource/' + encodeURIComponent(similar.id)"
+          >
             <help-tooltip
-            :title="similar.type.name"
-            class="mr-xs"
-            top="10px">
+              :title="getResourceTypeName(similar)"
+              class="mr-xs"
+              top="0"
+              left="2rem"
+            >
               <!-- style in img is for safari bug -->
               <img
                 :src="getResourceIconTemporary(similar)"
@@ -78,7 +101,7 @@
                 width="20"
                 height="20">
             </help-tooltip>
-            <span>{{ similar.title || 'No title' }}</span>
+            <span>{{ similar.title.text || 'No title' }}</span>
           </b-link>
         </div>
       </div>
@@ -118,7 +141,7 @@
         :items="resource.spatial"
         slotType="prop"
         filter="placeName"
-        fields="location"
+        query="placeName"
         icon="fas fa-map-marker-alt mr-sm mb-xs"
       />
     </section>
@@ -127,7 +150,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { resource } from "@/store/modules";
+import { resourceModule } from "@/store/modules";
 
 import utils from '@/utils/utils';
 import BLink from '@/component/Base/Link.vue';
@@ -143,29 +166,40 @@ import ResourceFilteredItems from './FilteredItems.vue';
 })
 export default class ResourceSidebar extends Vue {
   @Prop() initResource!: Function;
+
   utils = utils;
 
+  destroyed() {
+    // reset thematical selection
+    resourceModule.setResourceParamsThematical('');
+  }
+
   get resource(): any {
-    return resource.getResource;
+    return resourceModule.getResource;
   }
 
-  get thematicals (): any {
-    return resource.getThematicals;
+  get thematicals(): any {
+    return resourceModule.getThematicals;
   }
-  get resourceParams (): string {
-    return resource.getResourceParams;
+  get resourceParams(): string {
+    return resourceModule.getResourceParams;
   }
 
-  get sectionClass () {
+  get sectionClass() {
     return 'py-base pb-sm rounded-base mb-md';
   }
 
+  getResourceTypeName(item: any): string {
+    return item.type?.[0]?.prefLabel ?? '';
+  }
+
   getResourceIcon(item: any): string {
-    return resource.getIconByTypeId(item.type.id);
+    return resourceModule.getIconByTypeId(item.type.id);
   }
 
   getResourceIconTemporary(item: any): string {
-    return resource.getIconByTypeNameTemporary(item.type.name);
+    return resourceModule.getIconByTypeNameTemporary(item.type?.[0]?.prefLabel);
   }
+
 }
 </script>

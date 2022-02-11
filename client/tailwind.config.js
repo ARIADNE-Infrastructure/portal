@@ -6,14 +6,16 @@
  * no es6 syntax here - crashes internet explorer (doesn't get transformed)
  * */
 function getColorsWithOpacity (colors) {
-  for (var key in colors) {
-    var hex = colors[key];
+  for (const key in colors) {
+    let hex = colors[key];
 
-    for (var i = 0; i <= 10; i++) {
+    for (let i = 0; i <= 10; i++) {
       hex = hex.replace(/^#?([a-f\d])([a-f\d])([a-f\d])$/i, function (m, r, g, b) {
         return r + r + g + g + b + b;
       });
-      var rgb = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+
+      const rgb = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+
       colors[key + '-' + (i * 10)] = 'rgba(' +
         parseInt(rgb[1], 16) + ',' +
         parseInt(rgb[2], 16) + ',' +
@@ -51,6 +53,7 @@ module.exports = {
     margin: ['responsive', 'last'],
     borderWidth: ['responsive', 'last', 'hover', 'focus'],
     textColor: ['responsive', 'hover', 'focus', 'group-hover'],
+    borderColor: ['group-hover'],
     backgroundColor: ['responsive', 'hover', 'focus', 'group-hover', 'disabled'],
     opacity: ['responsive', 'hover', 'focus', 'group-hover'],
     zIndex: ['responsive', 'hover', 'focus', 'group-hover'],
@@ -130,7 +133,7 @@ module.exports = {
       '9x':   '9rem',
       '10x':  '10rem',
       '11x':  '11rem',
-      'toolbar': '350px',
+      'toolbar': '370px',
     },
 
     borderWidth: {
@@ -147,6 +150,7 @@ module.exports = {
       '0':    '0',
       'base': '4px',
       'lg':   '10px',
+      '1/2':  '50%',
       'full': '9999px',
     },
 
@@ -229,6 +233,6 @@ module.exports = {
     lineHeight: {
       '0': '0',
       '1': '1',
-    }
+    },
   }
 }

@@ -1,22 +1,24 @@
 <!-- Paginator for search results -->
 <template>
-  <div class="flex" v-if="active">
-    <span
-      v-for="(page, key) in getPaging()"
-      v-bind:key="key"
-      class="leading-1 mx-none my-none py-md px-base text-sm border-base transition-all duration-300"
-      :class="pageClasses(page)"
-      :title="'page ' + (page.val < 2 ? 1 : page.val)"
-      @click.prevent="changePage(page.val, page.hover)"
-      v-html="page.label"
-    >
-    </span>
+  <div class="flex">
+    <template v-if="active">
+      <span
+        v-for="(page, key) in getPaging()"
+        v-bind:key="key"
+        class="leading-1 mx-none my-none py-md px-base text-sm border-base transition-all duration-300"
+        :class="pageClasses(page)"
+        :title="'page ' + (page.val < 2 ? 1 : page.val)"
+        @click.prevent="changePage(page.val, page.hover)"
+        v-html="page.label"
+      >
+      </span>
+    </template>
   </div>
 </template>
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
-import { search } from "@/store/modules";
+import { searchModule } from "@/store/modules";
 import VueScrollTo from 'vue-scrollto';
 
 @Component
@@ -24,11 +26,11 @@ export default class ResultPaginator extends Vue {
   @Prop() scrollTop?: boolean;
 
   get params(): any {
-    return search.getParams;
+    return searchModule.getParams;
   }
 
   get result(): any {
-    return search.getResult;
+    return searchModule.getResult;
   }
 
   get currentPage () {
@@ -55,7 +57,7 @@ export default class ResultPaginator extends Vue {
   // changes page, only if can
   changePage (page: any, can: boolean) {
     if (can) {
-      search.setSearch({ page: page < 2 ? 0 : page });
+      searchModule.setSearch({ page: page < 2 ? 0 : page });
 
       if (this.scrollTop) {
         VueScrollTo.scrollTo('body');
@@ -65,7 +67,7 @@ export default class ResultPaginator extends Vue {
 
   // Returns paginator buttons
   getPaging (): Array<any> {
-    
+
     let total = parseInt(this.result.total.value),
         pages: Array<any> = [],
         start = this.currentPage - 2,
@@ -84,7 +86,7 @@ export default class ResultPaginator extends Vue {
 
     let activePage = this.currentPage < 2 ? 1 : this.currentPage;
 
-    // Pages buttons  
+    // Pages buttons
     for (let i = start; i < start + amount; i++) {
       pages.push({
         active: i === activePage,
@@ -110,7 +112,7 @@ export default class ResultPaginator extends Vue {
     if(this.currentPage < max ) {
       pages.push({ label: '<i class="fas fa-angle-double-right"></i>', val: this.currentPage+1 , hover: this.currentPage < max, cl: 'rounded-r-base' });
     }
-    
+
     return pages;
   }
 }

@@ -4,84 +4,92 @@
 
 require '../../vendor/autoload.php';
 
-header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-
 spl_autoload_register(function ($class_name) {
   $class_name = '../../classes/' . str_replace("\\", DIRECTORY_SEPARATOR, $class_name);
   include $class_name . '.php';
 });
 
-use Elastic\Query;
-use Elastic\Utils;
+use Application\App;
 use Application\Contact;
+use Elastic\DummyResource;
 
-$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$uri = substr($uri, strrpos($uri, 'api/') + 4); // get all after api/
-$uri = explode('/', $uri); // explode and get rest calls to array
+$app = new App('api/');
 
-/* Dispatch request */
-switch ($uri[0] ?? '') {
+$app->route('getAllRecords', function ($q, $parts) {
+  $this->json($q->getAllRecords());
+});
 
-  case 'getAllRecords':
-    echo json_encode(Query::instance()->getAllRecords());
-    break;
+$app->route('getNearbySpatialResources', function ($q, $parts) {
+  $this->json($q->getNearbySpatialResources($parts[0] ?? ''), true);
+});
 
-  case 'getRecord':
-    if (isset($uri[1])) {
-      $res = Query::instance()->getRecord($uri[1], 'index');
-      if (isset($uri[2]) && $uri[2] === 'xml') {
-        header('Content-Type: application/xml');
-        echo Utils::getRecordAsXML($res);
+$app->route('getRecord', function ($q, $parts) {
+  $slug = $parts[0] ?? '';
 
-      } else {
-        echo json_encode($res, JSON_PRETTY_PRINT);
-      }
-    } else {
-      showInfo();
-    }
-    break;
+  if ($slug === 'dummyRecord') {
+    $res = $q->getNormalizer()->splitLanguages(DummyResource::getDummy());
+  } else {
+    $res = $q->getRecord($slug);
+  }
 
-  case 'getSubject':
-    if (isset($uri[1])) {
-      echo json_encode(Query::instance()->getSubject($uri[1]));
-    }
-    break;
+  if ($parts[1] ?? '' === 'xml') {
+    $this->xml($res);
+  } else {
+    $this->json($res, true);
+  }
+});
 
-  case 'search':
-    echo json_encode(Query::instance()->search());
-    break;
+$app->route('getSubject', function ($q, $parts) {
+  $this->json($q->getSubject($parts[0] ?? ''));
+});
 
-  case 'autocomplete':
-    echo json_encode(Query::instance()->autocomplete());
-    break;
+$app->route('search', function ($q, $parts) {
+  $this->json($q->search());
+});
 
-  case 'cloud':
-    echo json_encode(Query::instance()->getWordCloudData());
-    break;
+$app->route('autocomplete', function ($q, $parts) {
+  $this->json($q->autocomplete());
+});
 
-  case 'mail':
-    header('Access-Control-Allow-Methods: GET, POST');
-    header('Access-Control-Allow-Headers: Content-Type');
-    echo json_encode(Contact::sendMail());
-    break;
+$app->route('autocompleteFilter', function ($q, $parts) {
+  $this->json($q->autocompleteFilter());
+});
 
-  default:
-    showInfo();
-}
+$app->route('timeline', function ($q, $parts) {
+  $this->json($q->getTimelineData());
+});
 
-/**
- * Show info about endpoint
- */
-function showInfo() {
-  header('Content-Type: text/html; charset=utf-8');
-  echo 'Valid REST endpoints<br><br>'.
-    '&bull; getRecord/[id]<br>'.
-    '&bull; getRecord/[id]/xml<br>'.
-    '&bull; getAllRecords<br>' .
-    '&bull; getSubject/[id]<br>' .
-    '&bull; cloud<br>' .
-    '&bull; mail<br>' .
-    '&bull; search?q=[searchString]<br>' .
-    '&bull; autocomplete?q=[searchString]';
-}
+$app->route('mail', function ($q, $parts) {
+  header('Access-Control-Allow-Methods: GET, POST');
+  header('Access-Control-Allow-Headers: Content-Type');
+  $contact = new Contact($this->getSettings(), $this->getLogger());
+  $this->json($contact->sendMail());
+});
+
+// 404
+$app->route('*', function () {
+  $settings = $this->getSettings();
+  $esHost = $settings->elasticsearchEnv->{$settings->environment->elasticsearchEnv}->host;
+  $esIndex = $settings->elasticsearchEnv->{$settings->environment->elasticsearchEnv}->index;
+  $esAATIndex = $settings->elasticsearchEnv->{$settings->environment->elasticsearchEnv}->subject_index;
+
+  $this->json([
+    'Api_Title' => 'ARIADNE PORTAL',
+    'ES_Index' => $esHost . '/' . $esIndex,
+    'ES_AAT_Index' => $esHost . '/' . $esAATIndex,
+    'Valid_REST_endpoints' => [
+      'api/getRecord/{id}',
+      'api/getRecord/{id}/xml',
+      'api/getAllRecords',
+      'api/getSubject/{id}',
+      'api/getNearbySpatialResources/{id}',
+      'api/search?q={searchString}',
+      'api/autocomplete?q={searchString}',
+      'api/autocompleteFilter?q={searchString}&filter={filterName}',
+      'api/timeline',
+      'api/mail',
+    ],
+  ], true);
+});
+
+$app->run();

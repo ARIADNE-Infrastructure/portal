@@ -90,7 +90,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import { search, general, subject } from "@/store/modules";
+import { searchModule, generalModule, subjectModule } from "@/store/modules";
 import ResourceFilteredItems from '@/component/Resource/FilteredItems.vue';
 import BLink from '@/component/Base/Link.vue';
 import utils from '@/utils/utils';
@@ -116,13 +116,12 @@ export default class Subject extends Vue {
       return;
     }
 
-    await subject.setSubject(id);
+    await subjectModule.setSubject(id);
 
     this.$nextTick(() => {
-      console.log(this.subject)
 
       if (this.subject) {
-        general.setMeta({
+        generalModule.setMeta({
           title: this.subject.prefLabel || '',
           description: (this.subject.scopeNote || '').slice(0, 155)
         });
@@ -134,8 +133,8 @@ export default class Subject extends Vue {
 
   get mappedTerms () {
     if (this.subject?.prefLabels?.length) {
-      let map = {};
-      this.subject.prefLabels.forEach(pref => {
+      let map: any = {};
+      this.subject.prefLabels.forEach((pref: any) => {
         if (!map[pref.lang]) {
           map[pref.lang] = [];
         }
@@ -147,15 +146,15 @@ export default class Subject extends Vue {
   }
 
   get isLoading(): boolean {
-    return general.getLoading;
+    return generalModule.getIsLoading;
   }
 
   get subject(): any {
-    return subject.getSubject;
+    return subjectModule.getSubject;
   }
 
   get params(): any {
-    return search.getParams;
+    return searchModule.getParams;
   }
 
   get itemClass(): string {

@@ -3,6 +3,7 @@
 /* purgecss end ignore */
 @tailwind utilities;
 
+/* general */
 html {
   @apply text-base;
 }
@@ -27,10 +28,86 @@ input::placeholder, textarea::placeholder {
   word-break: break-word;
 }
 
-/* leaflet override */
+/* leaflet overrides */
 .map--default .leaflet-control-container {
   @apply relative;
   @apply max-w-screen-xl;
   @apply mx-auto;
   @apply h-full;
+}
+
+.leaflet-touch .leaflet-control-container .leaflet-control-layers-toggle {
+  width: 30px;
+  height: 30px;
+}
+
+.leaflet-wrapper--hide-similar .leaflet-marker--similar {
+  display: none;
+}
+
+.leaflet-control-layers-selector[disabled] + span {
+  @apply text-gray;
+}
+
+/* slick carousel overrides */
+
+/* padding between each item */
+.slick-slider .slick-slide > div > div {
+  @apply px-xs;
+}
+
+/* dot align */
+.slick-slider .slick-dots {
+  bottom: -2.5rem !important;
+}
+
+/* dot padding */
+.slick-slider .slick-dots li {
+  margin: 0 2px;
+}
+
+/* dot size */
+.slick-slider .slick-dots li button::before {
+  font-size: 13px;
+}
+
+/* dot hover/focus */
+.slick-slider .slick-dots li button:hover::before,
+.slick-slider .slick-dots li button:focus::before {
+  @apply text-blue-40;
+}
+
+/* arrow hover/focus */
+.slick-slider .slick-prev:hover::before,
+.slick-slider .slick-prev:focus::before,
+.slick-slider .slick-next:hover::before,
+.slick-slider .slick-next:focus::before {
+  @apply text-blue-70;
+}
+
+/* active dot & default arrow styles */
+.slick-slider .slick-dots li.slick-active button::before,
+.slick-slider .slick-prev::before,
+.slick-slider .slick-next::before
+{
+  @apply transition-all;
+  @apply duration-300;
+  @apply opacity-100;
+  @apply text-blue;
+}
+
+/* v-img lightbox override */
+.count-v-img {
+  @apply hidden;
+}
+
+/* services links inside info */
+.services-a-style a {
+  @apply text-blue;
+  @apply transition-colors;
+  @apply duration-300;
+}
+
+.services-a-style a:hover {
+  @apply underline;
 }

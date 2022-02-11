@@ -1,6 +1,6 @@
 import Vue from 'vue';
 import Router from 'vue-router';
-import { general } from "@/store/modules";
+import { generalModule } from "@/store/modules";
 
 // components
 import About from './component/About.vue';
@@ -16,6 +16,7 @@ import Services from './component/Services.vue';
 import Theme from './component/Theme.vue';
 import Contact from './component/Contact.vue';
 import Infographic from './component/Infographic.vue';
+import Guide from './component/Guide.vue';
 
 /**
  * Router - component url paths
@@ -70,6 +71,14 @@ const router = new Router({
       meta: {
         title: 'About',
         description: 'About page'
+      }
+    },
+    {
+      path: '/guide',
+      component: Guide,
+      meta: {
+        title: 'Guide',
+        description: 'Guide over the ARIADNE portal'
       }
     },
     {
@@ -140,7 +149,7 @@ const router = new Router({
 
 router.beforeEach((to: any, from: any, next: any) => {
   if (to?.meta?.title) {
-    general.setMeta({
+    generalModule.setMeta({
       title: to.meta.title,
       description: to.meta.description,
     });

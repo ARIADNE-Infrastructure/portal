@@ -18,6 +18,12 @@
       />
 
       <i
+        v-if="!search && getOptionIconFromValue(localValue)"
+        class="-ml-3x text-md"
+        :class="getOptionIconFromValue(localValue)"
+      />
+
+      <i
         class="fa-chevron-down fas mr-xs duration-300 px-sm text-sm"
         :class="{ 'transform rotate-180': open }"
       />
@@ -32,18 +38,34 @@
         <ul
           v-if="filteredOptions.length"
         >
-          <li
-            v-for="(option, i) of filteredOptions"
-            :key="i"
-            class="cursor-pointer hover:bg-lightGray p-sm relative w-full block truncate text-md"
-            @click="select(option)"
+          <template
+            v-for="(group, groupId) of groupedFilteredOptions"
           >
-            <span
-              :class="{ 'font-bold': option.text === selectedText }"
+            <li
+              v-for="(option, optionIndex) of group"
+              :key="`${ groupId }-${ optionIndex }`"
+              class="p-sm relative w-full block truncate text-md"
+              :class="{
+                [altGroupFirstItemClass]: groupId !== 'default' && !optionIndex,
+                'cursor-pointer hover:bg-lightGray': !option.disabled,
+                'cursor-not-allowed text-gray': option.disabled
+              }"
+              @click="select(option)"
             >
-              {{ option.text }}
-            </span>
-          </li>
+              <span
+                class="flex items-center"
+                :class="{ 'font-bold': option.val === localValue }"
+              >
+                {{ option.text }}
+
+                <i
+                  v-if="getOptionIconFromValue(option.val)"
+                  class="pl-sm mb-1"
+                  :class="getOptionIconFromValue(option.val)"
+                />
+              </span>
+            </li>
+          </template>
         </ul>
 
         <div
@@ -61,6 +83,7 @@
 <script lang="ts">
 import { directive as onClickaway } from 'vue-clickaway';
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import utils from '@/utils/utils';
 
 @Component({
   directives: {
@@ -71,7 +94,7 @@ export default class BSelect extends Vue {
   @Prop() color!: string;
   @Prop() options!: any[];
   @Prop() value!: string;
-  @Prop() flatRight?: boolean;
+  @Prop() selectClass?: string;
 
   localValue: string = '';
   open: boolean = false;
@@ -98,11 +121,22 @@ export default class BSelect extends Vue {
     }
   }
 
-  get selectedClass() {
+  getOptionIconFromValue(value: string): string {
+    if (value.includes('-desc')) {
+      return 'fa-arrow-down fas';
+    }
+    else if (value.includes('-asc')) {
+      return 'fa-arrow-up fas';
+    }
+
+    return '';
+  }
+
+  get selectedClass(): string {
     let classes = '';
 
-    if (this.flatRight) {
-      classes += 'rounded-r-0 ';
+    if (this.selectClass) {
+      classes = `${ this.selectClass } `;
     }
 
     if (this.open) {
@@ -115,8 +149,12 @@ export default class BSelect extends Vue {
     return classes;
   }
 
-  get dropdownClass() {
+  get dropdownClass(): string {
     return `rounded-base rounded-t-0 border-${this.color}`;
+  }
+
+  get altGroupFirstItemClass(): string {
+    return `border-t-base border-${this.color}`;
   }
 
   get selected(): any {
@@ -131,15 +169,22 @@ export default class BSelect extends Vue {
     const search = this.search.toLowerCase();
 
     if (search) {
-      return this.options
-        .filter((item: any) => item.text.toLowerCase().includes(search));
+      return this.options.filter((item: any) => item.text.toLowerCase().includes(search));
     }
     else {
       return this.options;
     }
   }
 
+  get groupedFilteredOptions(): any[] {
+    return utils.groupListByKey(this.filteredOptions, 'group');
+  }
+
   select(option: any): void {
+    if (option?.disabled) {
+      return;
+    }
+
     // update local value
     this.localValue = option.val;
 
@@ -148,6 +193,9 @@ export default class BSelect extends Vue {
 
     // update for prop
     this.$emit('input', option.val);
+
+    // close
+    this.open = false;
   }
 
   // set local value to match prop

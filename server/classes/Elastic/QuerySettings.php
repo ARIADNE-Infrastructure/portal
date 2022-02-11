@@ -4,6 +4,8 @@ namespace Elastic;
 
 class QuerySettings {
 
+  private const AGGS_BUCKET_SIZE = 20;
+
   public static function getSearchSort() {
     return [
       'issued',
@@ -12,44 +14,74 @@ class QuerySettings {
     ];
   }
 
+  /**
+   * Search only in these fields for user inserted query string when selecting "Search all".
+   */
+  public static function getValidSearchableFields($searchString = '') {
+
+    return [
+      [ 'match' => [ 'title.text' => $searchString ] ],
+      [ 'match' => [ 'description.text' => $searchString ] ],
+      [
+        [
+          'nested' => [
+            'path' => 'spatial',
+            'query' => [ 'match' => [ 'spatial.placeName' => $searchString ] ]
+          ]
+        ]           
+      ],
+      [
+        [
+          'nested' => [
+            'path' => 'temporal',
+            'query' => [ 'match' => [ 'temporal.periodName' => $searchString ] ]
+          ]
+        ]           
+      ],
+      [ 'match' => [ 'nativeSubject.prefLabel' => $searchString ] ],
+      [ 'match' => [ 'derivedSubject.prefLabel' => $searchString ] ]                      
+    ];
+
+  }  
+
+  /**
+   * Mapp URI 'fields' and ES mapping names
+   */
   public static function getSearchFieldGroups() {
     return [
-      'time' => ['temporal.periodName'],
-      'location' => ['spatial.placeName'],
-      //'identifier' => ['identifier', 'originalId'],
-      'title' => ['title'],
+      'time'          => ['temporal.periodName'],
+      'location'      => ['spatial.placeName'],
+      'title'         => ['title.text'],
       'nativeSubject' => ['nativeSubject.prefLabel'],
-      //'subject' => ['nativeSubject.prefLabel', 'aatSubjects.label', 'derivedSubject.prefLabel'],
-      //'derivedSubject' => ['derivedSubject.prefLabel'],
-      //'subjectUri' => ['derivedSubject.source']
+      'aatSubjects'   => ['derivedSubject.prefLabel']
     ];
   }
 
   public static function getSearchAggregations() {
+    
     return [
-      'archaeologicalResourceType' => [
+      'ariadneSubject' => [
         'terms' => [
-          'field' => 'archaeologicalResourceType.name.raw'
+          'field' => 'ariadneSubject.prefLabel.raw',
+          'size' => self::AGGS_BUCKET_SIZE
         ]
       ],
       'derivedSubject' => [
         'terms' => [
-          'field' => 'derivedSubject.prefLabel.raw'
-        ]
-      ],
-      'keyword' => [
-        'terms' => [
-          'field' => 'keyword.raw'
+          'field' => 'derivedSubject.prefLabel.raw',
+          'size' => self::AGGS_BUCKET_SIZE
         ]
       ],
       'contributor' => [
         'terms' => [
-          'field' => 'contributor.name.raw'
+          'field' => 'contributor.name.raw',
+          'size' => self::AGGS_BUCKET_SIZE
         ]
       ],
       'publisher' => [
         'terms' => [
-          'field' => 'publisher.name.raw'
+          'field' => 'publisher.name.raw',
+          'size' => self::AGGS_BUCKET_SIZE
         ]
       ],
       'temporal' => [
@@ -59,7 +91,8 @@ class QuerySettings {
         'aggs' => [
           'temporal' =>[
             'terms' => [
-              'field' => 'temporal.periodName.raw'
+              'field' => 'temporal.periodName.raw',
+              'size' => self::AGGS_BUCKET_SIZE
             ],
             'aggs' =>[
               'top_reverse_nested'=>[
@@ -69,14 +102,10 @@ class QuerySettings {
           ]
         ]
       ],
-      'issued' => [
-        'terms' => [
-          'field' => 'issued.raw'
-        ]
-      ],
       'nativeSubject' => [
         'terms' => [
-          'field' => 'nativeSubject.prefLabel.raw'
+          'field' => 'nativeSubject.prefLabel.raw',
+          'size' => self::AGGS_BUCKET_SIZE
         ]
       ]
     ];

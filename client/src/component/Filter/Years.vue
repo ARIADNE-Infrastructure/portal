@@ -23,8 +23,7 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import debounce from 'debounce';
-import { general, search } from "@/store/modules";
-import utils from '@/utils/utils';
+import { generalModule, searchModule } from "@/store/modules";
 
 @Component
 export default class FilterYears extends Vue {
@@ -33,11 +32,11 @@ export default class FilterYears extends Vue {
   private debouncedSearch: any = debounce(this.setSearch, 600);
 
   get isLoading(): boolean {
-    return general.getLoading;
+    return generalModule.getIsLoading;
   }
 
   get params(): any {
-    return search.getParams;
+    return searchModule.getParams;
   }
 
   validateAndSearch(event: any) {
@@ -66,13 +65,13 @@ export default class FilterYears extends Vue {
   setSearch() {
     // clear range param is both years are empty
     if (!this.yearFrom && !this.yearTo) {
-      search.setSearch({
+      searchModule.setSearch({
         range: null,
       });
     }
 
     else if (this.yearTo) {
-      search.setSearch({
+      searchModule.setSearch({
         range: `${this.yearFrom},${this.yearTo}`
       });
     }

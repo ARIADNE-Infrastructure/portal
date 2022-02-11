@@ -1,5 +1,9 @@
 # The ARIADNE portal
 
+### Production
+
+https://portal.ariadne-infrastructure.eu/
+
 ### Demo
 
 https://demo.snd.gu.se/ariadne/
@@ -73,7 +77,7 @@ rm -rf client/node_modules  (optional)
 # NPM - install packages and build:
 cd client
 npm install
-npm run build
+npm run build-staging  (For Public: npm run build, For Staging: npm run build-staging, For DEV: npm run build-dev)
 
 # Clean /server/html from old client code, if any. Should only contain folder '/api' with backend code.
 # Copy client code client/dist to server/html
@@ -81,6 +85,7 @@ cd <ariadne-root>
 cp -r client/dist/. server/html/
 
 # Docker, build and run:
+docker-compose build
 docker-compose up
 
 # Now you'll have a running container. List containers and copy CONTAINER ID:

@@ -23,15 +23,7 @@ if (process.argv.some(arg => arg === '0.0.0.0')) { // localhost over wifi
   })
 }
 
-// localhost
-let ariadneApiPath  = `http://${ localhostUrl }:8080/api`;
-
-// staging
-//let ariadneApiPath  = 'xxx';
-
-// public
-//let ariadneApiPath  = 'xxx';
-
+let ariadneApiPath = `http://${ localhostUrl }:8080/api`;
 let ariadneAssetPath = '/static/assets';
 
 module.exports = env => {
@@ -41,7 +33,7 @@ module.exports = env => {
     output: {
       path: path.resolve(__dirname, './dist'),
       publicPath: '/',
-      filename: env.production ? '[name].[chunkhash].js' : '[name].[hash].js',
+      filename: env.development ? '[name].[hash].js' : '[name].[chunkhash].js',
     },
     module: {
       rules: [
@@ -75,21 +67,21 @@ module.exports = env => {
           test: /\.css$/,
           use: [
             {
-              loader: env.production ? MiniCssExtractPlugin.loader : 'vue-style-loader',
+              loader: env.development ? 'vue-style-loader' : MiniCssExtractPlugin.loader,
               options: {
-                sourceMap: !env.production
+                sourceMap: env.development
               }
             },
             {
               loader: 'css-loader',
               options: {
-                sourceMap: !env.production
+                sourceMap: env.development
               }
             },
             {
               loader: 'postcss-loader',
               options: {
-                sourceMap: !env.production
+                sourceMap: env.development
               }
             }
           ]
@@ -110,7 +102,7 @@ module.exports = env => {
         hash: true,
         template: path.resolve(__dirname, './src/index.html'),
         filename: 'index.html',
-        minify: env.production ? {
+        minify: !env.development ? {
           collapseWhitespace: true,
           removeComments: true,
           minifyCSS: true,
@@ -140,29 +132,14 @@ module.exports = env => {
   }
 
   /**
-   * Production config
-   */
-  if (env.production) {
-    console.log('ARIADNE Portal - Building with production config...');
-
-    process.env.NODE_ENV = 'production';
-
-    config.mode = 'production';
-    config.devtool = '';
-    config.optimization = {
-      minimizer: [
-        new TerserPlugin({}),
-        new OptimizeCSSAssetsPlugin({})
-      ],
-    };
-
-  /**
    * Development config
    */
-  } else {
+  if (env.development) {
     console.log('ARIADNE Portal - Building with development config...');
 
     process.env.NODE_ENV = 'development';
+
+    ariadneApiPath = `http://${ localhostUrl }:8080/api`;
 
     config.mode = 'development';
     config.devtool = '#eval-source-map';
@@ -174,15 +151,73 @@ module.exports = env => {
       host: 'localhost',
       port: 8081 // SND - If you need to run on port 80 you must run as root - (sudo npm run dev)
     };
-
   }
 
-  ariadneApiPath = JSON.stringify(env.ariadneApiPath ? env.ariadneApiPath : ariadneApiPath);
+  /**
+   * Public STAGING config
+   */
+  else if (env.staging) {
+    console.log('ARIADNE Portal - Building with public STAGING config...');
+
+    process.env.NODE_ENV = 'staging';
+
+    config.mode = 'dev';
+    config.devtool = '';
+    config.optimization = {
+      minimizer: [
+        new TerserPlugin({}),
+        new OptimizeCSSAssetsPlugin({})
+      ],
+    };
+  }
+
+  /**
+   * Public DEV config
+   */
+  else if (env.dev) {
+    console.log('ARIADNE Portal - Building with public DEV config...');
+
+    process.env.NODE_ENV = 'staging';
+
+    config.mode = 'dev';
+    config.devtool = '';
+    config.optimization = {
+      minimizer: [
+        new TerserPlugin({}),
+        new OptimizeCSSAssetsPlugin({})
+      ],
+    };
+  }
+
+  /**
+   * Public PRODUCTION config
+   */
+  else if (env.production) {
+    console.log('ARIADNE Portal - Building with public PROD config...');
+
+    process.env.NODE_ENV = 'production';
+
+    config.mode = 'production';
+    config.devtool = '';
+    config.optimization = {
+      minimizer: [
+        new TerserPlugin({}),
+        new OptimizeCSSAssetsPlugin({})
+      ],
+    };
+  }
+
   ariadneAssetPath = JSON.stringify(env.ariadneAssetPath ? env.ariadneAssetPath : ariadneAssetPath);
-  ariadnePublicPath = JSON.stringify('/');
+  ariadnePublicPath = JSON.stringify(config.output.publicPath);
+
+  console.log( 'Building with public path: ' );
+  console.log(ariadnePublicPath);
+
+  console.log( 'Building with asset path: ' );
+  console.log(ariadneAssetPath);
 
   let settings =  new webpack.DefinePlugin({
-    'process.env.apiUrl': ariadneApiPath,
+    'process.env.apiUrl': JSON.stringify(ariadneApiPath),
     'process.env.ARIADNE_PUBLIC_PATH': ariadnePublicPath,
     'process.env.ARIADNE_ASSET_PATH': ariadneAssetPath,
   });

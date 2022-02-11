@@ -1,9 +1,11 @@
 export const fields = [
-  { val: '', text: 'All fields' },
-  { val: 'time', text: 'Time period' },
-  { val: 'location', text: 'Place' },
-  { val: 'title', text: 'Title' },
-  { val: 'nativeSubject', text: 'Getty AAT Subject' },
+  { val: 'all', text: 'All fields', group: 'default' },
+  { val: 'time', text: 'Time period', group: 'default' },
+  { val: 'location', text: 'Place', group: 'default' },
+  { val: 'title', text: 'Title', group: 'default' },
+
+  // subject
+  { val: 'aatSubjects', text: 'Getty AAT Subject', group: 'subject' },
 ];
 
 export const types = {
@@ -23,8 +25,6 @@ export const types = {
   12: 'inscription',
 
   /* ISSUE: 19956
-  https://support.d4science.org/issues/19956
-
   Site/monument > 10
   Fieldwork > 11
   Fieldwork report > 12
@@ -41,7 +41,7 @@ export const types = {
 
 export const typesTemporary = {
   'Artefact': 'artefact',
-  'Date': 'date', 
+  'Date': 'date',
   'Fieldwork': 'excavation',
   'Fieldworkarchive': 'excavation', // later switch to new icon (spade w/ database)
   'Fieldworkreport': 'excavation', // later switch to new icon (spade w/ text document)
@@ -57,3 +57,9 @@ export const thematicals = {
   'subject': 'Subject',
   'temporal': 'Time period',
 };
+
+export const ctsCertified = [
+  'Archaeology Data Service',
+  'Data Archiving and Networked Services (DANS)',
+  'Swedish National Data Service',
+];

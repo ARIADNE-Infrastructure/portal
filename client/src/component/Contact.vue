@@ -54,7 +54,7 @@
       <div class="mb-lg" ref="captcha">
         <div class="g-recaptcha" :data-sitekey="captchaPublicKey"></div>
       </div>
-    
+
       <p v-if="errorMsg" class="p-sm mb-lg bg-red-80 text-white">
         {{ errorMsg }}
       </p>
@@ -74,14 +74,14 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { contact } from "@/store/modules";
+import { contactModule } from "@/store/modules";
 
 @Component
 export default class About extends Vue {
   isSending = false;
 
   mounted () {
-    contact.clearMessages();
+    contactModule.clearMessages();
 
     if ((<any>window).grecaptcha) {
       (this.$refs.captcha as any).innerHTML = '';
@@ -97,16 +97,16 @@ export default class About extends Vue {
   }
 
   get mail (): any {
-    return contact.getMail;
+    return contactModule.getMail;
   }
   get errorMsg (): string {
-    return contact.getErrorMsg;
+    return contactModule.getErrorMsg;
   }
   get successMsg (): string {
-    return contact.getSuccessMsg;
+    return contactModule.getSuccessMsg;
   }
   get captchaPublicKey (): string {
-    return contact.getCaptchaPublicKey;
+    return contactModule.getCaptchaPublicKey;
   }
   get headerClasses (): string {
     return 'text-hg mb-xs';
@@ -127,7 +127,7 @@ export default class About extends Vue {
 
     this.isSending = true;
 
-    await contact.sendMail(captchaResponse);
+    await contactModule.sendMail(captchaResponse);
 
     (<any>window).grecaptcha.reset(this.$refs.captcha, {
       sitekey: this.captchaPublicKey

@@ -1,13 +1,12 @@
 // store/modules/MyStoreModule.ts
 import { VuexModule, Module, Mutation, Action, RegisterOptions } from "vuex-class-modules";
 import axios from 'axios';
-import { General } from './General';
-import { contact } from "../modules";
+import { LoadingStatus, GeneralModule } from './General';
 
 @Module
-export class Contact extends VuexModule {
+export class ContactModule extends VuexModule {
   private captchaPublicKey = '6Ld9wPQZAAAAABdFgzuc2NDjhb9kz1pjHx8dkQAu';
-  private general: General;
+  private generalModule: GeneralModule;
   private errorMsg = '';
   private successMsg = '';
   private mail = {
@@ -17,14 +16,14 @@ export class Contact extends VuexModule {
     message: ''
   };
 
-  constructor (general: General, options: RegisterOptions) {
+  constructor (generalModule: GeneralModule, options: RegisterOptions) {
     super(options);
-    this.general = general;
+    this.generalModule = generalModule;
   }
 
   @Action
   public async sendMail (captchaResponse: string) {
-    this.general.updateLoading(true);
+    this.generalModule.updateLoadingStatus(LoadingStatus.Locked);
 
     try {
       let data = new FormData();
@@ -54,7 +53,7 @@ export class Contact extends VuexModule {
       this.setErrorMsg('Error: Could not send the mail. Please try again later.');
     }
 
-    this.general.updateLoading(false);
+    this.generalModule.updateLoadingStatus(LoadingStatus.None);
   }
 
   @Mutation

@@ -1,33 +1,45 @@
 // store/modules/MyStoreModule.ts
 import { VuexModule, Module, Mutation, Action, RegisterOptions } from "vuex-class-modules";
 import axios from 'axios';
-import { General } from './General';
-import { fields, types, typesTemporary, thematicals } from './Resource/static';
+import { LoadingStatus, GeneralModule } from './General';
+import { fields, types, typesTemporary, thematicals, ctsCertified } from './Resource/static';
 import utils from "@/utils/utils";
+import router from '@/router';
 
 @Module
-export class Resource extends VuexModule {
-  private general: General;
+export class ResourceModule extends VuexModule {
+  private generalModule: GeneralModule;
 
-  constructor(general: General, options: RegisterOptions) {
+  constructor(generalModule: GeneralModule, options: RegisterOptions) {
     super(options);
-    this.general = general;
+    this.generalModule = generalModule;
   }
 
   private resource: any = null;
   private fields: any[] = fields;
   private types: any = types;
   private typesTemporary: any = typesTemporary;
+  private ctsCertified: string[] = ctsCertified;
   private thematicals: any = thematicals;
   private resourceParams: any = {
     thematical: ''
   };
 
   @Action
+  navigateToResource(id: string) {
+    router.push('/resource/'+id);
+  }
+
+  @Action
+  setResourceParamsThematical(value: string) {
+    this.updateResourceParamsThematical(value);
+  }
+
+  @Action
   async setResource(id: string) {
     let data: any = null;
 
-    this.general.updateLoading(true);
+    this.generalModule.updateLoadingStatus(LoadingStatus.Locked);
 
     try {
       const url = utils.paramsToString(`${ process.env.apiUrl }/getRecord/${ id }`, this.resourceParams);
@@ -40,7 +52,13 @@ export class Resource extends VuexModule {
 
     this.updateResource(data);
 
-    this.general.updateLoading(false);
+    this.generalModule.updateLoadingStatus(LoadingStatus.None);
+
+  }
+
+  @Mutation
+  updateResourceParamsThematical(value: string) {
+    this.resourceParams.thematical = value;
   }
 
   @Mutation
@@ -69,13 +87,13 @@ export class Resource extends VuexModule {
 
       let icon = resourceIcon ?? defaultIcon;
 
-      return `${ this.general.getAssetsDir }/resource/${ icon }.png`;
+      return `${ this.generalModule.getAssetsDir }/resource/${ icon }.png`;
     }
   }
 
   get getIconByTypeNameTemporary() {
     return (name: string) => {
-      name = name.replace(/\s/g, '');
+      name = (name || '').replace(/\s/g, '');
 
       const defaultIcon = 'site';
       const list: any = this.typesTemporary;
@@ -83,15 +101,102 @@ export class Resource extends VuexModule {
 
       let icon = resourceIcon ?? defaultIcon;
 
-      return `${ this.general.getAssetsDir }/resource/${ icon }.png`;
+      return `${ this.generalModule.getAssetsDir }/resource/${ icon }.png`;
     }
   }
 
-  get getThematicals () {
+  get getThematicals() {
     return this.thematicals;
   }
-  get getResourceParams () {
+
+  // cts certified
+  get getIsCtsCertified() {
+    return (resource: any) => {
+      const publisherName: string = resource.publisher?.[0]?.name ?? '';
+      return publisherName ? this.ctsCertified.includes(publisherName) : false;
+    }
+  }
+
+  // params
+  get getResourceParams() {
     return this.resourceParams;
+  }
+
+  // title
+  get getMainTitle() {
+    return (resource: any) => {
+      const text = resource?.title?.text;
+
+      return text.trim() ?? 'No title';
+    }
+  }
+
+  get getNativeTitle() {
+    return (resource: any) => {
+      const text = resource.titleOther?.find((item: any) => {
+        return item.language === this.resource.language;
+      });
+
+      return text ? text.text : '';
+    }
+  }
+
+  get getNonNativeTitles() {
+    return (resource: any) => {
+      const items = resource.titleOther?.filter((item: any) => {
+        return item.language !== this.resource.language;
+      });
+
+      return items ? items : [];
+    }
+  }
+
+  // description
+  get getMainDescription() {
+    return (resource: any) => {
+      const text = resource?.description?.text;
+
+      return text ? utils.cleanText(text, true) : 'Resource has no description';
+    }
+  }
+
+  get getNativeDescription() {
+    return (resource: any) => {
+      const text = resource.descriptionOther?.find((item: any) => {
+        return item.language === this.resource.language;
+      });
+
+      return text ? utils.cleanText(text.text, true) : '';
+    }
+  }
+
+  get getNonNativeDescriptions() {
+    return (resource: any) => {
+      const items = resource.descriptionOther?.filter((item: any) => {
+        return item.language !== this.resource.language;
+      });
+
+      return items ? items : [];
+    }
+  }
+
+  // images
+  get getDigitalImages() {
+    return (resource: any) => {
+      let imgs: string[] = [];
+
+      if (Array.isArray(resource?.digitalImage)) {
+        resource.digitalImage.forEach((img: any) => {
+          ['ariadneUri', 'providerUri'].forEach((prop: string) => {
+            if (img && utils.validUrl(img[prop]) && !imgs.includes(img[prop])) {
+              imgs.push(img[prop]);
+            }
+          });
+        });
+      }
+
+      return imgs;
+    }
   }
 
   get getFields() {

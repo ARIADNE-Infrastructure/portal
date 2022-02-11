@@ -30,18 +30,26 @@
         :bClass="bClass"
       />
     </section>
+
+    <section
+      v-if="digitalImages.length"
+      :class="sectionClass"
+    >
+      <resource-main-images />
+    </section>
   </div>
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import { resource } from "@/store/modules";
+import { Component, Vue } from 'vue-property-decorator';
+import { resourceModule } from "@/store/modules";
 import utils from '@/utils/utils';
 
 import ResourceMainMetadata from './Main/Metadata.vue';
 import ResourceMainResponsible from './Main/Responsible.vue';
 import ResourceMainLicence from './Main/Licence.vue';
 import ResourceMainDistribution from './Main/Distribution.vue';
+import ResourceMainImages from './Main/Images.vue';
 
 @Component({
   components: {
@@ -49,13 +57,19 @@ import ResourceMainDistribution from './Main/Distribution.vue';
     ResourceMainResponsible,
     ResourceMainLicence,
     ResourceMainDistribution,
+    ResourceMainImages,
   }
 })
 export default class ResourceMain extends Vue {
   utils = utils;
+  resourceModule = resourceModule;
 
   get resource(): any {
-    return resource.getResource;
+    return resourceModule.getResource;
+  }
+
+  get digitalImages (): any[] {
+    return resourceModule.getDigitalImages(this.resource);
   }
 
   get sectionClass () {

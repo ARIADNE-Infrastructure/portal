@@ -6,10 +6,11 @@
     <!-- filter by text -->
     <input
       type="text"
-      :value="options.search"
       :placeholder="getFilterPlaceholder(title)"
-      class="flex-1 w-full py-xs px-sm text-mmd outline-none border-base rounded-base xl:rounded-r-0 xl:border-r-0 border-gray focus:border-blue"
-      @input="setSearch($event)"
+      class="flex-1 w-full py-xs px-sm text-mmd outline-none border-base rounded-base xl:rounded-r-0 xl:border-r-0 border-gray focus:border-blue disabled:bg-white"
+      v-model="localSearch"
+      :disabled="isLoading"
+      @input="debouncedSearch($event)"
     >
 
     <div class="flex mt-md xl:mt-none">
@@ -47,22 +48,29 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import { aggregation } from "@/store/modules";
-import utils from '@/utils/utils';
+import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import { generalModule, searchModule, aggregationModule } from "@/store/modules";
+import debounce from 'debounce';
 
 @Component
 export default class FilterAggregationOptions extends Vue {
-  utils: any = utils;
-  sortBy: string = 'key';
-  sortOrder: string = 'asc';
+  debouncedSearch: any = debounce(this.setSearch, 600);
+  localSearch: string = '';
 
   @Prop() id!: string;
   @Prop() shortSortNames!: boolean;
   @Prop() title!: string;
 
+  get isLoading(): boolean {
+    return generalModule.getIsLoading;
+  }
+
+  get params(): any {
+    return searchModule.getParams;
+  }
+
   get options(): any {
-    return aggregation.getOptionsById(this.id);
+    return aggregationModule.getOptionsById(this.id);
   }
 
   get name() {
@@ -73,22 +81,6 @@ export default class FilterAggregationOptions extends Vue {
     return this.shortSortNames ? 'Hits' : 'Sort by Hits';
   }
 
-  created() {
-    // set default options if none already exists
-    if (!this.options) {
-      const payload = {
-        id: this.id,
-        value: {
-          search: '',
-          sortBy: 'key',
-          sortOrder: 'asc',
-        }
-      }
-
-      aggregation.setOptions(payload);
-    }
-  }
-
   getFilterPlaceholder (title: string | undefined) {
     title = (title || '').trim().toLowerCase();
     if (title && title[title.length - 1] !== 's') {
@@ -97,17 +89,18 @@ export default class FilterAggregationOptions extends Vue {
     return 'Filter' + (title ? ' ' + title : '') + '..';
   }
 
-  setSearch(search: any): void {
+  setSearch(): void {
     const payload = {
       id: this.id,
       value: {
-        search: search.target.value,
+        search: this.localSearch,
         sortBy: this.options.sortBy,
         sortOrder: this.options.sortOrder,
-      }
+        data: {},
+      },
     }
 
-    aggregation.setOptions(payload);
+    aggregationModule.setSearch(payload);
 
     // emit list change event in order for accordion component to update its height
     this.$emit('searchUpdate');
@@ -120,7 +113,8 @@ export default class FilterAggregationOptions extends Vue {
         search: this.options.search,
         sortBy: '',
         sortOrder: '',
-      }
+        data: this.options.data,
+      },
     }
 
     payload.value.sortBy = sortBy;
@@ -134,7 +128,35 @@ export default class FilterAggregationOptions extends Vue {
       payload.value.sortOrder = sortBy === 'key' ? 'asc' : 'desc';
     }
 
-    aggregation.setOptions(payload);
+    aggregationModule.setOptions(payload);
+  }
+
+  @Watch('options', { immediate: true })
+  onOptionsUpdate() {
+    if (this.options) {
+      this.localSearch = this.options.search;
+    }
+    else {
+    // set default options if none already exists
+      const payload = {
+        id: this.id,
+        value: {
+          search: '',
+          sortBy: 'doc_count',
+          sortOrder: 'desc',
+          data: {},
+        }
+      }
+
+      aggregationModule.setOptions(payload);
+    }
+  }
+
+  @Watch('params', { immediate: true })
+  onParamsUpdate() {
+    if (this.localSearch) {
+      this.setSearch();
+    }
   }
 }
 </script>
