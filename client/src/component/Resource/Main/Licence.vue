@@ -1,7 +1,7 @@
 <template>
   <div>
     <h3 class="text-lg font-bold mb-lg">
-      <i class="fas fa-balance-scale mr-xs"></i>
+      <i class="fas fa-balance-scale mr-sm"></i>
       Licence information
     </h3>
 
@@ -34,26 +34,16 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script setup lang="ts">
+import { $computed } from 'vue/macros';
 import { resourceModule } from "@/store/modules";
-
 import utils from '@/utils/utils';
 import BLink from '@/component/Base/Link.vue';
 
-@Component({
-  components: {
-    BLink,
-  }
-})
-export default class ResourceMainLicence extends Vue {
-  utils = utils;
+defineProps({
+  itemClass: String,
+  bClass: String,
+});
 
-  @Prop() itemClass!: string;
-  @Prop() bClass!: string;
-
-  get resource(): any {
-    return resourceModule.getResource;
-  }
-}
+const resource = $computed(() => resourceModule.getResource);
 </script>

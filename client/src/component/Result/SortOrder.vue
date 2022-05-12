@@ -14,36 +14,21 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+<script setup lang="ts">
+import { $computed } from 'vue/macros';
 import { searchModule } from "@/store/modules";
 import BSelect from '@/component/Base/Select.vue';
 
-@Component({
-  components: {
-    BSelect
-  }
-})
-export default class ResultSortOrder extends Vue {
-  get params(): any {
-    return searchModule.getParams;
-  }
+const params = $computed(() => searchModule.getParams);
+const options = $computed(() => searchModule.getSortOptions);
+const order: string = $computed(() => `${ params.sort }-${ params.order }`);
 
-  get options(): any[] {
-    return searchModule.getSortOptions;
-  }
+const setOrder = (orderStr: string) => {
+  const arr = orderStr.split('-');
 
-  get order(): string {
-    return `${ this.params.sort }-${ this.params.order }`;
-  }
-
-  setOrder(orderStr: string): void {
-    let arr = orderStr.split('-');
-
-    searchModule.setSearch({
-      sort: arr[0],
-      order: arr[1],
-    });
-  }
-}
+  searchModule.setSearch({
+    sort: arr[0],
+    order: arr[1],
+  });
+};
 </script>

@@ -10,16 +10,15 @@
 
     <div class="flex items-center">
       <span
-        class="relative block border-2 rounded-1/2 w-base h-base mr-sm transition-all duration-300"
+        class="relative block border-2 rounded-1/2 w-base h-base mr-sm transition-all duration-300 border-white-80"
         :class="{
-          'border-blue': isChecked,
-          'border-gray group-hover:border-blue-50': !isChecked
+          'group-hover:border-white': !isChecked
         }"
       >
         <span
           class="transform scale-0"
           :class="{
-            'block bg-blue rounded-1/2 w-base h-base absolute left-1/2 bottom-1/2 -ml-sm -mb-sm transform scale-50 transition-transform duration-150': isChecked,
+            'block bg-white rounded-1/2 w-base h-base absolute left-1/2 bottom-1/2 -ml-sm -mb-sm transform scale-50 transition-transform duration-150': isChecked,
           }"
         />
       </span>
@@ -29,18 +28,15 @@
   </label>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script setup lang="ts">
+import { $computed } from 'vue/macros';
 
-@Component
-export default class BRadio extends Vue {
-  @Prop() name!: string;
-  @Prop() currentValue!: string;
-  @Prop() value!: string;
-  @Prop() label!: string;
+const props = defineProps({
+  name: String,
+  currentValue: String,
+  value: String,
+  label: String
+});
 
-  get isChecked(): boolean {
-    return this.currentValue === this.value;
-  }
-}
+const isChecked: boolean = $computed(() => props.currentValue === props.value)
 </script>

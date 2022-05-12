@@ -3,13 +3,13 @@
     <!-- overlay -->
     <div
       v-if="show"
-      class="bg-black opacity-60 absolute w-full h-full z-1005"
+      class="bg-black opacity-60 absolute w-full h-full z-30"
       @click="toggle"
     >
     </div>
 
     <header
-      class="fixed top-0 w-full bg-lightGray z-1005"
+      class="fixed top-0 w-full bg-lightGray z-30"
       :class="{ 'border-b-base border-gray shadow-bottomDark': !show }"
     >
       <div class="flex items-center h-4x">
@@ -47,17 +47,8 @@
           v-show="show"
           class="ease-out duration-200 overflow-y-hidden"
         >
-          <div class="z-1005">
-            <filter-search
-              class="my-lg px-base"
-              color="yellow"
-              hoverStyle="hover:bg-yellow-80"
-              focusStyle="focus:border-yellow"
-              :big="true"
-              :useCurrentSearch="false"
-              @submit="onSubmit"
-            />
-            <ul>
+          <div class="z-30">
+            <ul class="border-t-2 border-midGray">
               <li
                 v-for="item in generalModule.getMainNavigation"
                 :key="item.path"
@@ -70,7 +61,7 @@
                 >
                   <i
                     :class="`fa-${ item.icon }`"
-                    class="fas mr-xs"
+                    class="fas mr-sm"
                   />
 
                   {{ item.name }}
@@ -84,59 +75,57 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Mixins, Watch } from 'vue-property-decorator';
+<script setup lang="ts">
+import { watch, onMounted } from 'vue';
+import { $ref, $computed, $$ } from 'vue/macros';
+import { useRoute, useRouter } from 'vue-router'
 import { generalModule } from "@/store/modules";
-import utils from '@/utils/utils';
 
-import ListAccordionMixin from '@/component/List/AccordionMixin.vue';
-import FilterSearch from '@/component/Filter/Search.vue';
+const router = useRouter();
+const route = useRoute();
+let show: boolean = $ref(false);
+let path: string = $ref('');
 
-@Component({
-  components: {
-    FilterSearch,
-  }
-})
-export default class LayoutMobileHeader extends Mixins(ListAccordionMixin) {
-  generalModule = generalModule;
-  path: string = '';
+const assets: string = $computed(() => generalModule.getAssetsDir);
 
-  mounted () {
-    this.updateMenuPath();
-  }
-
-  get assets(): string  {
-    return generalModule.getAssetsDir;
-  }
-
-  navigate (path: string) {
-    this.$router.push(path);
-    this.show = false;
-  }
-
-  onSubmit () {
-    this.show = false
-    utils.blurMobile();
-  }
-
-  onEnter(el: any): void {
-    document.body.classList.add('overflow-y-hidden');
-    this.enter(el);
-  }
-
-  onLeave(el: any): void {
-    document.body.classList.remove('overflow-y-hidden');
-    this.leave(el);
-  }
-
-  isActive (path: string): boolean {
-    return this.path.includes(path) ||
-      (path.includes('search') && this.path.includes('resource'));
-  }
-
-  @Watch('$route')
-  updateMenuPath () {
-    this.path = this.$router.currentRoute.path;
-  }
+const toggle = () => {
+  show = !show;
 }
+
+const enter = (el: HTMLElement) => {
+  el.style.height = el.scrollHeight + 'px';
+}
+
+const leave = (el: HTMLElement): void => {
+  el.style.height = '0px';
+}
+
+const navigate = (path: string) => {
+  router.push(path);
+  show = false;
+}
+
+const onEnter = (el: HTMLElement) => {
+  // lock scroll behind overlay
+  document.body.classList.add('overflow-y-hidden');
+  enter(el);
+}
+
+const onLeave = (el: HTMLElement) => {
+  // unlock scroll behind overlay
+  document.body.classList.remove('overflow-y-hidden');
+  leave(el);
+}
+
+const isActive = (itemPath: string): boolean => {
+  return path.includes(itemPath) ||
+    (itemPath.includes('search') && path.includes('resource'));
+}
+
+const updateMenuPath = (): void => {
+  path = route.fullPath;
+}
+
+onMounted(updateMenuPath);
+watch(route, updateMenuPath);
 </script>

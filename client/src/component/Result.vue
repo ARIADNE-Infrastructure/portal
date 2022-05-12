@@ -1,28 +1,18 @@
 <template>
 	<div class="pt-3x px-base max-w-screen-xl mx-auto overflow-x-hidden flex flex-col lg:flex-row min-h-360 hg:min-h-300">
-    <!-- sidebar -->
-    <aside class="lg:w-1/3 lg:pr-lg block order-last lg:order-first">
-      <result-sidebar />
-    </aside>
+    <!-- filters (mobile & desktop) -->
+    <template v-if="window.innerWidth">
+      <filter-toggleable v-if="window.innerWidth < 1000" class="lg:w-1/3 lg:pr-lg">
+        <filter-list :show="['search', 'miniMap', 'timeLine', 'aggregations']" />
+      </filter-toggleable>
+      <aside v-else class="lg:w-1/3 lg:pr-lg">
+        <filter-list :show="['search', 'miniMap', 'timeLine', 'aggregations']" />
+      </aside>
+    </template>
 
     <!-- main content -->
     <section class="lg:w-2/3 lg:pl-lg block">
       <result-info class="py-base pt-none" />
-
-      <div class="lg:hidden">
-        <filter-search
-          color="blue"
-          hoverStyle="hover:bg-blue-80"
-          focusStyle="focus:border-blue"
-          class="mt-sm mb-xl"
-          :big="true"
-          :useCurrentSearch="true"
-          :clearSearch="true"
-          :hasAutocomplete="true"
-          showFields="select"
-          @submit="utils.blurMobile()"
-        />
-      </div>
 
       <div class="md:flex mt-sm items-center justify-between pt-none">
         <result-paginator />
@@ -38,60 +28,56 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Watch } from 'vue-property-decorator';
+<script setup lang="ts">
+import { watch } from 'vue';
+import { $computed } from 'vue/macros';
+import { useRoute, onBeforeRouteLeave } from 'vue-router'
 import { generalModule, searchModule } from "@/store/modules";
 
 // base & utils
 import utils from '@/utils/utils';
 
 // general
-import FilterSearch from '@/component/Filter/Search.vue';
+import FilterList from '@/component/Filter/List.vue';
+import FilterToggleable from '@/component/Filter/Toggleable.vue';
 
 // unique
 import ResultList from './Result/List.vue';
 import ResultInfo from './Result/Info.vue';
 import ResultPaginator from './Result/Paginator.vue';
-import ResultSidebar from './Result/Sidebar.vue';
 import ResultSortOrder from './Result/SortOrder.vue';
 
-@Component({
-  components: {
-    FilterSearch,
-    ResultList,
-    ResultInfo,
-    ResultPaginator,
-    ResultSidebar,
-    ResultSortOrder,
+let first: boolean = true;
+
+const route = useRoute();
+const window = $computed(() => generalModule.getWindow);
+const params = $computed(() => searchModule.getParams);
+
+const setMeta = () => {
+  let title = 'Search';
+
+  if (params.q) {
+    title = `Search results: ${ params.q }`;
   }
-})
-export default class Result extends Vue {
-  utils = utils;
-
-  get params(): any {
-    return searchModule.getParams;
-  }
-
-  setMeta () {
-    let title = 'Search';
-
-    if (this.params.q) {
-      title = `Search results: ${ this.params.q }`;
-    }
-    if (parseInt(this.params.page) > 1) {
-      title += ` (page ${ this.params.page })`;
-    }
-
-    generalModule.setMeta({
-      title: title,
-      description: title,
-    });
+  if (parseInt(params.page) > 1) {
+    title += ` (page ${ params.page })`;
   }
 
-  @Watch('$route', { immediate: true })
-  async onRouteUpdate () {
-    await searchModule.setSearch({ fromRoute: true });
-    this.setMeta();
-  }
+  generalModule.setMeta({
+    title: title,
+    description: title,
+  });
 }
+
+const unwatch = watch(route, async (path: any) => {
+  if (first) {
+    searchModule.actionResetResultState();
+    first = false;
+  }
+  await searchModule.setSearch({ fromRoute: true });
+  setMeta();
+
+}, { immediate: true });
+
+onBeforeRouteLeave(unwatch);
 </script>

@@ -14,12 +14,10 @@ export default {
    * @param lang The language short name. Example, 'EN|en' will be translted to 'English'
    */
   getLanguage(lang: string) {
-
     if(lang) {
-      if( (lang.trim() == 'und') || (lang.trim() == '')) {
+      if( (lang.trim() == 'und') || (lang.trim() == '')) {
         return 'N/A';
       }
-      //console.log(lang, utils.sentenceCase(ISO6391.getName(lang.trim().toLowerCase())));
       // Native language representation - ISO6391.getNativeName(lang)
       return utils.sentenceCase(ISO6391.getName(lang.trim().toLowerCase()));
     }

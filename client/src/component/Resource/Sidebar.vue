@@ -5,8 +5,8 @@
       :class="sectionClass"
     >
       <h3 class="text-lg font-bold mb-lg">
-        <i class="fas fa-copy mr-xs"></i>
-        Resource has parts
+        <i class="fas fa-copy mr-sm"></i>
+        Resource has {{ resource.collection.total }} records
       </h3>
 
       <resource-filtered-items
@@ -16,12 +16,12 @@
 
       <b-link
         v-if="resource.collection.total"
-        :to="utils.paramsToString('/search', { q: 'isPartOf:' + resource.id })"
+        :to="utils.paramsToString('/search', { isPartOf: resource.id, isPartOfLabel: resource.title ? resource.title.text : '' })"
         class="mb-sm block"
-        useDefaultStyle="true"
+        :useDefaultStyle="true"
       >
-        <i class="fas fa-search mr-xs"></i>
-        All parts ({{ resource.collection.total }})
+        <i class="fas fa-search mr-sm"></i>
+        Show all records
       </b-link>
     </section>
 
@@ -30,16 +30,16 @@
       :class="sectionClass"
     >
       <h3 class="text-lg font-bold mb-lg">
-        <i class="fas fa-copy mr-xs" />
+        <i class="fas fa-copy mr-sm" />
         Resource is about
       </h3>
 
       <resource-filtered-items :items="resource.isAboutResource">
-        <span slot-scope="{ item }">
+        <template v-slot="{ item }">
           <b-link :href="item.id" target="_blank" >
             {{ item.title.text }}
           </b-link>
-        </span>
+        </template>
       </resource-filtered-items>
     </section>
 
@@ -48,7 +48,7 @@
       :class="sectionClass"
     >
       <h3 class="text-lg font-bold mb-lg">
-        <i class="fas fa-copy mr-xs"></i>
+        <i class="fas fa-copy mr-sm"></i>
         Resource is part of
       </h3>
 
@@ -60,7 +60,7 @@
 
     <section :class="sectionClass">
       <h3 class="text-lg font-bold mb-sm">
-        <i class="fas fa-bullseye mr-xs"></i>
+        <i class="fas fa-bullseye mr-sm"></i>
         Thematically similar
       </h3>
       <p class="mb-md">
@@ -88,7 +88,7 @@
           >
             <help-tooltip
               :title="getResourceTypeName(similar)"
-              class="mr-xs"
+              class="mr-sm"
               top="0"
               left="2rem"
             >
@@ -101,7 +101,7 @@
                 width="20"
                 height="20">
             </help-tooltip>
-            <span>{{ similar.title.text || 'No title' }}</span>
+            <span>{{ similar.title.text || 'No title' }}</span>
           </b-link>
         </div>
       </div>
@@ -117,7 +117,7 @@
       :class="sectionClass"
     >
       <h3 class="text-lg font-bold mb-lg">
-        <i class="fas fa-tags mr-xs"></i>
+        <i class="fas fa-tags mr-sm"></i>
         Tags
       </h3>
 
@@ -148,58 +148,36 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script setup lang="ts">
+import { onUnmounted } from 'vue';
+import { $computed } from 'vue/macros';
 import { resourceModule } from "@/store/modules";
-
 import utils from '@/utils/utils';
 import BLink from '@/component/Base/Link.vue';
 import HelpTooltip from '@/component/Help/Tooltip.vue';
 import ResourceFilteredItems from './FilteredItems.vue';
 
-@Component({
-  components: {
-    BLink,
-    HelpTooltip,
-    ResourceFilteredItems,
-  }
-})
-export default class ResourceSidebar extends Vue {
-  @Prop() initResource!: Function;
+defineProps({
+  initResource: Function,
+});
 
-  utils = utils;
+const sectionClass: string = 'py-base pb-sm rounded-base mb-md';
+const resource = $computed(() => resourceModule.getResource);
+const thematicals = $computed(() => resourceModule.getThematicals);
+const resourceParams = $computed(() => resourceModule.getResourceParams);
 
-  destroyed() {
-    // reset thematical selection
-    resourceModule.setResourceParamsThematical('');
-  }
+// reset thematical selection
+onUnmounted(() => resourceModule.setResourceParamsThematical(''));
 
-  get resource(): any {
-    return resourceModule.getResource;
-  }
+const getResourceTypeName = (item: any): string => {
+  return item.type?.[0]?.prefLabel ?? '';
+}
 
-  get thematicals(): any {
-    return resourceModule.getThematicals;
-  }
-  get resourceParams(): string {
-    return resourceModule.getResourceParams;
-  }
+const getResourceIcon = (item: any): string => {
+  return resourceModule.getIconByTypeId(item.type.id);
+}
 
-  get sectionClass() {
-    return 'py-base pb-sm rounded-base mb-md';
-  }
-
-  getResourceTypeName(item: any): string {
-    return item.type?.[0]?.prefLabel ?? '';
-  }
-
-  getResourceIcon(item: any): string {
-    return resourceModule.getIconByTypeId(item.type.id);
-  }
-
-  getResourceIconTemporary(item: any): string {
-    return resourceModule.getIconByTypeNameTemporary(item.type?.[0]?.prefLabel);
-  }
-
+const getResourceIconTemporary = (item: any): string => {
+  return resourceModule.getIconByTypeNameTemporary(item.type?.[0]?.prefLabel);
 }
 </script>

@@ -11,7 +11,7 @@
         left="1.25rem"
         messageClasses="bg-blue text-white"
       >
-        <i class="fa fa-globe mr-xs text-blue" />
+        <i class="fa fa-globe mr-sm text-blue" />
       </help-tooltip>
 
       {{ nativeInfoText }}
@@ -44,27 +44,17 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script setup lang="ts">
 import utils from '@/utils/utils';
 import synonyms from '@/utils/synonyms';
 import HelpTooltip from '@/component/Help/Tooltip.vue';
 import ListAccordion from '@/component/List/Accordion.vue';
 
-@Component({
-  components: {
-    HelpTooltip,
-    ListAccordion,
-  },
-})
-export default class MultiLangInfo extends Vue {
-  @Prop() nativeInfoText!: string;
-  @Prop() nativeInfoIconHelpText!: string;
-  @Prop() nonNativeInfoTitleActive!: string;
-  @Prop() nonNativeInfoTitleInactive!: string;
-  @Prop() nonNativeInfoList!: any[];
-
-  utils = utils;
-  synonyms = synonyms;
-}
+defineProps({
+  nativeInfoText: String,
+  nativeInfoIconHelpText: String,
+  nonNativeInfoTitleActive: String,
+  nonNativeInfoTitleInactive: String,
+  nonNativeInfoList: Array,
+});
 </script>

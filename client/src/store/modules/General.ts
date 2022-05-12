@@ -13,6 +13,12 @@ export class GeneralModule extends VuexModule {
   private mainNavigation: any[] = mainNavigation;
   private services: any = services;
   private frontPageLinks: any[] = frontPageLinks;
+  private window: any = {};
+
+  @Action
+  setWindow() {
+    this.updateWindow();
+  }
 
   @Action
   setMeta(meta: any) {
@@ -31,6 +37,12 @@ export class GeneralModule extends VuexModule {
 
     document.title = this.meta.title;
     metaEl.content = this.meta.description;
+  }
+
+  @Mutation
+  updateWindow() {
+    // needs to create a new object for reactivity
+    this.window = { ...window };
   }
 
   @Mutation
@@ -71,4 +83,7 @@ export class GeneralModule extends VuexModule {
     return this.services;
   }
 
+  get getWindow(): any {
+    return this.window;
+  }
 }

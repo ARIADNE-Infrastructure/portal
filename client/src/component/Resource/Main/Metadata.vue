@@ -1,7 +1,7 @@
 <template>
   <div>
     <h3 class="text-lg font-bold mb-lg">
-      <i class="fas fa-database mr-xs"></i>
+      <i class="fas fa-database mr-sm"></i>
       Metadata
     </h3>
 
@@ -86,9 +86,9 @@
             </help-tooltip>
           </template>
 
-          <span slot-scope="{ item }">
+          <template v-slot="{ item }">
             {{ item.prefLabel }} <span v-if="item.lang">({{ item.lang }})</span>
-          </span>
+          </template>
         </resource-filtered-items>
       </div>
 
@@ -121,7 +121,7 @@
       filter="periodName,from,until"
       title="Dating"
     >
-      <span slot-scope="{ item }">
+      <template v-slot="{ item }">
         <b-link
           v-if="item.periodName"
           :to="utils.paramsToString('/search', { temporal: item.periodName })"
@@ -132,7 +132,7 @@
         <template v-if="item.from && item.until">
           {{ item.from + ' to ' +  item.until }}
         </template>
-      </span>
+      </template>
     </resource-filtered-items>
 
     <resource-filtered-items
@@ -141,7 +141,7 @@
       filter="placeName,country,location"
       title="Place"
     >
-      <span slot-scope="{ item }">
+      <template v-slot="{ item }">
         <span v-if="item.placeName">
           <b-link
             :to="utils.paramsToString('/search', {placeName: item.placeName})"
@@ -149,7 +149,7 @@
             {{ utils.sentenceCase(item.placeName) }}
           </b-link>
         </span>
-      </span>
+      </template>
     </resource-filtered-items>
 
     <div v-if="resource.resourceType" :class="itemClass">
@@ -171,7 +171,7 @@
     <resource-filtered-items
       :items="resource.publisher"
       :class="itemClass"
-      slotType="person"
+      slotType="organisation"
       filter="name"
       title="Publisher"
       query="publisher"
@@ -199,7 +199,7 @@
       filter="xmlDoc,conformsTo"
       title="Metadata record"
     >
-      <div slot-scope="{ item, last }">
+      <template v-slot="{ item, last }">
         <div v-if="utils.validUrl(item.xmlDoc)" class="mt-sm" :class="{ 'border-b-base border-gray pb-md mb-md': !last }">
           <b-link
             :href="item.xmlDoc"
@@ -217,37 +217,24 @@
             (Character set: {{ item.conformsTo[0].characterSet }})
           </div>
         </div>
-      </div>
+      </template>
     </resource-filtered-items>
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script setup lang="ts">
+import { $computed } from 'vue/macros';
 import { resourceModule } from "@/store/modules";
-
 import utils from '@/utils/utils';
 import synonyms from '@/utils/synonyms';
 import BLink from '@/component/Base/Link.vue';
 import HelpTooltip from '@/component/Help/Tooltip.vue';
 import ResourceFilteredItems from '../FilteredItems.vue';
 
-@Component({
-  components: {
-    BLink,
-    HelpTooltip,
-    ResourceFilteredItems,
-  }
-})
-export default class ResourceMainMetadata extends Vue {
-  utils = utils;
-  synonyms = synonyms;
+defineProps({
+  itemClass: String,
+  bClass: String,
+});
 
-  @Prop() itemClass!: string;
-  @Prop() bClass!: string;
-
-  get resource(): any {
-    return resourceModule.getResource;
-  }
-}
+const resource = $computed(() => resourceModule.getResource);
 </script>

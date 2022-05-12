@@ -2,7 +2,7 @@
   <div>
     <!-- heading -->
     <h3 class="text-lg font-bold mb-md">
-      <i class="fas fa-info-circle mr-xs" />
+      <i class="fas fa-info-circle mr-sm" />
       Description
     </h3>
 
@@ -20,33 +20,13 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+<script setup lang="ts">
+import { $computed } from 'vue/macros';
 import { resourceModule } from "@/store/modules";
 import MultiLangInfo from './MultiLangInfo.vue';
 
-@Component({
-  components: {
-    MultiLangInfo,
-  },
-})
-export default class ResourceDescription extends Vue {
-  resourceModule = resourceModule;
-
-  get resource(): any {
-    return resourceModule.getResource;
-  }
-
-  get mainDescription (): string {
-    return resourceModule.getMainDescription(this.resource);
-  }
-
-  get nativeDescription (): string {
-    return resourceModule.getNativeDescription(this.resource);
-  }
-
-  get nonNativeDescriptions (): any[] {
-    return resourceModule.getNonNativeDescriptions(this.resource);
-  }
-}
+const resource = $computed(() => resourceModule.getResource);
+const mainDescription = $computed(() => resourceModule.getMainDescription(resource));
+const nativeDescription = $computed(() => resourceModule.getNativeDescription(resource));
+const nonNativeDescriptions = $computed(() => resourceModule.getNonNativeDescriptions(resource));
 </script>

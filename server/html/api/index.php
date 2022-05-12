@@ -1,6 +1,4 @@
 <?php
-//phpinfo(); exit;
-//xdebug_info(); exit;
 
 require '../../vendor/autoload.php';
 
@@ -13,7 +11,11 @@ use Application\App;
 use Application\Contact;
 use Elastic\DummyResource;
 
-$app = new App('api/');
+//use Periodo\Periodo;
+//$p = new Periodo();
+
+$settings = json_decode(file_get_contents('../../classes/settings.json'));
+$app = new App('api/', $settings);
 
 $app->route('getAllRecords', function ($q, $parts) {
   $this->json($q->getAllRecords());
@@ -55,9 +57,31 @@ $app->route('autocompleteFilter', function ($q, $parts) {
   $this->json($q->autocompleteFilter());
 });
 
-$app->route('timeline', function ($q, $parts) {
-  $this->json($q->getTimelineData());
+$app->route('getMiniMapData', function ($q, $parts) {
+  $this->json($q->getMiniMapData());
 });
+
+$app->route('getMapData', function ($q, $parts) {
+  $this->json($q->getMiniMapData());
+});
+
+$app->route('getSearchAggregationData', function ($q, $parts) {
+  $this->json($q->getSearchAggregationData());
+});
+
+$app->route('getPeriodsCountryAggregationData', function ($q, $parts) {
+    // $this->q->setClient($this->settings->elasticsearchEnv->{$this->settings->environment->elasticsearchEnv}->periodHost);
+    $this->json($q->getPeriodsCountryAggregationData());
+  },
+  $settings->elasticsearchEnv->{$settings->environment->elasticsearchEnv}->periodHost
+);
+
+$app->route('getPeriodsForCountry', function ($q, $parts) {
+    // $this->q->setClient($this->settings->elasticsearchEnv->{$this->settings->environment->elasticsearchEnv}->periodHost);
+    $this->json($q->getPeriodsForCountry());
+  },
+  $settings->elasticsearchEnv->{$settings->environment->elasticsearchEnv}->periodHost
+);
 
 $app->route('mail', function ($q, $parts) {
   header('Access-Control-Allow-Methods: GET, POST');
@@ -86,7 +110,6 @@ $app->route('*', function () {
       'api/search?q={searchString}',
       'api/autocomplete?q={searchString}',
       'api/autocompleteFilter?q={searchString}&filter={filterName}',
-      'api/timeline',
       'api/mail',
     ],
   ], true);

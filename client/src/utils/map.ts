@@ -2,12 +2,9 @@
 /**
  * Common map functions shared for map (leaflet)
  */
- import { Component, Vue, Prop, Watch } from "vue-property-decorator";
- import { searchModule, generalModule } from "@/store/modules";
- import { LoadingStatus } from "@/store/modules/General";
+ import { generalModule } from "@/store/modules";
 
  import * as L from "leaflet";
- import Geohash from "latlon-geohash";
 
  // Leaflet stuff
  import "leaflet.heat";

@@ -11,7 +11,7 @@ export const sortOptions = [
 
 export const helpTexts: helpText[] = [
   {
-    id: 'all',
+    id: '',
     title: 'All fields',
     text: '<p>Search in all fields</p>',
   },
@@ -33,6 +33,6 @@ export const helpTexts: helpText[] = [
   {
     id: 'aatSubjects',
     title: 'Getty AAT Subject',
-    text: '<p><a href="https://www.getty.edu/research/tools/vocabularies/aat/about.html" target="_blank" class="underline">https://www.getty.edu/research/tools/vocabularies/aat/about.html</a></p>',
+    text: '<p>Search using a subject term from the Getty thesaurus:<br><a href="https://www.getty.edu/research/tools/vocabularies/aat/about.html" target="_blank" class="underline">https://www.getty.edu/research/tools/vocabularies/aat/about.html</a></p>',
   },
 ];

@@ -27,13 +27,50 @@ input::placeholder, textarea::placeholder {
   word-break: break-all;
   word-break: break-word;
 }
+.whitespace-no-wrap{
+  white-space: nowrap;
+}
 
 /* leaflet overrides */
-.map--default .leaflet-control-container {
+
+/* small marker */
+.ariadne-map .marker-cluster-small {
+  @apply bg-green-40;
+}
+
+.ariadne-map .marker-cluster-small div {
+  @apply bg-green-80;
+}
+
+/* medium marker */
+.ariadne-map .marker-cluster-medium {
+  @apply bg-yellow-40;
+}
+
+.ariadne-map .marker-cluster-medium div {
+  @apply bg-yellow-80;
+}
+
+/* large marker */
+.ariadne-map .marker-cluster-large {
+  @apply bg-red-40;
+}
+
+.ariadne-map .marker-cluster-large div {
+  @apply bg-red-80;
+}
+
+.ariadne-map--resource .leaflet-control-container {
   @apply relative;
   @apply max-w-screen-xl;
   @apply mx-auto;
   @apply h-full;
+}
+
+.ariadne-map .leaflet-pane,
+.ariadne-map .leaflet-top,
+.ariadne-map .leaflet-bottom {
+  @apply z-10;
 }
 
 .leaflet-touch .leaflet-control-container .leaflet-control-layers-toggle {
@@ -94,11 +131,6 @@ input::placeholder, textarea::placeholder {
   @apply duration-300;
   @apply opacity-100;
   @apply text-blue;
-}
-
-/* v-img lightbox override */
-.count-v-img {
-  @apply hidden;
 }
 
 /* services links inside info */

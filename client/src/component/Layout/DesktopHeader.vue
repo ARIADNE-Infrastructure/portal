@@ -1,92 +1,84 @@
 <template>
   <header
-    class="hidden md:block fixed top-0 z-1005 top-0 bg-blue w-full h-4x bg-lightGray shadow-bottomDark"
+    class="hidden md:block fixed top-0 z-30 top-0 bg-blue w-full h-4x bg-lightGray shadow-bottomDark"
   >
     <div class="flex relative items-center max-w-screen-xl mx-auto h-4x">
-    <template>
       <!-- logo -->
       <b-link
         to="/"
-        class="absolute -bottom-base left-base"
-      >
+        class="ml-base flex transition-opacity duration-300 hover:opacity-80"
+        style="margin-bottom: -28px">
         <img
           :src="`${ assets }/logo.png`"
-          class="transition-opacity duration-300 hover:opacity-80 backface-hidden"
-          alt="logo"
-        >
+          class="backface-hidden"
+          alt="Ariadne logo"
+        />
+        <p class="text-red text-2x" style="font-family: 'PT Sans'; white-space: nowrap; margin-top: -7px">
+          ARIADNE PORTAL
+        </p>
       </b-link>
 
-      <!-- search -->
-      <div class="flex max-w-lg flex-1 ml-5x border-yellow border-b-3 items-center h-full p-base">
-        <filter-search
-          color="yellow"
-          hoverStyle="hover:bg-yellow-80"
-          focusStyle="focus:border-yellow"
-          :useCurrentSearch="false"
-        />
-      </div>
-    </template>
+      <div class="w-1/2 border-b-3 border-yellow ml-5x absolute bottom-0"></div>
 
-    <!--  menu -->
-    <div class="flex flex-1 h-full xl:pr-base">
-      <ul class="flex w-full">
+      <!--  menu -->
+      <ul class="flex flex-1 h-full justify-end ml-2x xl:mr-base">
         <li
           v-for="item in generalModule.getMainNavigation"
           :key="item.path"
-          class="h-full flex-1 bg-lightGray"
+          class="h-full flex-1 bg-lightGray relative group"
+          style="max-width: 200px"
         >
           <b-link
             :to="item.path"
-            :class="`${ item.hover } ${ item.border }` + (isActive(item.path) ? ` ${ item.bg } ${ item.border }` : '')"
+            :class="`${ item.groupHover || '' } ${ item.hover } ${ item.border }` + (isActive(item.path) ? ` ${ item.bg } ${ item.border }` : '')"
             class="block relative transition-all duration-300 text-mmd text-midGray2 border-b-3 flex items-center justify-center h-full"
           >
             <span class="leading-1">
               <i
                 :class="`fa-${ item.icon }`"
-                class="fas mr-xs"
+                class="fas mr-sm"
               />
               {{ item.name }}
             </span>
           </b-link>
+
+          <div v-if="item.subMenu" class="absolute w-full bg-lightGray opacity-0 z-neg10 group-hover:opacity-100 group-hover:z-30 invisible group-hover:visible transition-all duration-300">
+            <b-link v-for="sub in item.subMenu" :key="sub.path" :to="sub.path"
+              :class="`${ sub.hover } ${ sub.border }` + (isActive(sub.path) ? ` ${ sub.bg } ${ sub.border }` : '')"
+              class="block relative py-lg transition-all duration-300 text-mmd text-midGray2 border-b-3 flex items-center justify-center h-full">
+              <span class="leading-1">
+                <i :class="`fa-${ sub.icon }`" class="fas mr-sm" />
+                {{ sub.name }}
+              </span>
+            </b-link>
+          </div>
         </li>
       </ul>
-      </div>
     </div>
   </header>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Watch } from 'vue-property-decorator';
+<script setup lang="ts">
+import { watch, onMounted } from 'vue';
+import { $ref, $computed } from 'vue/macros';
+import { useRoute } from 'vue-router'
 import { generalModule } from "@/store/modules";
 import BLink from '@/component/Base/Link.vue';
-import FilterSearch from '@/component/Filter/Search.vue';
 
-@Component({
-  components: {
-    BLink,
-    FilterSearch,
-  }
-})
-export default class LayoutDesktopHeader extends Vue {
-  generalModule = generalModule;
-  path: string = '';
+const route = useRoute();
+let path: string = $ref('');
 
-  mounted () {
-    this.updateMenuPath();
-  }
+const assets: string = $computed(() => generalModule.getAssetsDir);
 
-  get assets(): string {
-    return generalModule.getAssetsDir;
-  }
-
-  isActive (path: string): boolean {
-    return this.path.includes(path) ||
-      (path.includes('search') && this.path.includes('resource'));
-  }
-
-  @Watch('$route')
-  updateMenuPath () {
-    this.path = this.$router.currentRoute.path;
-  }
+const isActive = (itemPath: string): boolean => {
+  return path.includes(itemPath) ||
+    (itemPath.includes('search') && path.includes('resource'));
 }
+
+const updateMenuPath = (): void => {
+  path = route.fullPath;
+}
+
+onMounted(updateMenuPath);
+watch(route, updateMenuPath);
 </script>

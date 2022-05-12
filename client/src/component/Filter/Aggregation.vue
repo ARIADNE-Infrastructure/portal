@@ -4,12 +4,13 @@
   >
     <list-accordion
       :title="resultAggTitle"
+      :description="resultAggDescription"
       :initShow="initShow"
       :autoShow="resultAggAnyActive"
       :hover="true"
       :height="height"
     >
-      <div ref="bucketList" class="relative">
+      <div :id="bucketListId" class="relative">
         <filter-aggregation-options
           :id="id"
           :title="resultAggTitle"
@@ -28,8 +29,8 @@
               @click="setActive(id, bucket.key, false)"
             >
               <span class="flex-grow break-word pr-lg">
-                <span v-if="id === 'subjectUri' && params.subjectLabel">
-                  {{ utils.sentenceCase(params.subjectLabel) }}
+                <span v-if="id === 'derivedSubjectId' && params.derivedSubjectIdLabel">
+                  {{ utils.sentenceCase(params.derivedSubjectIdLabel) }}
                 </span>
 
                 <span v-else-if="id === 'fields' && fields.some(f => f.val === bucket.key)">
@@ -84,126 +85,93 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+<script setup lang="ts">
+import { watch, nextTick } from 'vue';
+import { $ref, $computed, $$ } from 'vue/macros';
 import { searchModule, resourceModule, aggregationModule, generalModule } from "@/store/modules";
 import utils from '@/utils/utils';
-
 import ListAccordion from '@/component/List/Accordion.vue';
 import FilterAggregationOptions from './Aggregation/Options.vue';
 
-@Component({
-  components: {
-    ListAccordion,
-    FilterAggregationOptions,
+let height = $ref(0);
+const bucketListId: string = 'bucketList-' + utils.getUniqueId();
+
+const props = defineProps({
+  id: { type: String, required: true },
+  item: Object,
+  shortSortNames: Boolean,
+});
+
+const params = $computed(() => searchModule.getParams);
+const fields = $computed(() => resourceModule.getFields);
+const aggType = $computed(() => aggregationModule.getTypes.find(type => type.id === props.id));
+const resultAggTitle: string = $computed(() => aggregationModule.getTitle(props.id));
+const resultAggDescription: string = $computed(() => aggregationModule.getDescription(props.id));
+const resultAggAnyActive: boolean = $computed(() => aggregationModule.getAnyActive(props.id, props.item?.buckets));
+
+const hasMoreDocs: number = $computed(() => {
+  const options = aggregationModule.getOptions[props.id];
+  let count;
+
+  if (options?.search) {
+    count = options?.data?.sum_other_doc_count;
   }
-})
-export default class FilterAggregation extends Vue {
-  utils: any = utils;
-
-  height: number = 0;
-
-  @Prop() id!: string;
-  @Prop() item!: any;
-  @Prop({ default: false }) shortSortNames?: boolean;
-
-  get params(): any {
-    return searchModule.getParams;
-  }
-
-  get fields(): any {
-    return resourceModule.getFields;
-  }
-
-  get isLoading(): boolean {
-    return generalModule.getIsLoading;
-  }
-
-  get aggType(): any {
-    return aggregationModule.getTypes.find(type => type.id === this.id);
+  else {
+    count = props.item?.sum_other_doc_count;
   }
 
-  get resultAggTitle(): string {
-    return aggregationModule.getTitle(this.id);
-  }
+  return count ?? 0;
+});
 
-  get resultAggAnyActive(): boolean {
-    return aggregationModule.getAnyActive(this.id, this.item.buckets);
-  }
+const initShow: boolean = $computed(() => {
+  const options = aggregationModule.getOptions[props.id];
+  return !!(options?.search || resultAggAnyActive);
+});
 
-  resultAggIsActive(key: string, bucketKey: string): boolean {
-    return aggregationModule.getIsActive(key, bucketKey);
-  }
+const filteredAndSortedBuckets: Array<any> = $computed(() => {
+  let list = props.item?.buckets;
+  const options = aggregationModule.getOptions[props.id];
 
-  getFilterText(text: string) {
-    if (this.aggType?.unformatted) {
-      return text;
-    }
-    return utils.sentenceCase(text);
-  }
+  if (options) {
+    let { search, sortBy, sortOrder, data } = options;
 
-  noBucketMatch(id: string): boolean {
-    const options = aggregationModule.getOptionsById(id);
-
-    return options?.data?.buckets?.length === 0 ? true : false;
-  }
-
-  get hasMoreDocs(): number {
-    const options = aggregationModule.getOptionsById(this.id);
-    let count;
-
-    if (options?.search) {
-      count = options?.data?.sum_other_doc_count;
-    }
-    else {
-      count = this.item.sum_other_doc_count;
+    // replace list with search result
+    if (search && data?.buckets) {
+      list = data.buckets;
     }
 
-    return count ?? 0;
+    // return sorted
+    return utils.sortListByValue(list, sortBy, sortOrder);
   }
 
-  get initShow(): boolean {
-    const options = aggregationModule.getOptionsById(this.id);
+  return list;
+});
 
-    return options?.search || this.resultAggAnyActive;
+const resultAggIsActive = (key: string, bucketKey: string): boolean => {
+  return aggregationModule.getIsActive(key, bucketKey);
+};
+
+const getFilterText = (text: string): string => {
+  if (aggType?.unformatted) {
+    return text;
   }
+  return utils.sentenceCase(text);
+};
 
-  get filteredAndSortedBuckets(): any[] {
-    let list = this.item.buckets;
-    const options = aggregationModule.getOptionsById(this.id);
+const noBucketMatch = (id: string): boolean => {
+  const options = aggregationModule.getOptions[id];
+  return options?.data?.buckets?.length === 0;
+};
 
-    if (options) {
-      let { search, sortBy, sortOrder, data } = options;
+const setActive = (key: string, value: any, add: boolean) => {
+  aggregationModule.setActive({ key, value, add });
+};
 
-      // replace list with search result
-      if (options?.search && data?.buckets) {
-        list = data.buckets;
-      }
+const setBucketListHeight = () => {
+  nextTick(() => {
+    height = document.getElementById(bucketListId)?.scrollHeight || 0;
+  });
+};
 
-      // return sorted
-      return utils.sortListByValue(list, sortBy, sortOrder);
-    }
-
-    return list;
-  }
-
-  setActive(key: string, value: any, add: boolean): void {
-    aggregationModule.setActive({ key, value, add });
-  }
-
-  setBucketListHeight(): void {
-    const el = this.$refs.bucketList as HTMLDivElement;
-
-    this.$nextTick(() => {
-      if (el) {
-        this.height = el.scrollHeight;
-      }
-    });
-  }
-
-  @Watch('filteredAndSortedBuckets', { deep: true })
-  onLoadingChange() {
-    this.setBucketListHeight();
-  }
-}
+watch($$(filteredAndSortedBuckets), setBucketListHeight, { deep: true });
 </script>

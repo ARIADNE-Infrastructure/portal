@@ -1,5 +1,5 @@
 <template>
-  <div v-if="this.filtered.length">
+  <div v-if="filtered.length">
     <h3
       v-if="header"
       class="text-lg font-bold mt-2x mb-md"
@@ -9,7 +9,7 @@
 
     <b
       v-if="title"
-      class="mr-xs"
+      class="mr-sm"
       :class="filtered.length > 1 ? 'block mb-sm' : ''"
     >
       {{ title }}:
@@ -26,7 +26,7 @@
         <i v-if="icon" :class="icon"></i>
 
         <b-link :to="getUrl(item)">
-          <span v-if="slotType === 'person'">
+          <span v-if="slotType === 'person' || slotType === 'organisation'">
             {{ item.name + (item.type ? ' (' + item.type + ')' : '') }}
           </span>
 
@@ -54,9 +54,18 @@
           target="_blank"
           class="hover:text-black group block mt-sm md:mt-none md:ml-md md:inline"
         >
-          <i class="fa fa-home mr-xs text-blue group-hover:text-black"></i>
+          <i class="fa fa-home mr-sm text-blue group-hover:text-black"></i>
           {{ item.institution ? item.institution : getHomepage(item) }}
         </b-link>
+
+        <span
+          v-if="getEmail(item)"
+          class="hover:text-black group block mt-sm md:mt-none md:ml-md md:inline"
+        >
+          <i class="fa fa-envelope mr-sm text-blue group-hover:text-black"></i>
+          <span v-html="getEmail(item)"></span>
+        </span>
+
       </span>
 
       <span v-else>
@@ -70,106 +79,103 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script setup lang="ts">
+import { $computed } from 'vue/macros';
 import { generalModule } from "@/store/modules";
-
 import utils from '@/utils/utils';
 import BLink from '@/component/Base/Link.vue';
 import HelpTooltip from '@/component/Help/Tooltip.vue';
 
-@Component({
-  components: {
-    BLink,
-    HelpTooltip
+const props = defineProps({
+  items: Array,
+  title: String,
+  header: String,
+  filter: String,
+  prop: String,
+  slotType: String,
+  query: String,
+  icon: String,
+  fields: String,
+});
+
+const assets: string = $computed(() => generalModule.getAssetsDir);
+const isSingleItem: boolean = $computed(() => filtered.length === 1 && props.title ? true : false);
+
+const itemsList: Array<any> = $computed(() => {
+  // use prop if valid
+  if (Array.isArray(props.items)) {
+    return props.items;
   }
-})
-export default class ResourceFilteredItems extends Vue {
-  @Prop() items?: any[];
-  @Prop() title?: string;
-  @Prop() header?: string;
-  @Prop() filter?: string;
-  @Prop() prop?: string;
-  @Prop() slotType?: string;
-  @Prop() query?: string;
-  @Prop() icon?: string;
-  @Prop() fields?: string;
+  return [];
+});
 
-  utils = utils;
-
-  get itemsList(): any[] {
-    // use prop if valid
-    if (Array.isArray(this.items)) {
-      return this.items;
-    }
-
-    return [];
-  }
-
-  get isSingleItem(): boolean {
-    return this.filtered.length === 1 && this.title ? true : false;
+const filtered: Array<any> = $computed(() => {
+  if (!props.filter) {
+    return itemsList;
   }
 
-  get assets(): string {
-    return generalModule.getAssetsDir;
-  }
+  let filter = props.filter.split(',');
+  let doublets: any[] = [];
 
-  get filtered(): any[] {
-    if (!this.filter) {
-      return this.itemsList;
-    }
-
-    let filter = this.filter.split(',');
-    let doublets: any[] = [];
-
-    return this.itemsList.filter((item: any) => {
-      if (filter.some((prop: string) => item[prop] && !utils.isInvalid(item[prop]))) {
-        if (!doublets.some((doublet: any) => utils.objectEquals(doublet, item))) {
-          doublets.push(item);
-          return true;
-        }
-      }
-      return false;
-    });
-  }
-
-  getHomepage(item: any): string | null {
-    let homepage = item?.homepage;
-
-    if (this.slotType === 'person' && homepage) {
-      // make sure a protocol is set
-      if (!/http:|https:/.test(homepage)) {
-        homepage = `http://${ homepage }`;
-      }
-
-      return homepage;
-    }
-
-    return null;
-  }
-
-  getUrl(item: any): string {
-
-    if (this.slotType === 'resource' || this.slotType === 'subject') {
-      return '/' + this.slotType + '/' + encodeURIComponent(item[this.prop || 'id']);
-    }
-
-    let params = {
-      [this.query || 'q']: this.prop ? item[this.prop] : (this.filter ? item[this.filter] : item)
-    }
-
-    if (this.query === 'derivedSubjectId') {
-      if(item.id) {
-        let parts = item.id.split('/');
-        params = {
-          [this.query] : parts[parts.length-1]
-        }
+  return itemsList.filter((item: any) => {
+    if (filter.some((prop: string) => item[prop] && !utils.isInvalid(item[prop]))) {
+      if (!doublets.some((doublet: any) => utils.objectEquals(doublet, item))) {
+        doublets.push(item);
+        return true;
       }
     }
-    if (this.fields) {
-      params.fields = this.fields;
+    return false;
+  });
+});
+
+const getHomepage = (item: any): string | null => {
+  let homepage = item?.homepage;
+
+  if ((props.slotType === 'person' || props.slotType === 'organisation') && homepage) {
+    // make sure a protocol is set
+    if (!/http:|https:/.test(homepage)) {
+      homepage = `http://${ homepage }`;
     }
-    return utils.paramsToString('/search', params);
+    return homepage;
   }
+  return null;
+};
+
+const getUrl = (item: any): string => {
+  if (props.slotType === 'resource' || props.slotType === 'subject') {
+    return '/' + props.slotType + '/' + encodeURIComponent(item[props.prop || 'id']);
+  }
+
+  let params = {
+    [props.query || 'q']: props.prop ? item[props.prop] : (props.filter ? item[props.filter] : item)
+  }
+
+  if (props.query === 'derivedSubjectId') {
+    if (item.id) {
+      let parts = item.id.split('/');
+      params = {
+        [props.query] : parts[parts.length-1]
+      }
+      if (item.prefLabel) {
+        params.derivedSubjectIdLabel = item.prefLabel;
+      }
+    }
+  }
+  if (props.fields) {
+    params.fields = props.fields;
+  }
+  return utils.paramsToString('/search', params);
+}
+
+const getEmail = (item: any): string => {
+  // Only organisationss (publisher) is allowed to display email!!
+  if (props.slotType === 'organisation') {
+    const regex = new RegExp("^(.+)@(.+)$");
+    let email = item?.email;
+    if (regex.test(email)) {
+      return '<a href="mailto:'+email+'">Email</a>';
+    }
+  }
+  return '';
 }
 </script>

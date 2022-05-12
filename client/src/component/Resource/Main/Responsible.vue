@@ -1,8 +1,8 @@
 <template>
   <div>
     <h3 class="text-lg font-bold mb-lg">
-      <i class="fas fa-users mr-xs"></i>
-      Responsible persons and organisations
+      <i class="fas fa-users mr-sm"></i>
+      Responsible person and organisations
     </h3>
 
     <resource-filtered-items v-for="(person, key) in persons" :key="key"
@@ -51,35 +51,23 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script setup lang="ts">
+import { $computed } from 'vue/macros';
 import { resourceModule } from "@/store/modules";
-
 import BLink from '@/component/Base/Link.vue';
 import ResourceFilteredItems from '../FilteredItems.vue';
 
-@Component({
-  components: {
-    BLink,
-    ResourceFilteredItems,
-  }
-})
-export default class ResourceMainResponsible extends Vue {
-  persons = [
-    { prop: 'creator', title: 'Creator', query: 'creator' },
-    { prop: 'contributor', title: 'Contributor', query: 'contributor' },
-    { prop: 'owner', title: 'Owner', query: 'owner' },
-    { prop: 'responsible', title: 'Responsible', query: 'responsible' }
-  ];
+defineProps({
+  itemClass: String,
+  bClass: String,
+});
 
-  @Prop() itemClass!: string;
-  @Prop() bClass!: string;
+const persons = [
+  { prop: 'creator', title: 'Creator', query: 'creator' },
+  { prop: 'contributor', title: 'Contributor', query: 'contributor' },
+  { prop: 'owner', title: 'Owner', query: 'owner' },
+  { prop: 'responsible', title: 'Responsible', query: 'responsible' }
+];
 
-  get resource(): any {
-    return resourceModule.getResource;
-  }
-
-
-
-}
+const resource = $computed(() => resourceModule.getResource);
 </script>

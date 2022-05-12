@@ -148,4 +148,39 @@ class Timeline {
             ];
     }
 
+        /**
+     * ElasticSearch inner query for filters
+     *
+     * @param $rangeStartYear
+     * @param $rangeEndYear
+     * @return array
+     */
+    public static function buildRangeInnerQuery($range) {
+
+      $start = [];  
+      $end = [];  
+
+      if ($range) {
+        $range = explode(',', $range);
+        if (sizeof($range) > 1) {
+          $start = [
+            'range' => [
+              'temporal.from' => [
+                'gte' => intval($range[0])
+              ]
+            ]
+          ];
+          $end = [
+            'range' => [
+              'temporal.until' => [
+                'lte' => intval($range[1])
+              ]
+            ]
+          ];
+        }
+      }
+      return [$start, $end];
+    }
+
+
 }

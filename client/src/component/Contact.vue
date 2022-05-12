@@ -72,68 +72,56 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+<script setup lang="ts">
+import { onMounted } from 'vue';
+import { $ref, $computed } from 'vue/macros';
 import { contactModule } from "@/store/modules";
 
-@Component
-export default class About extends Vue {
-  isSending = false;
+let isSending: boolean = $ref(false);
+const captcha: any = $ref(null);
 
-  mounted () {
-    contactModule.clearMessages();
+const headerClasses: string = 'text-hg mb-xs';
+const fieldClasses: string = 'w-full p-sm border-base rounded-base';
 
-    if ((<any>window).grecaptcha) {
-      (this.$refs.captcha as any).innerHTML = '';
-      (<any>window).grecaptcha.render(this.$refs.captcha, {
-        sitekey: this.captchaPublicKey
-      });
-    } else {
-      let captchaScript: any = document.createElement('script');
-      captchaScript.src = 'https://www.google.com/recaptcha/api.js';
-      captchaScript.async = 'true';
-      document.body.appendChild(captchaScript);
-    }
-  }
+const mail = $computed(() => contactModule.getMail);
+const errorMsg: string = $computed(() => contactModule.getErrorMsg);
+const successMsg: string = $computed(() => contactModule.getSuccessMsg);
+const captchaPublicKey: string = $computed(() => contactModule.getCaptchaPublicKey);
 
-  get mail (): any {
-    return contactModule.getMail;
-  }
-  get errorMsg (): string {
-    return contactModule.getErrorMsg;
-  }
-  get successMsg (): string {
-    return contactModule.getSuccessMsg;
-  }
-  get captchaPublicKey (): string {
-    return contactModule.getCaptchaPublicKey;
-  }
-  get headerClasses (): string {
-    return 'text-hg mb-xs';
-  }
-  get fieldClasses (): string {
-    return 'w-full p-sm border-base rounded-base';
-  }
+onMounted(() => {
+  contactModule.clearMessages();
 
-  async sendMail () {
-    if (this.isSending) {
-      return;
-    }
-
-    let captchaResponse = (<any>window)?.grecaptcha?.getResponse();
-    if (!captchaResponse) {
-      return;
-    }
-
-    this.isSending = true;
-
-    await contactModule.sendMail(captchaResponse);
-
-    (<any>window).grecaptcha.reset(this.$refs.captcha, {
-      sitekey: this.captchaPublicKey
+  if ((<any>window).grecaptcha) {
+    captcha.innerHTML = '';
+    (<any>window).grecaptcha.render(captcha, {
+      sitekey: captchaPublicKey
     });
-
-    this.isSending = false;
+  } else {
+    const captchaScript: HTMLScriptElement = document.createElement('script');
+    captchaScript.src = 'https://www.google.com/recaptcha/api.js';
+    captchaScript.async = true;
+    document.body.appendChild(captchaScript);
   }
+});
+
+const sendMail = async () => {
+  if (isSending) {
+    return;
+  }
+
+  let captchaResponse = (<any>window)?.grecaptcha?.getResponse();
+  if (!captchaResponse) {
+    return;
+  }
+
+  isSending = true;
+
+  await contactModule.sendMail(captchaResponse);
+
+  (<any>window).grecaptcha.reset(captcha, {
+    sitekey: captchaPublicKey
+  });
+
+  isSending = false;
 }
 </script>

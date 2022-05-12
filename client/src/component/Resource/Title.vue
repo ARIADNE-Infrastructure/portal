@@ -40,40 +40,15 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+<script setup lang="ts">
+import { $computed } from 'vue/macros';
 import { generalModule, resourceModule } from "@/store/modules";
 import HelpTooltip from '@/component/Help/Tooltip.vue';
 import MultiLangInfo from './MultiLangInfo.vue';
 
-@Component({
-  components: {
-    HelpTooltip,
-    MultiLangInfo,
-  },
-})
-export default class ResourceTitle extends Vue {
-  generalModule = generalModule;
-  resourceModule = resourceModule;
-
-  get resource(): any {
-    return resourceModule.getResource;
-  }
-
-  get mainTitle (): string {
-    return resourceModule.getMainTitle(this.resource);
-  }
-
-  get isCtsCertified(): boolean {
-    return resourceModule.getIsCtsCertified(this.resource);
-  }
-
-  get nativeTitle (): string {
-    return resourceModule.getNativeTitle(this.resource);
-  }
-
-  get nonNativeTitles (): any[] {
-    return resourceModule.getNonNativeTitles(this.resource);
-  }
-}
+const resource = $computed(() => resourceModule.getResource);
+const mainTitle = $computed(() => resourceModule.getMainTitle(resource));
+const isCtsCertified = $computed(() => resourceModule.getIsCtsCertified(resource));
+const nativeTitle = $computed(() => resourceModule.getNativeTitle(resource));
+const nonNativeTitles = $computed(() => resourceModule.getNonNativeTitles(resource));
 </script>

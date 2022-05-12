@@ -1,36 +1,17 @@
 <template>
 	<div class="pt-3x px-base max-w-screen-xl mx-auto relative flex flex-col lg:flex-row">
-    <aside class="pt-base lg:pt-none lg:w-1/3 lg:pr-lg lg:order-first block order-last relative">
-      <h2 class="text-lg mb-md">
-        Filters
-      </h2>
+    <!-- filters (mobile & desktop) -->
+    <template v-if="window.innerWidth">
+      <filter-toggleable v-if="window.innerWidth < 1000" class="lg:w-1/3 lg:pr-lg">
+        <filter-list :show="['search', 'yearsAndPeriods', 'aggregations']" />
+      </filter-toggleable>
+      <aside v-else class="lg:w-1/3 lg:pr-lg">
+        <filter-list :show="['search', 'yearsAndPeriods', 'aggregations']" />
+      </aside>
+    </template>
 
-      <filter-search
-        color="blue"
-        hoverStyle="hover:bg-blue-80"
-        focusStyle="focus:border-blue"
-        class="mb-lg pr-lg"
-        :breakHg="true"
-        :big="true"
-        :useCurrentSearch="true"
-        showFields="select"
-        :hasAutocomplete="true"
-        :stayOnPage="true"
-        @submit="utils.blurMobile()"
-      />
-
-      <filter-years class="mb-lg pr-lg" />
-
-      <filter-aggregations max-height="490px" />
-
-      <div class="pr-lg">
-        <filter-clear
-          :ignoreParams="['page', 'sort', 'order', 'mapq', 'bbox', 'size', 'ghp', 'loadingStatus', 'forceReload']"
-        />
-      </div>
-    </aside>
-
-    <section class="lg:w-2/3 lg:pl-lg block">
+    <!-- main content -->
+    <section class="lg:w-2/3 lg:pl-lg">
       <p v-if="result.error" class="text-red">
         {{ result.error }}
       </p>
@@ -39,43 +20,36 @@
         v-else
         ref="timeline"
       >
-        <filter-time-line />
+        <filter-time-line :hasLoader="true" />
       </div>
     </section>
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
-import { searchModule } from "@/store/modules";
+<script setup lang="ts">
+import { watch, onMounted } from 'vue';
+import { $computed } from 'vue/macros';
+import { useRoute, onBeforeRouteLeave } from 'vue-router'
+
+import { generalModule, searchModule } from "@/store/modules";
 import utils from '@/utils/utils';
-
-import FilterSearch from '@/component/Filter/Search.vue';
-import FilterYears from '@/component/Filter/Years.vue';
-import FilterAggregations from '@/component/Filter/Aggregations.vue';
+import FilterList from '@/component/Filter/List.vue';
+import FilterToggleable from '@/component/Filter/Toggleable.vue';
 import FilterTimeLine from '@/component/Filter/TimeLine.vue';
-import FilterClear from '@/component/Filter/Clear.vue';
 
-@Component({
-  components: {
-    FilterSearch,
-    FilterYears,
-    FilterAggregations,
-    FilterTimeLine,
-    FilterClear,
-  }
-})
-export default class BrowseWhen extends Vue {
-  utils = utils;
+const route = useRoute();
+const window = $computed(() => generalModule.getWindow);
+const result = $computed(() => searchModule.getResult);
 
-  get result(): any {
-    return searchModule.getResult;
-  }
+onMounted(() => {
+  searchModule.setSearch({
+    fromRoute: true
+  });
+});
 
-  async created () {
-    await searchModule.setSearch({
-      fromRoute: true
-    });
-  }
-}
+const unwatch = watch(route, () => {
+  searchModule.setSearch({ fromRoute: true });
+});
+
+onBeforeRouteLeave(unwatch);
 </script>

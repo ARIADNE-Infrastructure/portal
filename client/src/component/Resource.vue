@@ -15,27 +15,30 @@
           :to="utils.paramsToString('/search', params)"
           class="p-md bg-black-80 text-white border-b-base border-black hover:bg-blue transition-bg duration-300 w-full block text-center"
         >
-          <i class="fas fa-long-arrow-alt-left mr-xs"></i>
+          <i class="fas fa-long-arrow-alt-left mr-sm"></i>
           Back to search results
         </b-link>
       </div>
 
-      <div class="mb-2x">
-        <resource-map
-          v-if="resource"
-          class="map--default"
-        />
+      <div>
+        <resource-map v-if="resource" />
       </div>
 
-      <article class="px-base mx-auto max-w-screen-xl lg:flex">
-        <div class="w-full lg:w-2/3 lg:pr-2x">
-          <resource-title />
+      <!-- crumbtrails -->
+      <div>
+        <bread-crumb/>
+      </div>
+
+      <article class="py-xl px-base mx-auto max-w-screen-xl lg:flex">
+
+        <div class="pt-xl w-full lg:w-2/3 lg:pr-2x">
+          <resource-title class="mt-xs" />
           <resource-description class="mt-2x pt-xs mb-3x lg:mb-2x" />
           <resource-links class="mt-lg block lg:hidden" :resourceId="id" />
           <resource-main class="mt-lg" />
         </div>
 
-        <div class="w-full lg:w-1/3 pt-sm lg:pl-2x lg:border-l-base border-gray">
+        <div class="w-full lg:w-1/3 pt-xl lg:pl-2x lg:border-l-base border-gray">
           <resource-links class="hidden lg:block" :resourceId="id" />
           <resource-sidebar :initResource="initResource" />
         </div>
@@ -44,8 +47,10 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+<script setup lang="ts">
+import { watch, onMounted, nextTick } from 'vue';
+import { $ref, $computed } from 'vue/macros';
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { searchModule, generalModule, resourceModule } from "@/store/modules";
 import utils from '@/utils/utils';
 import BLink from '@/component/Base/Link.vue';
@@ -57,71 +62,52 @@ import ResourceDescription from './Resource/Description.vue';
 import ResourceLinks from './Resource/Links.vue';
 import ResourceMain from './Resource/Main.vue';
 import ResourceSidebar from './Resource/Sidebar.vue';
+import BreadCrumb from './Resource/BreadCrumb.vue';
 
-@Component({
-  components: {
-    BLink,
-    ResourceMap,
-    ResourceTitle,
-    ResourceDescription,
-    ResourceLinks,
-    ResourceMain,
-    ResourceSidebar,
-  },
-})
-export default class Resource extends Vue {
-  @Prop() id!: string;
-  forced: boolean = false;
-  utils = utils;
+const props = defineProps({
+  id: String,
+});
 
-  created () {
-    this.initResource(this.id);
+const router = useRouter();
+const route = useRoute();
+let forced: boolean = $ref(false);
+
+const isLoading: boolean = $computed(() => generalModule.getIsLoading);
+const resource = $computed(() => resourceModule.getResource);
+const params = $computed(() => searchModule.getParams);
+
+onMounted(() => {
+  initResource(props.id);
+});
+
+const initResource = async (id: any, force: boolean = false) => {
+  id = String(id);
+  forced = force;
+
+  if (resource?.id && resource.id === id && !force) {
+    return;
   }
 
-  async initResource (id: any, force: boolean = false) {
+  await resourceModule.setResource(id);
 
-    id = String(id);
-    this.forced = force;
-
-    if (this.resource?.id && this.resource.id === id && !force) {
-      return;
+  nextTick(() => {
+    if (resource) {
+      // Set document metadata
+      generalModule.setMeta({
+        title: (resource.title?.text && resource.title?.text.trim()) ? resource.title?.text : 'No title',
+        description: resource?.description?.text ? resource?.description?.text.slice(0, 155) : ''
+      });
+    } else {
+      router.replace('/404');
     }
-
-    await resourceModule.setResource(id);
-
-    this.$nextTick(() => {
-      if (this.resource) {
-        // Set document metadata
-
-        generalModule.setMeta({
-          title: (this.resource.title?.text && this.resource.title?.text.trim()) ? this.resource.title?.text : 'No title',
-          description: this.resource?.description?.text ? this.resource?.description?.text.slice(0, 155) : ''
-        });
-      } else {
-        this.$router.replace('/404');
-      }
-    });
-
-  }
-
-  get isLoading(): boolean {
-    return generalModule.getIsLoading;
-  }
-
-  get resource(): any {
-    return resourceModule.getResource;
-  }
-
-  get params(): any {
-    return searchModule.getParams;
-  }
-
-  @Watch('$route')
-  async onRouteUpdate (to: any) {
-    if (to?.params?.id) {
-      await this.initResource(to.params.id);
-      this.$nextTick(() => this.$forceUpdate());
-    }
-  }
+  });
 }
+
+const unwatch = watch(route, async (to: any) => {
+  if (to?.params?.id) {
+    await initResource(to.params.id);
+  }
+});
+
+onBeforeRouteLeave(unwatch);
 </script>

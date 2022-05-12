@@ -1,13 +1,14 @@
 const path = require('path');
 const webpack = require('webpack');
 const os = require('os')
-const VueLoaderPlugin = require('vue-loader/lib/plugin');
+const { VueLoaderPlugin } = require('vue-loader');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
-const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
+const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const InjectPlugin = require('webpack-inject-plugin').default;
 
 /**
  * Settings
@@ -27,13 +28,12 @@ let ariadneApiPath = `http://${ localhostUrl }:8080/api`;
 let ariadneAssetPath = '/static/assets';
 
 module.exports = env => {
-
   config = {
     entry: path.resolve(__dirname, './src/index.ts'),
     output: {
       path: path.resolve(__dirname, './dist'),
       publicPath: '/',
-      filename: env.development ? '[name].[hash].js' : '[name].[chunkhash].js',
+      filename: '[name].[fullhash].js',
     },
     module: {
       rules: [
@@ -43,7 +43,8 @@ module.exports = env => {
           options: {
             loaders: {
               'css': 'vue-style-loader!css-loader',
-            }
+            },
+            reactivityTransform: true,
           }
         },
         {
@@ -58,31 +59,19 @@ module.exports = env => {
         },
         {
           test: /\.(png|jpg|gif|svg|ttf|woff|woff2|eot)$/,
-          loader: 'file-loader',
-          options: {
-            name: 'static/[name].[ext]?[hash]'
-          }
+          type: 'asset/resource',
         },
         {
           test: /\.css$/,
           use: [
             {
               loader: env.development ? 'vue-style-loader' : MiniCssExtractPlugin.loader,
-              options: {
-                sourceMap: env.development
-              }
             },
             {
               loader: 'css-loader',
-              options: {
-                sourceMap: env.development
-              }
             },
             {
               loader: 'postcss-loader',
-              options: {
-                sourceMap: env.development
-              }
             }
           ]
         }
@@ -94,7 +83,7 @@ module.exports = env => {
       new VueLoaderPlugin(),
 
       new MiniCssExtractPlugin({
-        filename: "style.[contenthash].css"
+        filename: "style.[fullhash].css"
       }),
 
       new HtmlWebpackPlugin({
@@ -122,7 +111,7 @@ module.exports = env => {
       extensions: ['.ts', '.js', '.vue', '.json'],
       alias: {
         '@': path.resolve(__dirname, 'src'),
-        'vue$': 'vue/dist/vue.esm.js'
+        'vue$': 'vue/dist/vue.esm-browser' + (env.production ? '.prod' : '') + '.js'
       }
     },
     performance: {
@@ -142,12 +131,11 @@ module.exports = env => {
     ariadneApiPath = `http://${ localhostUrl }:8080/api`;
 
     config.mode = 'development';
-    config.devtool = '#eval-source-map';
+    config.devtool = 'source-map';
 
     config.devServer = {
-      contentBase: [path.join(__dirname, 'dist'), path.join(__dirname, 'static')],
+      static: [path.join(__dirname, 'dist'), path.join(__dirname, 'static')],
       historyApiFallback: true,
-      noInfo: true,
       host: 'localhost',
       port: 8081 // SND - If you need to run on port 80 you must run as root - (sudo npm run dev)
     };
@@ -162,11 +150,11 @@ module.exports = env => {
     process.env.NODE_ENV = 'staging';
 
     config.mode = 'dev';
-    config.devtool = '';
+    config.devtool = false;
     config.optimization = {
       minimizer: [
         new TerserPlugin({}),
-        new OptimizeCSSAssetsPlugin({})
+        new CssMinimizerPlugin(),
       ],
     };
   }
@@ -180,11 +168,11 @@ module.exports = env => {
     process.env.NODE_ENV = 'staging';
 
     config.mode = 'dev';
-    config.devtool = '';
+    config.devtool = false;
     config.optimization = {
       minimizer: [
         new TerserPlugin({}),
-        new OptimizeCSSAssetsPlugin({})
+        new CssMinimizerPlugin(),
       ],
     };
   }
@@ -198,17 +186,17 @@ module.exports = env => {
     process.env.NODE_ENV = 'production';
 
     config.mode = 'production';
-    config.devtool = '';
+    config.devtool = false;
     config.optimization = {
       minimizer: [
         new TerserPlugin({}),
-        new OptimizeCSSAssetsPlugin({})
+        new CssMinimizerPlugin(),
       ],
     };
   }
 
-  ariadneAssetPath = JSON.stringify(env.ariadneAssetPath ? env.ariadneAssetPath : ariadneAssetPath);
-  ariadnePublicPath = JSON.stringify(config.output.publicPath);
+  ariadneAssetPath = env.ariadneAssetPath ? env.ariadneAssetPath : ariadneAssetPath;
+  ariadnePublicPath = config.output.publicPath;
 
   console.log( 'Building with public path: ' );
   console.log(ariadnePublicPath);
@@ -216,12 +204,18 @@ module.exports = env => {
   console.log( 'Building with asset path: ' );
   console.log(ariadneAssetPath);
 
-  let settings =  new webpack.DefinePlugin({
-    'process.env.apiUrl': JSON.stringify(ariadneApiPath),
-    'process.env.ARIADNE_PUBLIC_PATH': ariadnePublicPath,
-    'process.env.ARIADNE_ASSET_PATH': ariadneAssetPath,
-  });
+  const argvStr = process.argv.includes('--no-purge') ? '--no-purge' : ''
 
-  config.plugins.push(settings);
+  config.plugins.push(new InjectPlugin(() => `
+    window.process = {
+      argv: "${ argvStr }",
+      env: {
+        apiUrl: "${ariadneApiPath}",
+        ARIADNE_PUBLIC_PATH: "${ariadnePublicPath}",
+        ARIADNE_ASSET_PATH: "${ariadneAssetPath}"
+      }
+    };`
+  ));
+
   return config;
 }

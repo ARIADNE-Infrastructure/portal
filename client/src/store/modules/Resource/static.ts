@@ -1,5 +1,5 @@
 export const fields = [
-  { val: 'all', text: 'All fields', group: 'default' },
+  { val: '', text: 'All fields', group: 'default' },
   { val: 'time', text: 'Time period', group: 'default' },
   { val: 'location', text: 'Place', group: 'default' },
   { val: 'title', text: 'Title', group: 'default' },
@@ -25,6 +25,7 @@ export const types = {
   12: 'inscription',
 
   /* ISSUE: 19956
+
   Site/monument > 10
   Fieldwork > 11
   Fieldwork report > 12

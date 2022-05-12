@@ -3,8 +3,9 @@
   <div>
     <h2 class="text-2xl">
       Results
-      <span v-if="displayResult">for "{{ displayResult }}"</span>
+      <span v-if="searchQuery">for "{{ searchQuery }}"</span>
     </h2>
+
     <div v-if="result && result.total" class="text-md">
       Time: {{ result.time }}s.
       Total: {{ result.total.value }}<span v-if="result.total.relation !== 'eq'">+</span>.
@@ -12,41 +13,73 @@
         Page: {{ currentPage }} / {{ lastPage }}
       </span>
     </div>
+
+    <div v-if="activeFilters.length">
+      <div v-for="(filter, key) in activeFilters" :key="key" @click="removeFilter(filter)"
+        class="inline-block bg-lightGray mr-md mt-md py-xs px-sm cursor-pointer hover:bg-red-80 group transition-bg duration-300">
+        <span class="group-hover:text-white transition-text duration-300 text-mmd align-middle">
+          {{ getFilterTitle(filter) }}:
+          {{ getFilterValue(filter) }}
+        </span>
+        <i class="fas fa-times text-md text-red group-hover:text-white align-middle ml-sm transition-text duration-300"></i>
+      </div>
+    </div>
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
-import { searchModule } from "@/store/modules";
+<script setup lang="ts">
+import { $computed } from 'vue/macros';
+import { searchModule, aggregationModule } from "@/store/modules";
+import { iKeyVal } from '@/store/modules/Aggregation';
 
-@Component
-export default class ResultInfo extends Vue {
+const params = $computed(() => searchModule.getParams);
+const result = $computed(() => searchModule.getResult);
+const activeFilters = $computed(() => aggregationModule.activeFilters);
+const searchQuery: string = $computed(() => activeFilters.find((f: any) => f.key === 'q')?.val || '');
 
-  get params(): any {
-    return searchModule.getParams;
+const resultRange: string = $computed(() => {
+  const start = currentPage < 2 ? 1 : (currentPage - 1) * 10 + 1;
+  const end = (currentPage - 1) * 10 + result.hits.length;
+
+  return `(${ start }-${ end })`;
+});
+
+const currentPage: number = $computed(() => {
+  let p = parseInt(params.page);
+  return p && p > 1 ? p : 1;
+});
+
+const lastPage: number = $computed(() => Math.ceil(result.total.value / 10));
+
+const getFilterTitle = (filter: iKeyVal): string => {
+  if (filter.key === 'q') {
+    return 'Search';
   }
+  return aggregationModule.getTitle(filter.key);
+};
 
-  get displayResult() {
-    return searchModule.displayResultString;
+// for some params that are id:s sometimes a label param is present
+const getLabelParam = (filter: iKeyVal): string => {
+  const labels = ['isPartOf', 'derivedSubjectId'];
+  if (labels.includes(filter.key)) {
+    return params[filter.key + 'Label'] || '';
   }
-  get result(): any {
-    return searchModule.getResult;
-  }
+  return '';
+};
 
-  get resultRange() {
-    const start = this.currentPage < 2 ? 1 : (this.currentPage - 1) * 10 + 1;
-    const end = (this.currentPage - 1) * 10 + this.result.hits.length;
+const getFilterValue = (filter: iKeyVal): string => {
+  return getLabelParam(filter) || filter.val;
+};
 
-    return `(${ start }-${ end })`;
+const removeFilter = (filter: iKeyVal) => {
+  if (getLabelParam(filter)) {
+      delete params[filter.key + 'Label'];
+      searchModule.updateParams(params);
   }
-
-  get currentPage() {
-    let p = parseInt(this.params.page);
-    return p && p > 1 ? p : 1;
-  }
-
-  get lastPage() {
-    return Math.ceil(this.result.total.value / 10);
-  }
-}
+  aggregationModule.setActive({
+    key: filter.key,
+    value: filter.val,
+    add: false,
+  });
+};
 </script>

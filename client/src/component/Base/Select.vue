@@ -7,24 +7,24 @@
       :class="selectedClass"
       @click="toggle"
       v-on:keydown.esc="leave"
-      v-on-clickaway="leave"
+      v-click-away="leave"
     >
       <input
         class="rounded-base flex-grow truncate outline-none cursor-default p-sm pr-none text-md"
         :class="{ 'placeholder-black': !open }"
         :placeholder="selectedText"
-        ref="search"
+        ref="searchRef"
         v-model="search"
       />
 
       <i
-        v-if="!search && getOptionIconFromValue(localValue)"
+        v-if="!search && getOptionIconFromValue(value)"
         class="-ml-3x text-md"
-        :class="getOptionIconFromValue(localValue)"
+        :class="getOptionIconFromValue(value)"
       />
 
       <i
-        class="fa-chevron-down fas mr-xs duration-300 px-sm text-sm"
+        class="fa-chevron-down fas mr-sm duration-300 px-sm text-sm"
         :class="{ 'transform rotate-180': open }"
       />
     </div>
@@ -32,7 +32,7 @@
     <div class="relative">
       <div
         v-if="open"
-        class="border-base absolute left-0 w-full bg-white border-t-0 z-1003 shadow-bottom"
+        class="border-base absolute left-0 w-full bg-white border-t-0 z-30 shadow-bottom"
         :class="dropdownClass"
       >
         <ul
@@ -54,7 +54,7 @@
             >
               <span
                 class="flex items-center"
-                :class="{ 'font-bold': option.val === localValue }"
+                :class="{ 'font-bold': option.val === value }"
               >
                 {{ option.text }}
 
@@ -80,129 +80,88 @@
   </div>
 </template>
 
-<script lang="ts">
-import { directive as onClickaway } from 'vue-clickaway';
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+<script setup lang="ts">
+import { $ref, $computed } from 'vue/macros';
 import utils from '@/utils/utils';
 
-@Component({
-  directives: {
-    onClickaway
+const props = defineProps({
+  color: String,
+  selectClass: String,
+  options: { type: Array, required: true },
+  value: { type: String, default: '' },
+});
+
+const emit = defineEmits(['input', 'change']);
+
+let open: boolean = $ref(false);
+let search: string = $ref('');
+const searchRef: any = $ref(null);
+
+const dropdownClass: string = $computed(() => `rounded-base rounded-t-0 border-${props.color}`);
+const altGroupFirstItemClass: string = $computed(() => `border-t-base border-${props.color}`);
+const selected: any = $computed(() => props.options.find((item: any) => item.val === props.value));
+const selectedText: string = $computed(() => selected ? selected.text : '');
+
+const filteredOptions: Array<any> = $computed(() => {
+  const s = search.toLowerCase();
+  if (s) {
+    return props.options.filter((item: any) => item.text.toLowerCase().includes(s));
   }
-})
-export default class BSelect extends Vue {
-  @Prop() color!: string;
-  @Prop() options!: any[];
-  @Prop() value!: string;
-  @Prop() selectClass?: string;
+  return props.options;
+});
 
-  localValue: string = '';
-  open: boolean = false;
-  search: string = '';
+const selectedClass: string = $computed(() => {
+  let classes = '';
 
-  enter() {
-    const search = this.$refs.search as HTMLInputElement;
-    search.focus();
-
-    this.open = true;
+  if (props.selectClass) {
+    classes = props.selectClass + ' ';
   }
-
-  leave() {
-    this.open = false;
-    this.search = '';
+  if (open) {
+    classes += `rounded-base rounded-b-0 border-${props.color}`;
+  } else {
+    classes += 'rounded-base border-gray';
   }
+  return classes;
+});
 
-  toggle() {
-    if (!this.open) {
-      this.enter();
-    }
-    else {
-      this.leave();
-    }
+const groupedFilteredOptions: Array<any> = $computed(() => utils.groupListByKey(filteredOptions, 'group'));
+
+const enter = () => {
+  searchRef.focus();
+  open = true;
+}
+
+const leave = () => {
+  open = false;
+  search = '';
+}
+
+const toggle = () => {
+  open ? leave() : enter();
+}
+
+const getOptionIconFromValue = (value: string): string => {
+  if (value.includes('-desc')) {
+    return 'fa-arrow-down fas';
   }
-
-  getOptionIconFromValue(value: string): string {
-    if (value.includes('-desc')) {
-      return 'fa-arrow-down fas';
-    }
-    else if (value.includes('-asc')) {
-      return 'fa-arrow-up fas';
-    }
-
-    return '';
+  if (value.includes('-asc')) {
+    return 'fa-arrow-up fas';
   }
+  return '';
+}
 
-  get selectedClass(): string {
-    let classes = '';
-
-    if (this.selectClass) {
-      classes = `${ this.selectClass } `;
-    }
-
-    if (this.open) {
-      classes += `rounded-base rounded-b-0 border-${this.color}`;
-    }
-    else {
-      classes += 'rounded-base border-gray';
-    }
-
-    return classes;
-  }
-
-  get dropdownClass(): string {
-    return `rounded-base rounded-t-0 border-${this.color}`;
-  }
-
-  get altGroupFirstItemClass(): string {
-    return `border-t-base border-${this.color}`;
-  }
-
-  get selected(): any {
-    return this.options.find((item: any) => item.val === this.localValue);
+const select = (option: any) => {
+  if (option?.disabled) {
+    return;
   }
 
-  get selectedText(): string {
-    return this.selected ? this.selected.text : '';
-  }
+  // exit focus state
+  leave();
 
-  get filteredOptions(): any[] {
-    const search = this.search.toLowerCase();
+  // update for prop
+  emit('input', option.val);
 
-    if (search) {
-      return this.options.filter((item: any) => item.text.toLowerCase().includes(search));
-    }
-    else {
-      return this.options;
-    }
-  }
-
-  get groupedFilteredOptions(): any[] {
-    return utils.groupListByKey(this.filteredOptions, 'group');
-  }
-
-  select(option: any): void {
-    if (option?.disabled) {
-      return;
-    }
-
-    // update local value
-    this.localValue = option.val;
-
-    // exit focus state
-    this.leave();
-
-    // update for prop
-    this.$emit('input', option.val);
-
-    // close
-    this.open = false;
-  }
-
-  // set local value to match prop
-  @Watch('value', { immediate: true })
-  updateLocalValue() {
-    this.localValue = this.value;
-    this.$emit('change', this.value);
-  }
+  // close
+  open = false;
 }
 </script>

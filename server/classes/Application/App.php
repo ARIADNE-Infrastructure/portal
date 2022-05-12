@@ -19,12 +19,13 @@ class App {
   private $uriParts;
   private $q;
 
-  public function __construct ($base) {
+  public function __construct ($base, $settings) {
+
     $parts = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
     $parts = substr($parts, strrpos($parts, $base) + strlen($base));
     $this->uriParts = explode('/', $parts);
 
-    $this->settings = json_decode(file_get_contents('../../classes/settings.json'));
+    $this->settings = $settings;
 
     $this->logger = new Logger('main');
     if ($this->settings->environment->logLevel !== 'NONE') {
@@ -34,7 +35,18 @@ class App {
       $this->logger->pushHandler($handler);
     }
 
+  }
+
+  private function setClient($clientHost) {
     $this->q = new Query($this->settings, $this->logger);
+    if(is_null($clientHost)) {
+      // set default client
+      $this->q->setClient($this->settings->elasticsearchEnv->{$this->settings->environment->elasticsearchEnv}->host);
+    } else {
+      // set other client host
+      $this->q->setClient($clientHost);
+    }
+
   }
 
   // returns settings
@@ -48,8 +60,11 @@ class App {
   }
 
   // adds new route
-  public function route ($route, $callback) {
-    $this->routes[$route] = $callback->bindTo($this, __CLASS__);
+  public function route ($route, $callback, $clientHost = null) {
+    $this->routes[$route] = [
+      'callback' => $callback->bindTo($this, __CLASS__),
+      'clientHost' => $clientHost
+    ];
   }
 
   // prints json
@@ -66,13 +81,14 @@ class App {
   // runs app & checks routes
   public function run () {
     header('Access-Control-Allow-Origin: *');
-    header('X-Robots-Tag: noindex, nofollow');
     header('Content-Type: application/json');
     header_remove('X-Powered-By');
 
-    foreach ($this->routes as $route => $callback) {
+    foreach ($this->routes as $route => $routeSet) {
+
       if ($route === $this->uriParts[0]) {
-        $callback($this->q, array_slice($this->uriParts, 1));
+        $this->setClient($routeSet['clientHost']);
+        $routeSet['callback']($this->q, array_slice($this->uriParts, 1));
         return;
       }
     }

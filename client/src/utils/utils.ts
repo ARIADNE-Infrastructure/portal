@@ -1,7 +1,13 @@
 // @ts-ignore
 import striptags from 'striptags';
+const debounceMap: any = {};
 
 export default {
+
+  debounce (key: string, callback: Function, timeout: number) {
+    clearTimeout(debounceMap[key]);
+    debounceMap[key] = setTimeout(callback, timeout);
+  },
 
   delay (ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -13,6 +19,10 @@ export default {
 
   objectIsNotEmpty (obj: any): boolean {
     return obj && typeof obj === 'object' && Object.keys(obj).length > 0;
+  },
+
+  objectIsEmpty (obj: any): boolean {
+    return !this.objectIsNotEmpty(obj);
   },
 
   isMobile () {
@@ -183,4 +193,20 @@ export default {
 
     return gradient;
   },
+
+  tmpId: 1,
+  getUniqueId(): number {
+    return this.tmpId++
+  },
+
+  /**
+   * Trim text to given max length
+   *
+   * @param text Text to trim
+   * @param length Max length of string
+   * @returns If text is short than length return text, else return substring text to length
+   */
+  trimString(text: string, maxLength: number): string {
+    return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+  }
 };

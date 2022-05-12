@@ -30,17 +30,17 @@
             <div class="mt-md lg:ml-xl lg:mt-none text-mmd">
               <!-- title -->
               <b-link :href="item.url" target="_blank" class="flex-shrink-0 hover:underline">
-                <h3 class="text-lg" v-html="utils.getMarked(item.title, filter)"></h3>
+                <h3 class="text-lg" v-html="item.title"></h3>
               </b-link>
 
               <!-- text -->
-              <p class="mt-md mb-lg whitespace-pre-line services-a-style" v-html="utils.getMarked(item.description, filter)"></p>
+              <p class="mt-md mb-lg whitespace-pre-line services-a-style" v-html="item.description"></p>
 
               <!-- link -->
               <p v-if="item.url">
                 <b-link :href="item.url" target="_blank" class="break-word text-blue hover:underline">
-                  <i class="fas fa-external-link-alt mr-xs"></i>
-                  <span v-html="utils.getMarked(item.url, filter)"></span>
+                  <i class="fas fa-external-link-alt mr-sm"></i>
+                  <span v-html="item.url"></span>
                 </b-link>
               </p>
             </div>
@@ -51,43 +51,35 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+<script setup lang="ts">
+import { onMounted } from 'vue';
+import { $ref, $computed } from 'vue/macros';
 import { generalModule } from "@/store/modules";
 import utils from '@/utils/utils';
 import BLink from '@/component/Base/Link.vue';
 
-@Component({
-  components: {
-    BLink,
-  }
-})
-export default class Services extends Vue {
-  filter = '';
-  utils = utils;
+let filter: string = $ref('');
+let serviceInput: any = $ref(null);
 
-  mounted () {
-    if (!utils.isMobile()) {
-      (this.$refs.serviceInput as any).focus();
-    }
-  }
+const assets: string = $computed(() => generalModule.getAssetsDir);
 
-  get assets(): string {
-    return generalModule.getAssetsDir;
-  }
+const filtered = $computed(() => {
+  const str = filter.toLowerCase().trim();
+  const ret: any = {};
 
-  get filtered () {
-    let filter = this.filter.toLowerCase().trim();
-    let ret: any = {};
-
-    for (let key in generalModule.getServices) {
-      ret[key] = generalModule.getServices[key].filter((s: any) => {
-        return s.title.toLowerCase().includes(filter) ||
-          s.description.toLowerCase().includes(filter) ||
-          s.url.toLowerCase().includes(filter);
-      });
-    }
-    return ret;
+  for (let key in generalModule.getServices) {
+    ret[key] = generalModule.getServices[key].filter((s: any) => {
+      return s.title.toLowerCase().includes(str) ||
+        s.description.toLowerCase().includes(str) ||
+        s.url.toLowerCase().includes(str);
+    });
   }
-}
+  return ret;
+});
+
+onMounted(() => {
+  if (!utils.isMobile()) {
+    serviceInput.focus();
+  }
+});
 </script>

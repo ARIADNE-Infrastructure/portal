@@ -1,7 +1,8 @@
 <template>
   <div
     v-if="autocomplete && updateComponents !== -1"
-    class="absolute left-0 w-full bg-white top-full z-1002 rounded-b-base text-left"
+    class="left-0 w-full bg-white top-full z-30 rounded-b-base text-left"
+    :class="{ absolute }"
   >
     <template v-if="Array.isArray(autocomplete.hits)">
       <div
@@ -67,108 +68,94 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Vue, Component, Prop, Watch } from 'vue-property-decorator';
+<script setup lang="ts">
+import { watch } from 'vue';
+import { $ref, $computed, $$ } from 'vue/macros';
+import { useRouter } from 'vue-router'
 import utils from '@/utils/utils';
 import { searchModule, aggregationModule } from "@/store/modules";
 
-@Component
-export default class FilterSearchAutoComplete extends Vue {
-  // props
-  @Prop() newSearch!: string;
-  @Prop() fieldValue!: string;
-  @Prop() stayOnPage!: boolean;
-  @Prop() updateComponents!: number;
+const props = defineProps({
+  newSearch: { type: String, required: true },
+  fieldValue: String,
+  stayOnPage: Boolean,
+  updateComponents: Number,
+  absolute: { type: Boolean, default: true },
+});
 
-  // data
-  utils = utils;
-  timeout: any = false;
-  autocomplete: any = '';
+let autocomplete: string = $ref('');
+const router = useRouter();
+const updateComponentsRef: number | undefined = $computed(() => props.updateComponents);
+const autocompleteType: string = $computed(() => props.fieldValue === 'aatSubjects' ? 'subjects' : 'resources');
 
-  getFieldHitLabels(hits: string[]): string {
-    return hits.map((field: string) => aggregationModule.getTitle(field)).join(', ');
+const getFieldHitLabels = (hits: string[]): string => {
+  return hits.map((field: string) => aggregationModule.getTitle(field)).join(', ');
+}
+
+const getAutoCompleteLabel = (label: string, searchString: any) => {
+  if (label) {
+    return utils.getMarked(utils.sentenceCase(label), '')
+  }
+  return '*'+searchString+'*';
+}
+
+const doAutocomplete = () => {
+  const value = props.newSearch.trim().toLowerCase();
+
+  if (!value || value.length < 2) {
+    autocomplete = '';
+    return;
   }
 
-  getAutoCompleteLabel(label: string, searchString: any) {
-    if(label) {
-      return utils.getMarked(utils.sentenceCase(label), '')
-    }
-    return '*'+searchString+'*';
+  let cached = searchModule.getAutoComplete[props.fieldValue + value];
+
+  if (cached !== undefined) {
+    autocomplete = cached.hits?.length ? cached : `No ${ autocompleteType } found..`;
+    return;
   }
 
-  get autocompleteType(): string {
-    return this.fieldValue === 'aatSubjects' ? 'subjects' : 'resources';
-  }
+  autocomplete = `<i class="fas fa-circle-notch fa-spin mr-sm"></i> Loading ${ autocompleteType }..`;
 
-  doAutocomplete() {
-    const value = this.newSearch.trim().toLowerCase();
+  utils.debounce('autocompleteSearch', async () => {
+    await searchModule.setAutocomplete({ type: props.fieldValue, q: value });
+    let stored = searchModule.getAutoComplete[props.fieldValue + value];
 
-    if (!value) {
-      this.autocomplete = '';
-      return;
-    }
+    autocomplete = stored && stored.hits?.length ? stored : `No ${ autocompleteType } found..`;
+  }, 300);
+}
 
-    let cached = searchModule.getAutoComplete[this.fieldValue + value];
+const autocompleteClick = (e: any, hit: any) => {
+  autocomplete = '';
 
-    if (cached !== undefined) {
-      this.autocomplete = cached.hits?.length ? cached : `No ${ this.autocompleteType } found..`;
-      return;
-    }
+  if (autocompleteType === 'subjects') {
+    if (!e.target.className || !e.target.className.includes('fas')) {
+      const searchValues: any = {
+        derivedSubjectId: hit.id,
+        derivedSubject: hit.label
+      };
 
-    this.autocomplete = `<i class="fas fa-circle-notch fa-spin mr-xs"></i> Loading ${ this.autocompleteType }..`;
-
-    clearTimeout(this.timeout);
-
-    this.timeout = setTimeout(async() => {
-      await searchModule.setAutocomplete({ type: this.fieldValue, q: value });
-      let stored = searchModule.getAutoComplete[this.fieldValue + value];
-
-      this.autocomplete = stored && stored.hits?.length ? stored : `No ${ this.autocompleteType } found..`;
-    }, 500);
-  }
-
-  autocompleteClick (e: any, hit: any) {
-    let path = '';
-    this.autocomplete = '';
-
-    if (this.autocompleteType === 'subjects') {
-
-      path = `/subject/${ hit.id }`
-
-      if (!e.target.className || !e.target.className.includes('fas')) {
-
-        const searchValues: any = {
-          derivedSubjectId: hit.id,
-          derivedSubject: hit.label
-        };
-
-        if (!this.stayOnPage) {
-          searchValues.path = '/search';
-        }
-
-        searchModule.setSearch(searchValues);
-
+      if (!props.stayOnPage) {
+        searchValues.path = '/search';
       }
-      else {
-        this.$router.push(path);
-      }
-    }
-    else {
-      path = `/resource/${ hit.id }`;
-      this.$router.push(path);
-    }
-  }
 
-  @Watch('updateComponents')
-  onParentUpdate() {
-    // on close
-    if (this.updateComponents === -1) {
-      this.autocomplete = '';
+      searchModule.setSearch(searchValues);
+
+    } else {
+      router.push(`/subject/${ hit.id }`);
     }
-    // on change
-    else {
-      this.doAutocomplete();
-    }
+  } else {
+    router.push(`/resource/${ hit.id }`);
   }
 }
+
+watch($$(updateComponentsRef), () => {
+  // on close
+  if (props.updateComponents === -1) {
+    autocomplete = '';
+  }
+  // on change
+  else {
+    doAutocomplete();
+  }
+});
 </script>

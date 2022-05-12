@@ -2,39 +2,34 @@
   <button
     v-if="hasParams"
     class="p-md bg-red text-white text-md hover:bg-red-90 focus:outline-none transition-bg duration-300 w-full block text-center rounded-base"
-    @click="clearFilters"
+    @click.prevent="clearFilters"
   >
-    <i class="fas fa-times mr-xs"></i>
     Clear All Filters
+    <i class="fas fa-times ml-sm"></i>
   </button>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script setup lang="ts">
+import { $computed } from 'vue/macros';
+import { PropType } from '@vue/runtime-core';
 import { searchModule, aggregationModule } from "@/store/modules";
 import utils from '@/utils/utils';
 
-@Component
-export default class FilterClear extends Vue {
-  @Prop() ignoreParams!: string[];
+const props = defineProps({
+  ignoreParams: { type: Array as PropType<string[]>, required: true }
+})
 
-  get params(): any {
-    return searchModule.getParams;
+const params = $computed(() => searchModule.getParams);
+const hasParams: boolean = $computed(() => !utils.objectEquals(params, { q: ''}, props.ignoreParams))
+
+const clearFilters = () => {
+  const clearParams: any = { clear: true };
+
+  if (params?.mapq) {
+    clearParams.mapq = true;
   }
 
-  get hasParams(): boolean {
-    return !utils.objectEquals(this.params, { q: ''}, this.ignoreParams)
-  }
-
-  clearFilters(): void {
-    let clearParams: any = {clear: true};
-
-    if (this.params?.mapq) {
-      clearParams.mapq = true;
-    }
-
-    searchModule.setSearch(clearParams);
-    aggregationModule.setOptionsToDefault();
-  }
+  searchModule.setSearch(clearParams);
+  aggregationModule.setOptionsToDefault();
 }
 </script>

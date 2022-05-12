@@ -40,12 +40,11 @@ module.exports = {
    * Causes some problems when adding new styles, or when trying to use already purged
    * Use "npm run dev -- --no-purge" when developing for easier access to all classes
    */
-  purge: {
+  content: {
     enabled: isDevelopment && process.argv.includes('--no-purge') ? false : true,
     content: [
-      './src/**/*.html',
-      './src/**/*.vue',
-      './src/**/*.ts',
+      './dist/index.html',
+      './src/**/*.{html,ts,vue}',
     ]
   },
   variants: {
@@ -53,6 +52,7 @@ module.exports = {
     margin: ['responsive', 'last'],
     borderWidth: ['responsive', 'last', 'hover', 'focus'],
     textColor: ['responsive', 'hover', 'focus', 'group-hover'],
+    visibility: ['group-hover'],
     borderColor: ['group-hover'],
     backgroundColor: ['responsive', 'hover', 'focus', 'group-hover', 'disabled'],
     opacity: ['responsive', 'hover', 'focus', 'group-hover'],
@@ -109,16 +109,19 @@ module.exports = {
       'lg': '1000px',
       'hg': '1200px',
       'xl': '1440px',
+      '2xl': '1800px',
     },
 
     // padding, margin, width, and height
     spacing: {
+      'auto': 'auto',
       'none': '0',
       '1':    '1px',
       'xs':   '.25rem',
       'xxs':  '.4rem',
       'sm':   '.5rem',
       'md':   '.75rem',
+      'mmd':  '.85rem',
       'base': '1rem',
       'lg':   '1.25rem',
       'xl':   '1.5rem',
@@ -133,7 +136,7 @@ module.exports = {
       '9x':   '9rem',
       '10x':  '10rem',
       '11x':  '11rem',
-      'toolbar': '370px',
+      'toolbar': '400px',
     },
 
     borderWidth: {
@@ -188,18 +191,12 @@ module.exports = {
     },
 
     zIndex: {
-      'neg':  -1,
-      '0':    0,
-      '1':    1,
-      '2':    2,
-      '3':    3,
-      '4':    4,
-      '1001': 1001,
-      '1002': 1002,
-      '1003': 1003,
-      '1004': 1004,
-      '1005': 1005,
-      'max':  9999,
+      'neg20': -20,
+      'neg10':  -10,
+      '10':    10,
+      '20':    20,
+      '30':    30,
+      '40':    40,
     },
 
     boxShadow: {

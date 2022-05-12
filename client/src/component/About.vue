@@ -37,15 +37,6 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+<script setup lang="ts">
 import BLink from '@/component/Base/Link.vue';
-
-@Component({
-  components: {
-    BLink,
-  }
-})
-export default class About extends Vue {
-}
 </script>

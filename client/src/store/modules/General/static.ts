@@ -15,36 +15,85 @@ export const frontPageLinks = [
 
 export const mainNavigation = [
   {
-    'path': '/search',
-    'name': 'Catalogue',
-    'icon': 'globe-americas',
-    'color': 'yellow',
-    'border': 'border-yellow',
-    'bg': 'bg-yellow-20',
-    'hover': 'hover:bg-yellow-20',
+    path: '/search',
+    name: 'Catalogue',
+    icon: 'search',
+    color: 'yellow',
+    border: 'border-yellow',
+    bg: 'bg-yellow-20',
+    hover: 'hover:bg-yellow-20',
   },
   {
-    'path': '/services',
-    'name': 'Services',
-    'icon': 'cog',
-    'color': 'red',
-    'border': 'border-red',
-    'bg': 'bg-red-20',
-    'hover': 'hover:bg-red-20',
+    path: '/browse',
+    name: 'Browse',
+    icon: 'globe-americas',
+    color: 'red',
+    border: 'border-red',
+    bg: 'bg-red-20',
+    hover: 'hover:bg-red-20',
+    groupHover: 'group-hover:bg-red-20',
+    subMenu: [
+      {
+        path: '/browse/where',
+        name: 'Where',
+        icon: 'globe-americas',
+        color: 'red',
+        border: 'border-red',
+        bg: 'bg-red-20',
+        hover: 'hover:bg-red-20',
+      },
+      {
+        path: '/browse/when',
+        name: 'When',
+        icon: 'chart-line',
+        color: 'red',
+        border: 'border-red',
+        bg: 'bg-red-20',
+        hover: 'hover:bg-red-20',
+      },
+      {
+        path: '/browse/what',
+        name: 'What',
+        icon: 'bars',
+        color: 'red',
+        border: 'border-red',
+        bg: 'bg-red-20',
+        hover: 'hover:bg-red-20',
+      },
+    ],
   },
   {
-    'path': '/about',
-    'name': 'About',
-    'icon': 'question-circle',
-    'color': 'green',
-    'border': 'border-green',
-    'bg': 'bg-green-20',
-    'hover': 'hover:bg-green-20',
+    path: '/services',
+    name: 'Services',
+    icon: 'cog',
+    color: 'green',
+    border: 'border-green',
+    bg: 'bg-green-20',
+    hover: 'hover:bg-green-20',
+  },
+  {
+    path: '/about',
+    name: 'About',
+    icon: 'question',
+    color: 'blue',
+    border: 'border-blue',
+    bg: 'bg-blue-20',
+    hover: 'hover:bg-blue-20',
   },
 ];
-
 export const services = {
   'Web Services': [
+    {
+      title: ' ARIADNEplus Data Management Plan Tool',
+      description: ' The ARIADNEplus Data Management Plan Tool is an online tool developed by PIN which provides support to archaeologists, data managers, researchers who want, or are required, to make a data management plan. The tool, developed in the framework of the ARIADNEplus project,  assists users  by providing:'
+      + '<br/><ul class="list-disc" style="margin-left: 1rem">'
+        + '<li>a Protocol for Archaeological Data Management, based on the Science Europe guide for research data management;</li>'
+        + '<li>the ARIADNEplus DMP Researcher Template for Archaeological Datasets based on the Horizon 2020 requirements;</li>'
+        + '<li>the new Horizon Europe Template for Archaeological Datasets which provides guidance and suggested answers to archaeologists including standards and tools commonly used in their daily practices.</li>'
+        + '</ul>',      
+      url: 'https://vast-lab.org/dmp/index.html',
+      img: 'ariadneplus-data-management-plan-tool.jpeg'
+    },    
     {
       title: 'Visual Media Service',
       description: 'Visual Media Service provides easy publication on the web for complex visual media assets: images, relightable images and 3D models. The assets are uploaded, converted into a multiresolution, compressed format optimized for streaming on the web.</br>The presentation can be customized and the resulting assets can be either downloaded or accessed directly in the Visual Media Service.',
@@ -132,5 +181,5 @@ export const services = {
       url: 'https://wiki.gcube-system.org/',
       img: 'geo-portale.png'
     }
-  ]  
+  ]
 };

@@ -5,7 +5,7 @@
       to="/"
       class="p-md bg-red text-white hover:bg-red-90 transition-bg duration-300 w-full block text-center"
     >
-      <i class="fas fa-long-arrow-alt-left mr-xs"></i>
+      <i class="fas fa-long-arrow-alt-left mr-sm"></i>
       Go back to Front page
     </b-link>
 
@@ -36,18 +36,7 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+<script setup lang="ts">
 import BLink from '@/component/Base/Link.vue';
-
 import FilterSearch from '@/component/Filter/Search.vue';
-
-@Component({
-  components: {
-    BLink,
-    FilterSearch
-  }
-})
-export default class NotFound extends Vue {
-}
 </script>

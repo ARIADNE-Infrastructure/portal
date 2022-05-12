@@ -1,22 +1,22 @@
 <template>
   <div class="mt-3x -ml-8x">
-    <div class="w-full relative z-1002" style="box-shadow: 0 5px 3px rgba(0, 0, 0, 0.15);">sdff</div>
+    <div class="w-full relative z-20" style="box-shadow: 0 5px 3px rgba(0, 0, 0, 0.15);">sdff</div>
 
     <div
       class="flex w-full overflow-hidden relative"
       style="height: 500px; background: linear-gradient(to right, rgba(117,169,157,0.5) 0%, rgba(117,169,157,0.5) 50%, rgba(187,57,33,0.5) 50%, rgba(187,57,33,0.5) 100%);"
     >
-      <div class="w-1/3 transform rotate-12 -mt-6x relative z-1002" style="height: 1000px;">
+      <div class="w-1/3 transform rotate-12 -mt-6x relative z-20" style="height: 1000px;">
         <div class="transform -rotate-12 text-center mt-8x ml-6x pt-8x text-white" style="height: 500px">
           <h3 class="text-2x mb-md">Client</h3>
-          <i class="fa fa-laptop text-white-50" :class="icon" style="font-size: 100px" />
+          <i class="fa fa-laptop text-white-50 text-3x" style="font-size: 100px" />
 
-          <i class="fa fa-arrows-alt-h absolute text-white" :class="arrow" style="right: -1.3rem; top: calc(50% - 3rem); filter:drop-shadow(2px -3px 1px rgba(0, 0, 0, 0.1)" />
-          <i class="fa fa-cloud absolute text-white text-sm" :class="lock" style="right: -1.1rem; top: calc(50% - 5rem); filter:drop-shadow(2px -3px 1px rgba(0, 0, 0, 0.1)" />
+          <i class="fa fa-arrows-alt-h absolute text-white text-3x" style="right: -1.3rem; top: calc(50% - 3rem); filter:drop-shadow(2px -3px 1px rgba(0, 0, 0, 0.1)" />
+          <i class="fa fa-cloud absolute text-white text-2x" style="right: -1.1rem; top: calc(50% - 5rem); filter:drop-shadow(2px -3px 1px rgba(0, 0, 0, 0.1)" />
         </div>
       </div>
 
-      <div class="w-1/3 transform rotate-12 -mt-6x z-1001" style="height: 1000px; background: #88ADBA">
+      <div class="w-1/3 transform rotate-12 -mt-6x z-10" style="height: 1000px; background: #88ADBA">
         <div class="transform -rotate-12 text-center mt-8x ml-6x pt-8x text-white" style="height: 500px">
           <h3 class="text-2x">Docker Swarm</h3>
           <h3 class="-mt-xs text-white-50 text-xl">(Server Environment)</h3>
@@ -44,8 +44,8 @@
 
           <div class="absolute text-white-50 text-mmd" style="top: -1.2rem; right: -2rem">(Hosted by D4Science)</div>
 
-          <i class="fa fa-arrows-alt-h absolute text-white" :class="arrow" style="right: -2.3rem; top: calc(50% - 3rem); filter:drop-shadow(2px -3px 1px rgba(0, 0, 0, 0.1)" />
-          <i class="fa fa-lock-open absolute text-white text-sm" :class="lock" style="right: -2.2rem; top: calc(50% - 5rem); filter:drop-shadow(2px -3px 1px rgba(0, 0, 0, 0.1)" />
+          <i class="fa fa-arrows-alt-h absolute text-white text-3x" style="right: -2.3rem; top: calc(50% - 3rem); filter:drop-shadow(2px -3px 1px rgba(0, 0, 0, 0.1)" />
+          <i class="fa fa-lock-open absolute text-white text-2x" style="right: -2.2rem; top: calc(50% - 5rem); filter:drop-shadow(2px -3px 1px rgba(0, 0, 0, 0.1)" />
         </div>
       </div>
 
@@ -53,7 +53,7 @@
         <div class="transform -rotate-12 text-center mt-8x ml-6x pt-8x text-white" style="height: 500px">
           <div style="margin-left: -90px">
             <h3 class="text-2x mb-md">Elasticsearch</h3>
-            <i class="fa fa-database text-white-50" :class="icon" style="font-size: 100px" />
+            <i class="fa fa-database text-white-50 text-3x" style="font-size: 100px" />
           </div>
 
           <div class="absolute text-white-50 text-mmd" style="top: -1.2rem; right: 4rem">(Hosted by D4Science)</div>
@@ -62,7 +62,7 @@
     </div>
 
     <ul
-      class="flex bg-yellow-50 py-base px-2x justify-end text-black-50 text-mmd relative z-1002"
+      class="flex bg-yellow-50 py-base px-2x justify-end text-black-50 text-mmd relative z-20"
       style="box-shadow: 0px -4px 3px rgba(0, 0, 0, 0.15);"
     >
       <li class="">
@@ -87,22 +87,3 @@
     </ul>
   </div>
 </template>
-
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
-
-@Component
-export default class Infographic extends Vue {
-  get icon() {
-    return 'text-white text-3x';
-  }
-
-  get arrow() {
-    return 'text-midGray2 text-3x';
-  }
-
-  get lock() {
-    return 'text-midGray2 text-2x';
-  }
-}
-</script>

@@ -15,7 +15,7 @@
 
             <div v-if="utils.validUrl(subject.uri)" :class="itemClass">
               <b>URI</b>:
-              <b-link :href="subject.uri" target="_blank"  breakWords="true">
+              <b-link :href="subject.uri" target="_blank"  :breakWords="true">
                 {{ subject.uri }}
               </b-link>
             </div>
@@ -44,13 +44,13 @@
                 <p><b>{{ item.sourceLabel }}</b></p>
                 <p v-if="utils.validUrl(item.matchURI)">
                   Match URI:
-                  <b-link :href="item.matchURI" target="_blank" breakWords="true">
+                  <b-link :href="item.matchURI" target="_blank" :breakWords="true">
                     {{ item.matchURI }}
                   </b-link>
                 </p>
                 <p v-if="utils.validUrl(item.sourceURI)">
                   Source URI:
-                  <b-link :href="item.sourceURI" target="_blank" breakWords="true">
+                  <b-link :href="item.sourceURI" target="_blank" :breakWords="true">
                     {{ item.sourceURI }}
                   </b-link>
                 </p>
@@ -62,7 +62,7 @@
             <h3 class="text-lg font-bold mt-2x mb-md">Connected resources</h3>
 
             <router-link
-              :to="utils.paramsToString('/search', { subjectUri: subject.id, subjectLabel: subject.prefLabel })"
+              :to="utils.paramsToString('/search', { derivedSubjectId: subject.id, derivedSubjectIdLabel: subject.prefLabel })"
               class="block md:w-auto p-md bg-blue hover:bg-blue-80 text-white rounded-base py-xs transition-all duration-300 focus:outline-none text-center">
               <i class="p-sm pl-none fas fa-search"></i>
               Search connected resources ({{ subject.connectedTotal }})
@@ -88,85 +88,66 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+<script setup lang="ts">
+import { onMounted, nextTick, watch } from 'vue';
+import { $computed } from 'vue/macros';
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { searchModule, generalModule, subjectModule } from "@/store/modules";
 import ResourceFilteredItems from '@/component/Resource/FilteredItems.vue';
 import BLink from '@/component/Base/Link.vue';
 import utils from '@/utils/utils';
 
-@Component({
-  components: {
-    ResourceFilteredItems,
-    BLink,
-  }
-})
-export default class Subject extends Vue {
-  @Prop() id!: string;
-  utils = utils;
+const props = defineProps({
+  id: { type: String, required: true },
+});
 
-  created () {
-    this.initSubject(this.id);
-  }
+const router = useRouter();
+const route = useRoute();
+const itemClass: string = 'border-b-base border-gray mb-md pb-md last:border-b-0 last:pb-none last:mb-none';
+const subject = $computed(() => subjectModule.getSubject);
 
-  async initSubject (id: any) {
-    id = String(id);
-
-    if (this.subject?.id && this.subject.id === id) {
-      return;
-    }
-
-    await subjectModule.setSubject(id);
-
-    this.$nextTick(() => {
-
-      if (this.subject) {
-        generalModule.setMeta({
-          title: this.subject.prefLabel || '',
-          description: (this.subject.scopeNote || '').slice(0, 155)
-        });
-      } else {
-        this.$router.replace('/404');
+const mappedTerms = $computed(() => {
+  if (subject?.prefLabels?.length) {
+    const map: any = {};
+    subject.prefLabels.forEach((pref: any) => {
+      if (!map[pref.lang]) {
+        map[pref.lang] = [];
       }
+      map[pref.lang].push(pref);
     });
+    return map;
+  }
+  return null;
+});
+
+const initSubject = async (id: any) => {
+  id = String(id);
+
+  if (subject?.id && subject.id === id) {
+    return;
   }
 
-  get mappedTerms () {
-    if (this.subject?.prefLabels?.length) {
-      let map: any = {};
-      this.subject.prefLabels.forEach((pref: any) => {
-        if (!map[pref.lang]) {
-          map[pref.lang] = [];
-        }
-        map[pref.lang].push(pref);
+  await subjectModule.setSubject(id);
+
+  nextTick(() => {
+    if (subject) {
+      generalModule.setMeta({
+        title: subject.prefLabel || '',
+        description: (subject.scopeNote || '').slice(0, 155)
       });
-      return map;
+    } else {
+      router.replace('/404');
     }
-    return null;
-  }
-
-  get isLoading(): boolean {
-    return generalModule.getIsLoading;
-  }
-
-  get subject(): any {
-    return subjectModule.getSubject;
-  }
-
-  get params(): any {
-    return searchModule.getParams;
-  }
-
-  get itemClass(): string {
-    return 'border-b-base border-gray mb-md pb-md last:border-b-0 last:pb-none last:mb-none';
-  }
-
-  @Watch('$route')
-  async onRouteUpdate (to: any) {
-    if (to?.params?.id) {
-      await this.initSubject(to.params.id);
-      this.$nextTick(() => this.$forceUpdate());
-    }
-  }
+  });
 }
+
+onMounted(() => initSubject(props.id));
+
+const unwatch = watch(route, async (to: any) => {
+    if (to?.params?.id) {
+      await initSubject(to.params.id);
+    }
+});
+
+onBeforeRouteLeave(unwatch);
 </script>

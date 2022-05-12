@@ -6,7 +6,7 @@
       <p>The rest are purged by PurgeCSS</p>
     </div>
 
-    <div v-for="(conf, confKey) in config" :key="confKey">
+    <div v-for="(conf, confKey) in Config.theme" :key="confKey">
       <list-accordion :title="utils.sentenceCase(utils.splitCase(confKey))"
         :initShow="true" :hover="true">
         <div v-for="(val, key) in conf" :key="key" class="p-base border-t-base border-gray"
@@ -18,57 +18,45 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+<script setup lang="ts">
 import utils from '@/utils/utils';
 import Config from '@/../tailwind.config.js';
-
 import ListAccordion from '@/component/List/Accordion.vue';
 
-@Component({
-  components: {
-    ListAccordion
+const getClassType = (confKey: any, key: any, val: any): string => {
+  if (/color/i.test(confKey)) {
+    return `bg-${ key } ${ getColorContrast(val) }`;
   }
-})
-export default class Theme extends Vue {
-  config = Config.theme;
-  utils = utils;
-
-  getClassType (confKey: any, key: any, val: any): string {
-    if (/color/i.test(confKey)) {
-      return `bg-${ key } ${ this.getColorContrast(val) }`;
-    }
-    switch (confKey) {
-      case 'fontSize': return `text-${ key }`;
-      case 'boxShadow': return `shadow-${ key }`;
-      case 'opacity': return `opacity-${ key }`;
-    }
-    return '';
+  switch (confKey) {
+    case 'fontSize': return `text-${ key }`;
+    case 'boxShadow': return `shadow-${ key }`;
+    case 'opacity': return `opacity-${ key }`;
   }
+  return '';
+};
 
-  getColorContrast (color: any): string {
-    let r, g, b, hsp;
+const getColorContrast = (color: any): string => {
+  let r, g, b, hsp;
 
-    // convert hex to rgb
-    color = +('0x' + color.slice(1).replace(
-      color.length < 5 && /./g, '$&$&')
-    );
+  // convert hex to rgb
+  color = +('0x' + color.slice(1).replace(
+    color.length < 5 && /./g, '$&$&')
+  );
 
-    r = color >> 16;
-    g = color >> 8 & 255;
-    b = color & 255;
+  r = color >> 16;
+  g = color >> 8 & 255;
+  b = color & 255;
 
-    // get hsp
-    hsp = Math.sqrt(
-      0.299 * (r * r) +
-      0.587 * (g * g) +
-      0.114 * (b * b)
-    );
+  // get hsp
+  hsp = Math.sqrt(
+    0.299 * (r * r) +
+    0.587 * (g * g) +
+    0.114 * (b * b)
+  );
 
-    if (hsp > 127.5) {
-      return 'text-black';
-    }
-    return 'text-gray';
+  if (hsp > 127.5) {
+    return 'text-black';
   }
-}
+  return 'text-gray';
+};
 </script>

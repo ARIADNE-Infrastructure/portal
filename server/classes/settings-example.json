@@ -14,17 +14,23 @@
     "prod": {
       "host": "xxx:9200",
       "index": "xxx",
-      "subject_index": "xxx"
+      "subject_index": "xxx",
+      "periodHost": "xxx:9200",
+      "periodIndex": "xxx"
     },
     "staging": {
       "host": "xxx:9200",
       "index": "xxx",
-      "subject_index": "xxx"
+      "subject_index": "xxx",
+      "periodHost": "xxx:9200",
+      "periodIndex": "xxx"
     },
     "dev": {
       "host": "xxx:9200",
       "index": "xxx",
-      "subject_index": "xxx"
+      "subject_index": "xxx",
+      "periodHost": "xxx:9200",
+      "periodIndex": "xxx"
     }
   }
 }

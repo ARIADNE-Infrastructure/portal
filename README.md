@@ -46,7 +46,9 @@ npm run dev
 npm run dev-external
 
 # release build (client dir)
-npm run build
+npm run build # prod
+npm run build-dev # dev
+npm run build-staging # staging
 
 ```
 

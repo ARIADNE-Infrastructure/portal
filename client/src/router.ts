@@ -1,9 +1,10 @@
-import Vue from 'vue';
-import Router from 'vue-router';
+import { createRouter, createWebHistory } from 'vue-router';
 import { generalModule } from "@/store/modules";
+import { breadCrumbModule } from "@/store/modules";
 
 // components
 import About from './component/About.vue';
+import Browse from './component/Browse.vue';
 import BrowseWhat from './component/BrowseWhat.vue';
 import BrowseWhen from './component/BrowseWhen.vue';
 import BrowseWhere from './component/BrowseWhere.vue';
@@ -21,10 +22,10 @@ import Guide from './component/Guide.vue';
 /**
  * Router - component url paths
  */
-Vue.use(Router);
 
-const router = new Router({
+const router = createRouter({
   base: process.env.ARIADNE_PUBLIC_PATH,
+  history: createWebHistory(),
   mode: 'history',
   routes: [
     {
@@ -90,6 +91,14 @@ const router = new Router({
       }
     },
     {
+      path: '/browse',
+      component: Browse,
+      meta: {
+        title: 'Browse',
+        description: 'Browse'
+      }
+    },
+    {
       path: '/browse/when',
       component: BrowseWhen,
       meta: {
@@ -130,7 +139,7 @@ const router = new Router({
       }
     },
     {
-      path: '*',
+      path: '/:pathMatch(.*)*',
       component: NotFound,
       meta: {
         title: '404',
@@ -154,7 +163,14 @@ router.beforeEach((to: any, from: any, next: any) => {
       description: to.meta.description,
     });
   }
+
+  // Let breadCrumbModule module know from where user is landing on page
+  if(from?.path) {
+    breadCrumbModule.setFrom(from.path);
+  }
+
   next();
+
 });
 
 export default router;

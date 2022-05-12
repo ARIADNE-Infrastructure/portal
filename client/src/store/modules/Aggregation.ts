@@ -1,25 +1,27 @@
 // store/modules/MyStoreModule.ts
-import { Vue } from 'vue-property-decorator';
 import { VuexModule, Module, Mutation, Action, RegisterOptions } from "vuex-class-modules";
 import axios from 'axios';
 import utils from '@/utils/utils';
-import { GeneralModule } from './General';
 import { SearchModule } from './Search';
-import { titles, resultTitles, types } from './Aggregation/static';
+import { titles, descriptions, resultTitles, types } from './Aggregation/static';
+
+export interface iKeyVal {
+  key: string,
+  val: string,
+}
 
 @Module
 export class AggregationModule extends VuexModule {
-  private generalModule: GeneralModule;
   private searchModule: SearchModule;
 
-  constructor(general: GeneralModule, searchModule: SearchModule, options: RegisterOptions) {
+  constructor(searchModule: SearchModule, options: RegisterOptions) {
     super(options);
     this.searchModule = searchModule;
-    this.generalModule = general;
   }
 
   private options: any = {};
   private titles: any = titles;
+  private descriptions: any = descriptions;
   private resultTitles: any = resultTitles;
   private types: any[] = types;
 
@@ -36,7 +38,7 @@ export class AggregationModule extends VuexModule {
         let data = res?.data?.filtered_agg;
 
         if (utils.objectIsNotEmpty(data)) {
-          const value = { ...payload.value, ...{ data } };
+          const value = { ...payload.value, ...{ data } };
 
           this.updateOptions({ id: payload.id, value });
         }
@@ -84,9 +86,7 @@ export class AggregationModule extends VuexModule {
   @Mutation
   public updateOptions(payload: any) {
     const { id, value } = payload;
-
-    // we use vue.set to make the state object reactive
-    Vue.set(this.options, id, value);
+    this.options[id] = value
   }
 
   @Mutation
@@ -103,7 +103,7 @@ export class AggregationModule extends VuexModule {
   }
 
   get hasAggs(): boolean {
-    return utils.objectIsNotEmpty(this.searchModule.getResult.aggs);
+    return utils.objectIsNotEmpty(this.searchModule.getAggsResult.aggs);
   }
 
   get getResultTitle() {
@@ -118,6 +118,12 @@ export class AggregationModule extends VuexModule {
     }
   }
 
+  get getDescription() {
+    return (key: string) => {
+      return this.descriptions[key] || '';
+    }
+  }
+
   get getSorted() {
     const startOrder = [
       'ariadneSubject',
@@ -127,18 +133,18 @@ export class AggregationModule extends VuexModule {
       'nativeSubject'
     ];
 
-    const result = this.searchModule.getResult;
+    const result = this.searchModule.getAggsResult?.aggs;
 
     let sorted: any = {};
 
     if (this.hasAggs) {
-      const typesToSkip = ['fields', 'geogrid', 'bbox', 'ghp', 'range'];
+      const typesToSkip = ['fields', 'geogrid', 'bbox', 'range'];
 
-      startOrder.forEach((key: string) => sorted[key] = result.aggs[key]);
+      startOrder.forEach((key: string) => sorted[key] = result[key]);
 
-      for (let key in result.aggs) {
+      for (let key in result) {
         if (!sorted[key] && !typesToSkip.includes(key)) {
-          sorted[key] = result.aggs[key];
+          sorted[key] = result[key];
         }
       }
     }
@@ -162,7 +168,7 @@ export class AggregationModule extends VuexModule {
 
       if (params[key]) {
         return params[key].split('|').some((k: any) => {
-          return String(k || '').toLowerCase() === String(bucketKey || '').toLowerCase();
+          return String(k || '').toLowerCase() === String(bucketKey || '').toLowerCase();
         });
       }
 
@@ -170,9 +176,26 @@ export class AggregationModule extends VuexModule {
     }
   }
 
-  get getOptionsById() {
-    return (id: string) => {
-      return this.options.hasOwnProperty(id) ? this.options[id] : null;
-    }
+  get getOptions() {
+    return this.options;
+  }
+
+  // Used for displaying what user has filtered and/or search on. Not all uri params are valid for this.
+  get activeFilters(): Array<iKeyVal> {
+    const valid = Object.keys(this.getTitles).concat(['q', 'range', 'derivedSubjectId', 'geogrid', 'responsible', 'periodName', 'bbox']);
+    const params = utils.getCopy(this.searchModule.getParams);
+    const filters: Array<iKeyVal> = [];
+
+    valid.forEach((key: string) => {
+      if (typeof params[key] === 'string') {
+        params[key].split('|').forEach((val: string) => {
+          val = val.trim();
+          if (val) {
+            filters.push({ key, val });
+          }
+        });
+      }
+    });
+    return filters;
   }
 }

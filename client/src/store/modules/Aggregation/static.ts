@@ -40,6 +40,16 @@ export const titles = {
   title: 'Title',
 };
 
+export const descriptions = {
+  ariadneSubject: 'Broad resource type',
+  nativeSubject: 'Subject defined by data provider',
+  derivedSubject: 'Getty AAT Subjects',
+  temporal: 'Numerical date or date range, period name(s',
+  publisher: 'Data provider',
+  contributor: 'Organisation or individual contributing the resource',
+  aatSubjects: 'Subject type classified according to the Getty Art and Architecture thesaurus'
+}
+
 // temporary separate titles for results
 export const resultTitles = {
   ariadneSubject: 'Resource type',
@@ -90,7 +100,7 @@ export const types = [
   },
   {
     id: 'aatSubjects',
-    param: 'subjectLabel',
+    param: 'derivedSubjectIdLabel',
     prop: 'label'
   }
 ];

@@ -25,21 +25,12 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+<script setup lang="ts">
+import { $computed } from 'vue/macros';
 import { generalModule } from "@/store/modules";
 import BLink from '@/component/Base/Link.vue';
 
-@Component({
-  components: {
-    BLink,
-  }
-})
-export default class Guide extends Vue {
-  imgMaxWidth: number = 800;
+const imgMaxWidth: number = 800;
 
-  get assets(): string {
-    return generalModule.getAssetsDir;
-  }
-}
+const assets: string = $computed(() => generalModule.getAssetsDir);
 </script>

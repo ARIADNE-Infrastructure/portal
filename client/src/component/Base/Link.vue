@@ -1,9 +1,9 @@
 <template>
   <a
     v-if="href"
-    ref="link"
+    :id="linkId"
     :href="href"
-    :class="classes"
+    :class="cssClasses"
     :target="target"
   >
     <slot />
@@ -12,7 +12,7 @@
   <a
     v-else-if="clickFn"
     href="#"
-    :class="classes"
+    :class="cssClasses"
     v-on:click.prevent="clickFn"
   >
     <slot />
@@ -20,44 +20,37 @@
 
   <router-link
     v-else-if="to"
-    ref="link"
+    :id="linkId"
     :to="to"
-    :class="classes"
+    :class="cssClasses"
   >
     <slot />
   </router-link>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script setup lang="ts">
+import utils from '@/utils/utils';
+import { onMounted } from 'vue';
+import { $ref } from 'vue/macros';
 
-@Component
-export default class BLink extends Vue {
-  classes: string = '';
+const props = defineProps({
+  href: String,
+  to: String,
+  target: String,
+  useDefaultStyle: Boolean,
+  breakWords: Boolean,
+  clickFn: Function,
+});
 
-  @Prop() href?: string;
-  @Prop() to?: string;
-  @Prop() target?: string;
-  @Prop() useDefaultStyle?: boolean;
-  @Prop() breakWords?: boolean;
-  @Prop() clickFn?: Function;
+let cssClasses = $ref('');
+const linkId = 'b-link-' + utils.getUniqueId();
 
-  mounted() {
-    let link: any = this.$refs?.link;
+// apply default style if specified or if no other style has been set
+onMounted(() => {
+  const link = document.getElementById(linkId);
 
-    if (!link) {
-      return;
-    }
-
-    if (this.to) {
-      link = link.$el;
-    }
-
-    // apply default style if specified or if no other style has been set
-    if (this.useDefaultStyle || !link.className) {
-      this.classes = 'text-blue transition-colors duration-300 hover:text-darkGray hover:underline' +
-        (this.breakWords ? ' break-word' : '');
-    }
+  if (link && (props.useDefaultStyle || !link.className)) {
+    cssClasses = 'text-blue transition-colors duration-300 hover:text-darkGray hover:underline' + (props.breakWords ? ' break-word' : '');
   }
-}
+});
 </script>

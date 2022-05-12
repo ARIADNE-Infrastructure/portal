@@ -27,8 +27,11 @@ export class SearchModule extends VuexModule {
   private sortOptions: any[] = sortOptions;
   private helpTexts: helpText[] = helpTexts;
 
+  // aggregations
+  private aggsResult: any = {};
+  private aggsLoading: boolean = false;
+
   // minimap
-  private miniMapSearchParams: any = {};
   private miniMapSearchResult: any = {};
 
   @Action
@@ -50,22 +53,22 @@ export class SearchModule extends VuexModule {
 
   // sets mini map search
   @Action
-  async setMiniMapSearch(payload?: any) {
-    // update params
-    this.updateMiniMapSearchParams(payload);
-
-    // update result
+  async setMiniMapSearch(mapParams: any) {
+    let res;
     try {
-      const url = process.env.apiUrl + '/search';
-      const res = await axios.get(utils.paramsToString(url, {...this.miniMapSearchParams, size: 500}));
-      this.updateMiniMapSearchResult(res?.data);
+      const url = process.env.apiUrl + '/getMiniMapData';
+      res = await axios.get(utils.paramsToString(url, {...mapParams}));
     }
-    catch (ex) {}
+    catch (ex) {
+
+    }
+    this.updateMiniMapSearchResult(res?.data || {});
   }
 
   @Action
   async setSearch(payload: any) {
-    let currentPath = router.currentRoute.path;
+
+    let currentPath = router.currentRoute.value.path;
     currentPath = currentPath.endsWith('/') ? currentPath.slice(0, -1) : currentPath;
 
     let path = payload?.path ?? currentPath;
@@ -77,6 +80,7 @@ export class SearchModule extends VuexModule {
     if (payload.clear) {
       params = {};
     }
+
     if (payload.fromRoute) {
       updateUrl = false;
       params = {};
@@ -88,15 +92,24 @@ export class SearchModule extends VuexModule {
     for (let key in payload) {
       if (payload[key] && key !== 'clear' && key !== 'path') {
         params[key] = payload[key];
-
       } else {
-        if (key === 'subjectUri' && params.subjectLabel) {
-          delete params.subjectLabel;
+        if (key === 'derivedSubjectId' && params.derivedSubjectIdLabel) {
+          delete params.derivedSubjectIdLabel;
         }
         delete params[key];
       }
-    }
 
+      // makes sure previous periods filters are reseted if year range is selected
+      // todo: switch to periodo regions & periods when available
+      if (key === 'range') {
+        delete params.publisher;
+        delete params.ariadneSubject;
+      }
+      // reverse of above check
+      else if (key === 'publisher' || key === 'ariadneSubject') {
+        delete params.range;
+      }
+    }
     if (params.page) {
       params.page = parseInt(params.page)
     }
@@ -113,11 +126,10 @@ export class SearchModule extends VuexModule {
       // only update url if it's not identifcal to current
       const stringParams = utils.objectConvertNumbersToStrings(params);
 
-      if (!utils.objectEquals(router.currentRoute.query, stringParams) || path !== currentPath) {
+      if (!utils.objectEquals(router.currentRoute.value.query, stringParams) || path !== currentPath) {
         router.push(utils.paramsToString(path, params));
       }
     }
-
     if (path === '/search') {
       // reset to default sorting if current option is disabled
       if (params.sort && this.getSortOptionDisabled(params.q, params.sort)) {
@@ -130,64 +142,91 @@ export class SearchModule extends VuexModule {
       }
     }
 
+    const time = Date.now();
+
+    let data: any;
     // default to locked loading status
     this.generalModule.updateLoadingStatus(payload?.loadingStatus ?? LoadingStatus.Locked);
-
     this.updateParams(params);
-
-    const time = Date.now();
 
     try {
       const url = process.env.apiUrl + '/search';
-      const res = await axios.get(utils.paramsToString(url, params));
-      let data = res?.data;
-
-      if (utils.objectIsNotEmpty(data)) {
-        if (data.hits) {
-          data.hits.forEach((hit: any) => {
-            if (hit.data.aatSubjects?.length && hit.data.derivedSubject?.length) {
-              hit.data.derivedSubject = [...hit.data.derivedSubject, ...hit.data.aatSubjects];
-              hit.data.aatSubjects = [];
-            }
-          });
-        }
-        if (data.aggregations) {
-          if (data.aggregations.temporal?.temporal) {
-            data.aggregations.temporal = data.aggregations.temporal.temporal;
-          }
-          const extras = ['subjectUri', 'fields', 'range', 'bbox', 'ghp'];
-          extras.forEach((extra: any) => {
-            if (params[extra]) {
-              data.aggregations[extra] = {
-                buckets: [{ key: params[extra], doc_count: data.total?.value || 0 }]
-              };
-            }
-          });
-        }
-
-        this.updateResult({
-          total: data.total,
-          hits: data.hits,
-          aggs: data.aggregations,
-          time: Math.round(((Date.now() - time) / 1000) * 100) / 100
-        });
-
-        this.generalModule.updateLoadingStatus(LoadingStatus.None);
-
-        return;
-      }
+      const res = await axios.get(utils.paramsToString(url, { ...params }));
+      data = res?.data;
     } catch (ex) {}
+
+    if (data?.hits) {
+      data.hits.forEach((hit: any) => {
+        if (hit.data.aatSubjects?.length && hit.data.derivedSubject?.length) {
+          hit.data.derivedSubject = [...hit.data.derivedSubject, ...hit.data.aatSubjects];
+          hit.data.aatSubjects = [];
+        }
+      });
+    }
+    if (data) {
+      this.updateResult({
+        total: data.total,
+        hits: data.hits,
+        time: Math.round(((Date.now() - time) / 1000) * 100) / 100,
+        aggs: data.aggregations
+      });
+    } else {
+      this.updateResult({ error: 'Internal error. Search failed..' });
+      this.generalModule.updateLoadingStatus(LoadingStatus.None);
+      return;
+    }
 
     this.generalModule.updateLoadingStatus(LoadingStatus.None);
 
-    this.updateResult({
-      error: 'Internal error. Search failed..'
-    });
   }
 
-  @Mutation
-  updateMiniMapSearchParams(params: any) {
-    this.miniMapSearchParams = params;
+
+  /**
+   * Aggregations are fetched and queried separately backend
+   * Aggs are used for filters on frontend
+   */
+   @Action
+  async setAggregationSearch(routerQuery:any) {
+
+    // Get timline aggregation only if route matches one of these
+    const timelineRoutes = ['/search','/browse/when'];
+    let getTimeline: boolean = timelineRoutes.find(element => element == router.currentRoute.value.path)?true:false;
+    let params = {
+      ...routerQuery,
+      timeline: getTimeline
+    };
+
+    this.updateAggsLoading(true);
+
+    try {
+      const url = process.env.apiUrl + '/getSearchAggregationData';
+      const res = await axios.get(utils.paramsToString(url, {...params} ));
+
+      let data = res?.data;
+      if (utils.objectIsNotEmpty(data?.aggregations)) {
+        if (data.aggregations.temporal?.temporal) {
+          data.aggregations.temporal = data.aggregations.temporal.temporal;
+        }
+        this.updateAggsResult({
+          total: data.total,
+          hits: data.hits,
+          aggs: data.aggregations,
+        });
+
+      } else {
+        this.updateAggsResult({});
+      }
+    } catch (ex) {
+      this.updateAggsResult({ error: 'Internal error. Search failed..' });
+    }
+
+    this.updateAggsLoading(false);
+
+  }
+
+  @Action
+  actionResetResultState() {
+    this.resetResultState();
   }
 
   @Mutation
@@ -206,30 +245,25 @@ export class SearchModule extends VuexModule {
   }
 
   @Mutation
-  updateAutocomplete(res: any) {
-    this.autocomplete[res.type + res.q] = res.data;
+  resetResultState() {
+    this.result = {};
+    this.aggsResult = {};
+    this.params = {};
   }
 
-  /**
-   * Used for displaying what user has filtered and/or search on.
-   * Not all uri params are valid for this.
-   */
-  get displayResultString(): string {
+  @Mutation
+  updateAggsResult(result: any) {
+    this.aggsResult = result;
+  }
 
-    const valid = ['q', 'nativeSubject', 'ariadneSubject', 'derivedSubject',  'contributor', 'publisher', 'temporal'];
-    const params = utils.getCopy(this.params);
-    let display:string = '';
+  @Mutation
+  updateAggsLoading(loading: boolean) {
+    this.aggsLoading = loading;
+  }
 
-    valid.forEach(function (value) {
-      let val:string = params[value];
-      if(val) {
-        val = val.replace('|',', ');
-        display += val.trim()+', ';
-      }
-    });
-
-    return display.substring(0, display.length-2);
-
+  @Mutation
+  updateAutocomplete(res: any) {
+    this.autocomplete[res.type + res.q] = res.data;
   }
 
   get getParams(): any {
@@ -240,13 +274,21 @@ export class SearchModule extends VuexModule {
     return this.result;
   }
 
+  get getAggsResult(): any {
+    return this.aggsResult;
+  }
+
+  get getIsAggsLoading(): boolean {
+    return this.aggsLoading;
+  }
+
   get getAutoComplete(): any {
     return this.autocomplete;
   }
 
   get getDefaultSort(): any {
     return (q: any) => {
-      if (q) {
+      if (q) {
         return {
           sort: '_score',
           order: 'desc',
@@ -263,7 +305,7 @@ export class SearchModule extends VuexModule {
   get getSortOptions(): any[] {
     return this.sortOptions.map((item: any) => {
       const disabled = this.getSortOptionDisabled(this.params.q, item.val);
-      return { ...{ disabled }, ...item };
+      return { ...{ disabled }, ...item };
     });
   }
 
@@ -286,16 +328,10 @@ export class SearchModule extends VuexModule {
   }
 
   /**
-   * Get params for mini map residing on result page filters.
-   */
-  get getMiniMapSearchParams(): any {
-    return this.miniMapSearchParams;
-  }
-
-  /**
-   * Get results for mini map residing on result page filters.
+   * Get results for mini map.
    */
   get getMiniMapSearchResult() {
     return this.miniMapSearchResult;
   }
+
 }

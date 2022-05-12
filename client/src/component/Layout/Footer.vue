@@ -1,5 +1,5 @@
 <template>
-  <footer class="bg-darkGray-40 xl:px-base absolute bottom-0 w-full h-8x z-1002 text-mmd">
+  <footer class="bg-darkGray-40 xl:px-base absolute bottom-0 w-full h-8x text-mmd">
     <div class="max-w-screen-xl h-full mx-auto px-base flex items-center">
       <img :src="`${ assets }/eu-flag.png`" alt="eu flag" class="hidden md:block">
       <div class="text-white md:pl-base">
@@ -34,19 +34,10 @@
   </footer>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+<script setup lang="ts">
+import { $computed } from 'vue/macros';
 import { generalModule } from "@/store/modules";
 import BLink from '@/component/Base/Link.vue';
 
-@Component({
-  components: {
-    BLink,
-  }
-})
-export default class LayoutFooter extends Vue {
-  get assets(): string  {
-    return generalModule.getAssetsDir;
-  }
-}
+const assets: string = $computed(() => generalModule.getAssetsDir);
 </script>

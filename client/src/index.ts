@@ -4,19 +4,16 @@ import '@babel/polyfill';
 import 'url-search-params-polyfill';
 
 // main
-import Vue from 'vue';
+import { createApp } from 'vue';
 import router from './router';
 import store from './store';
 import App from './App.vue';
+import VueClickAway from 'vue3-click-away'
 
-// vue img
-import VueImg from 'v-img';
-Vue.use(VueImg);
 
 // app
-new Vue({
-  el: '#app',
-  router,
-  store,
-  render: h => h(App),
-});
+createApp(App)
+  .use(router)
+  .use(store)
+  .use(VueClickAway)
+  .mount('#app')

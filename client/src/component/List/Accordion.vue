@@ -6,19 +6,30 @@
       :class="{ 'rounded-b-0': show, 'transition-all duration-300 hover:bg-gray': hover }"
       @click="toggle"
     >
-      <div>
-        <i
-          class="fa-chevron-right fas mr-xs duration-200"
-          :class="{ 'transform rotate-90': show }"
-        />
+      <help-tooltip
+        :enabled="!!description"
+        top="-3.1rem"
+        left="-0.85rem"
+        messageClasses="bg-yellow text-white"
+      >
+        <div>
+          <i
+            class="fa-chevron-right fas mr-sm duration-200"
+            :class="{ 'transform rotate-90': show }"
+          />
 
-        <template v-if="titleActive && titleInactive">
-          <template v-if="show">{{ titleActive }}</template>
-          <template v-else>{{ titleInactive }}</template>
+          <template v-if="titleActive && titleInactive">
+            <template v-if="show">{{ titleActive }}</template>
+            <template v-else>{{ titleInactive }}</template>
+          </template>
+
+          <template v-else>{{ title }}</template>
+        </div>
+
+        <template v-slot:content>
+          {{ description }}
         </template>
-
-        <template v-else>{{ title }}</template>
-      </div>
+      </help-tooltip>
     </div>
 
     <transition
@@ -28,7 +39,7 @@
       <div
         v-if="show"
         class="ease-out duration-200 overflow-hidden"
-        ref="content"
+        :id="contentId"
       >
         <slot />
       </div>
@@ -36,36 +47,53 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Mixins, Prop, Watch } from 'vue-property-decorator';
-import ListAccordionMixin from './AccordionMixin.vue';
+<script setup lang="ts">
+import { watch, onMounted, nextTick } from 'vue';
+import { $ref, $computed, $$ } from 'vue/macros';
+import utils from '@/utils/utils';
+import HelpTooltip from '@/component/Help/Tooltip.vue';
 
-@Component
-export default class ListAccordion extends Mixins(ListAccordionMixin) {
-  @Prop({ default: 'List' }) title?: string;
-  @Prop() titleActive?: string;
-  @Prop() titleInactive?: string;
-  @Prop() initShow!: boolean;
-  @Prop() hover?: boolean;
-  @Prop() height?: number;
-  @Prop({ default: false}) autoShow?: boolean;
+const props = defineProps({
+  title: { type: String, default: 'List' },
+  description: String,
+  titleActive: String,
+  titleInactive: String,
+  initShow: Boolean,
+  hover: Boolean,
+  height: Number,
+  autoShow: { type: Boolean, default: false }
+});
 
-  mounted() {
-    this.show = !this.initShow;
-    this.toggle();
-  }
+const contentId: string = 'content-' + utils.getUniqueId();
+const reactiveHeight: number | undefined = $computed(() => props.height);
+let show: boolean = $ref(false);
 
-  @Watch('height')
-  onHeightUpdate() {
-    const el = this.$refs?.content as HTMLDivElement;
-    if (el?.style) {
-      el.style.height = this.height + 'px';
-    }
-  }
-
-  @Watch('autoShow')
-  onAutoShowUpdate() {
-    this.show = <boolean>this.autoShow;
-  }
+const toggle = (): void => {
+  show = !show;
 }
+
+const enter = (el: HTMLElement): void => {
+  el.style.height = el.scrollHeight + 'px';
+}
+
+const leave = (el: HTMLElement): void => {
+  el.style.height = '0px';
+}
+
+onMounted(() => {
+  nextTick(() => {
+    show = !props.initShow;
+    toggle();
+  });
+});
+
+watch($$(reactiveHeight), () => {
+  const el = document.getElementById(contentId);
+  if (el?.style) {
+    el.style.height = props.height + 'px';
+  }
+});
+
+const reactiveAutoShow = $computed(() => props.autoShow);
+watch($$(reactiveAutoShow), () => show = !!props.autoShow);
 </script>

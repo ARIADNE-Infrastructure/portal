@@ -1,13 +1,13 @@
 <template>
-	<div>
+	<div class="text-center">
     <div
       v-if="result.error"
-      class="bg-white p-md text-mmd border-b-base border-red rounded-tl-base text-red"
+      class="bg-white p-md text-mmd border-b-base border-red rounded-tr-base text-red"
     >
       {{ result.error }}
     </div>
 
-    <div class="bg-white p-md text-mmd rounded-tl-base">
+    <div class="bg-white p-md text-mmd rounded-tr-base">
       <div v-if="data === true">
         <i class="fas fa-circle-notch fa-spin mr-sm backface-hidden"></i>
         Loading..
@@ -23,26 +23,20 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script setup lang="ts">
+import { $computed } from 'vue/macros';
 import { searchModule } from "@/store/modules";
 
-@Component
-export default class BrowseWhereTotals extends Vue {
-  @Prop() data!: any;
+const { data } = defineProps(['data']);
+const result = $computed(() => searchModule.getAggsResult);
 
-  get result(): any {
-    return searchModule.getResult;
+const totals: string = $computed(() => {
+  let total = data ? (data?.result?.total) : (result?.total);
+  let val = total?.value || 0;
+
+  if (val && total?.relation !== 'eq') {
+    val += '+';
   }
-
-  get totals() {
-    let total = this.data ? (this.data?.result?.total) : (this.result?.total);
-    let val = total?.value || 0;
-
-    if (val && total?.relation !== 'eq') {
-      val += '+';
-    }
-    return String(val).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  }
-}
+  return String(val).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+});
 </script>

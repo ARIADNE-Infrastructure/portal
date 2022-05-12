@@ -1,14 +1,8 @@
 // src/vue-shims.d.ts
 
-declare module "*.vue" {
-  import Vue from "vue";
-  export default Vue;
-}
-
-declare module 'debounce';
-declare module 'vue-clickaway';
-declare module 'vue-slick-carousel';
-declare module 'v-img';
+declare module 'vue';
+declare module 'vue3-click-away';
+declare module 'vue3-carousel';
 declare module 'wicket';
 declare module 'wordcloud';
 declare module 'chart.js';
