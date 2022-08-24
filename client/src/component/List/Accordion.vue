@@ -36,6 +36,7 @@
       v-on:before-enter="leave" v-on:enter="enter"
       v-on:before-leave="enter" v-on:leave="leave"
     >
+      <!-- overflow-hidden -->
       <div
         v-if="show"
         class="ease-out duration-200 overflow-hidden"
@@ -53,15 +54,18 @@ import { $ref, $computed, $$ } from 'vue/macros';
 import utils from '@/utils/utils';
 import HelpTooltip from '@/component/Help/Tooltip.vue';
 
-const props = defineProps({
-  title: { type: String, default: 'List' },
-  description: String,
-  titleActive: String,
-  titleInactive: String,
-  initShow: Boolean,
-  hover: Boolean,
-  height: Number,
-  autoShow: { type: Boolean, default: false }
+const props = withDefaults(defineProps<{
+  title?: string,
+  description?: string,
+  titleActive?: string,
+  titleInactive?: string,
+  initShow?: boolean,
+  hover?: boolean,
+  height?: number,
+  autoShow?: boolean,
+}>(), {
+  title: 'List',
+  autoShow: false,
 });
 
 const contentId: string = 'content-' + utils.getUniqueId();

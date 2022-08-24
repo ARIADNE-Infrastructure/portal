@@ -97,9 +97,9 @@ import ResourceFilteredItems from '@/component/Resource/FilteredItems.vue';
 import BLink from '@/component/Base/Link.vue';
 import utils from '@/utils/utils';
 
-const props = defineProps({
-  id: { type: String, required: true },
-});
+const props = defineProps<{
+  id: string,
+}>();
 
 const router = useRouter();
 const route = useRoute();
@@ -120,7 +120,7 @@ const mappedTerms = $computed(() => {
   return null;
 });
 
-const initSubject = async (id: any) => {
+const initSubject = async (id: string) => {
   id = String(id);
 
   if (subject?.id && subject.id === id) {

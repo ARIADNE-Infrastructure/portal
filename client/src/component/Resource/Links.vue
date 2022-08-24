@@ -42,13 +42,13 @@
 
       <li class="border-gray border-b-base md:border-b-0 last:border-b-0">
         <b-link
-          :href="'https://ariadne-infrastructure.eu/aocat/Resource/' + encodeURIComponent(resource.id)"
+          :href="resource.identifier"
           target="_blank"
           class="block py-md md:py-none md:px-md leading-1 hover:text-black group"
         >
           <i class="fas fa-share-alt mr-sm text-blue group-hover:text-black"></i>
           Rdf
-        </b-link>
+        </b-link>        
       </li>
       <template v-if="utils.validUrl(resource.landingPage)">
         <li
@@ -99,9 +99,9 @@ import utils from '@/utils/utils';
 import BLink from '@/component/Base/Link.vue';
 import ResourceFilteredItems from './FilteredItems.vue';
 
-const props = defineProps({
-  resourceId: String,
-});
+const props = defineProps<{
+  resourceId: string,
+}>();
 
 const router = useRouter();
 const citeRefId: string = 'citeRef-' + utils.getUniqueId();

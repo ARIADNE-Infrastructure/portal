@@ -118,10 +118,10 @@ import Wkt from 'wicket';
 
 import HelpTooltip from "@/component/Help/Tooltip.vue";
 
-defineProps({
-  title: String,
-  height: String,
-});
+defineProps<{
+  title?: string,
+  height?: string,
+}>();
 
 const route = useRoute();
 
@@ -165,7 +165,12 @@ const setMiniMapFromState = async () => {
     //zoomControl.addTo(mapObj);
   }
   else {
+
     setHeatMap(miniMapSearchResult.aggregations?.geogrid?.grids.buckets);
+
+    // CENTROID HEATS - Run instead of above when centroids are loaded to public portal
+    //setHeatMap(miniMapSearchResult.aggregations?.geogrid_centroid?.grids.buckets);
+
     showMarkerInfo = false;
     // Remove zoom control when on heatmap view
     //this.zoomControl.remove();
@@ -254,6 +259,10 @@ const setClusterMarkers = (markerResources: any) => {
 
 // sets heatmap with geogrids from agg
 const setHeatMap = (heatPoints: any) => {
+  if (!heatPoints) {
+    return;
+  }
+
   let max = Math.max.apply(null, heatPoints?.map((hp: any) => hp.doc_count || 0));
   let mapPoints: any[] = [];
   let points: any = [];
@@ -334,13 +343,14 @@ const setupMiniMapBody = () => {
   mapObj = L.map("mapWrapper", {
     zoomControl: true,
     worldCopyJump: true,
-    maxBounds: L.latLngBounds([-90,-180],[90,180]),
     scrollWheelZoom: false,
     dragging: true,
     boxZoom: false,
     doubleClickZoom: true,
     tap: false
   });
+
+  mapObj.setMaxBounds(L.latLngBounds([-90,-180], [90,180]));
 
   const osmTiles = L.tileLayer(
     "https://{s}.tile.osm.org/{z}/{x}/{y}.png",
@@ -387,7 +397,7 @@ const setupMiniMapBody = () => {
 }
 
 // prepares mapObj with an L.map()
-onMounted(() => setupMiniMapBody());
+onMounted(setupMiniMapBody);
 
 /**
  * When route changes, update minimap.

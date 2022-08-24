@@ -17,9 +17,9 @@
       <!-- sort by name -->
       <button
         type="button"
-        @click="setSort('key')"
+        @click="setSort(sortKey || 'key')"
         class="text-white hover:bg-blue-90 px-sm py-xs text-md group transition-all duration-300 focus:outline-none rounded-l-base xl:rounded-l-0 flex-1 xl:flex-initial"
-        :class="{ 'bg-blue': options.sortBy === 'key', 'bg-blue-50': options.sortBy !== 'key' }"
+        :class="{ 'bg-blue': options.sortBy !== 'doc_count', 'bg-blue-50': options.sortBy === 'doc_count' }"
       >
         <span class="pr-xs">{{ name }}</span>
         <i
@@ -32,13 +32,13 @@
       <!-- sort by # of results -->
       <button
         type="button"
-        @click="setSort('doc_count')"
+        @click="setSort(sortKeyOption || 'doc_count')"
         class="text-white hover:bg-blue-90 px-sm py-xs text-md group transition-all duration-300 focus:outline-none rounded-base rounded-l-0 flex-1 xl:flex-initial"
         :class="{ 'bg-blue': options.sortBy === 'doc_count', 'bg-blue-50': options.sortBy !== 'doc_count' }"
       >
-        <span class="pr-xs">{{ hits }}</span>
+        <span class="pr-xs">{{ sortKeyOptionLabel || hits }}</span>
         <i
-          v-if="options.sortBy === 'doc_count'"
+          v-if="(options.sortBy !== 'key')"
           class="fa-chevron-down fas mr-sm duration-300 text-sm"
           :class="{ 'transform rotate-180': options.sortOrder === 'asc' }"
         />
@@ -55,11 +55,15 @@ import utils from '@/utils/utils';
 
 const emit = defineEmits(['searchUpdate']);
 
-const props = defineProps({
-  id: { type: String, required: true },
-  shortSortNames: Boolean,
-  title: String,
-});
+const props = defineProps<{
+  id: string,
+  shortSortNames?: boolean,
+  sortKey?: string,
+  sortKeyOption?: string, // Secondary sorting apart from default key and aggs doc_count attribute. If set, it's used instead of sortKey
+  sortKeyOptionLabel?: string, // Secondary sorting label apart from default 'Hits'. If set, it's used instead of 'Hits'
+  sortOrder?: string,
+  title?: string,
+}>();
 
 let localSearch: string = $ref('');
 
@@ -108,13 +112,13 @@ const setSort = (sortBy: string): void => {
   }
 
   payload.value.sortBy = sortBy;
-
+  
   if (options.sortBy === sortBy) {
     // toggle current order
     payload.value.sortOrder = options.sortOrder === 'asc' ? 'desc' : 'asc';
   } else {
     // if name, default to sorting a-z, if count, start with highest number
-    payload.value.sortOrder = sortBy === 'key' ? 'asc' : 'desc';
+    payload.value.sortOrder = sortBy === 'doc_count' ? 'desc' : 'asc';
   }
 
   aggregationModule.setOptions(payload);
@@ -130,8 +134,8 @@ watch($$(options), () => {
       id: props.id,
       value: {
         search: '',
-        sortBy: 'doc_count',
-        sortOrder: 'desc',
+        sortBy: props.sortKeyOption || 'doc_count',
+        sortOrder: props.sortOrder || 'desc',
         data: {},
       }
     }

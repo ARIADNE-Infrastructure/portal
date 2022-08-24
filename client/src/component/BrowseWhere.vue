@@ -60,7 +60,7 @@
     </div>
 
     <!-- filters -->
-    <filter-toggleable :lockBodyOnActive="false">
+    <filter-toggleable :defaultView="true" :lockBodyOnActive="false">
       <filter-list :show="['search', 'yearsAndPeriods', 'aggregations']" />
     </filter-toggleable>
 

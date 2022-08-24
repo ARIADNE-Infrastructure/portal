@@ -27,7 +27,9 @@
 import { $computed } from 'vue/macros';
 import { searchModule } from "@/store/modules";
 
-const { data } = defineProps(['data']);
+const { data } = defineProps<{
+  data: any
+}>();
 const result = $computed(() => searchModule.getAggsResult);
 
 const totals: string = $computed(() => {

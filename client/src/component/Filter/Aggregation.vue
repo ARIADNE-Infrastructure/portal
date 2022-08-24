@@ -15,6 +15,10 @@
           :id="id"
           :title="resultAggTitle"
           :shortSortNames="shortSortNames"
+          :sortKey="sortKey"
+          :sortKeyOption="sortKeyOption"
+          :sortKeyOptionLabel="sortKeyOptionLabel"
+          :sortOrder="sortOrder"
           @searchUpdate="setBucketListHeight"
         />
 
@@ -29,6 +33,11 @@
               @click="setActive(id, bucket.key, false)"
             >
               <span class="flex-grow break-word pr-lg">
+                <i v-if="id === 'publisher' && findPublisher(bucket.key)"
+                  class="fas fa-info-circle text-white pr-sm py-sm transition-color duration-300 hover:text-green"
+                  @click.prevent.stop="() => router.push(utils.paramsToString('/publisher/' + findPublisher(bucket.key).slug, { publisher: bucket.key }))">
+                </i>
+
                 <span v-if="id === 'derivedSubjectId' && params.derivedSubjectIdLabel">
                   {{ utils.sentenceCase(params.derivedSubjectIdLabel) }}
                 </span>
@@ -38,7 +47,7 @@
                 </span>
 
                 <span v-else>
-                  {{ getFilterText(bucket.key) }}
+                  {{ getFilterText(sortKey ? bucket[sortKey] : bucket.key) }}
                 </span>
               </span>
 
@@ -46,7 +55,7 @@
                 <i class="fa-times fas align-middle transition-color duration-300 text-sm" />
               </span>
 
-              <span class="bg-midGray rounded-lg py-xs px-sm text-white text-sm font-bold">
+              <span v-if="bucket.doc_count" class="rounded-lg bg-lightGray py-xs px-sm text-blue text-sm font-bold">
                 {{ bucket.doc_count }}
               </span>
             </div>
@@ -56,13 +65,39 @@
               class="flex justify-between items-center px-md py-sm text-md hover:bg-lightGray transition-all duration-300 cursor-pointer border-t-base border-gray"
               @click="setActive(id, bucket.key, true)"
             >
-              <span class="flex-grow break-word pr-lg">
-                {{ getFilterText(bucket.key) }}
+              <span v-if="id === 'publisher' && findPublisher(bucket.key)">
+                <i class="fas fa-info-circle text-blue pr-sm py-sm transition-color duration-300 hover:text-green"
+                  @click.prevent.stop="() => router.push(utils.paramsToString('/publisher/' + findPublisher(bucket.key).slug, { publisher: bucket.key }))">
+                </i>
               </span>
 
-              <span class="bg-midGray rounded-lg py-xs px-sm text-white text-sm font-bold">
-                {{ bucket.doc_count }}
+              <span class="flex-grow break-word pr-lg">
+                {{ getFilterText(sortKey ? bucket[sortKey] : bucket.key) }}
               </span>
+
+              <span v-if="bucket.doc_count" class="whitespace-nowrap bg-lightGray rounded-lg py-xs px-sm text-midGray text-sm font-bold">
+                {{ bucket.doc_count }} {{ docCountSuffix }}
+              </span>
+
+              <div v-if="bucket.extraLabels">
+                <!-- show pills only for periods -->
+                <span v-if="id === 'filterByCulturalPeriods'">
+                  <span class="whitespace-nowrap bg-lightGray rounded-lg py-xs px-sm mx-xs text-midGray text-sm font-bold">Start: {{bucket.start}}</span>
+                  <span class="whitespace-nowrap bg-lightGray rounded-lg py-xs px-sm mx-xs text-midGray text-sm font-bold">{{synonyms.getCountryCode(bucket.region)}}</span>
+                </span>
+
+                <i class="fas fa-question-circle"
+                  @mouseenter="toggleTooltip($event, true)"
+                  @mouseleave="toggleTooltip($event, false)"
+                />
+
+                <div class="fixed z-20 hidden bg-blue text-white p-sm">
+                  <span v-for="(label, key) in bucket.extraLabels" v-bind:key="key">
+                    <strong>{{ key }}:</strong> {{ label }}<br/>
+                  </span>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
@@ -89,49 +124,58 @@
 import { watch, nextTick } from 'vue';
 import { $ref, $computed, $$ } from 'vue/macros';
 import { searchModule, resourceModule, aggregationModule, generalModule } from "@/store/modules";
+import { useRouter } from 'vue-router'
 import utils from '@/utils/utils';
 import ListAccordion from '@/component/List/Accordion.vue';
 import FilterAggregationOptions from './Aggregation/Options.vue';
+import HelpTooltip from '@/component/Help/Tooltip.vue';
+import synonyms from "@/utils/synonyms";
 
 let height = $ref(0);
 const bucketListId: string = 'bucketList-' + utils.getUniqueId();
+const router = useRouter();
 
-const props = defineProps({
-  id: { type: String, required: true },
-  item: Object,
-  shortSortNames: Boolean,
-});
+interface Props {
+  id: string,
+  item?: any,
+  shortSortNames?: boolean,
+  sortKey?: string,
+  sortKeyOption?: string, // If set, used instead if sortKey
+  sortKeyOptionLabel?: string, // Paired with sortKeyOption. If set, used instead if sortKey
+  sortOrder?: string,
+  sentenceCaseFilterText?: boolean,
+  docCountSuffix?: '', // String suffix for doc_count in bucket aggregations
+};
+
+const { id, item, shortSortNames, sortKey, sortOrder, sentenceCaseFilterText = true, docCountSuffix } = defineProps<Props>();
 
 const params = $computed(() => searchModule.getParams);
 const fields = $computed(() => resourceModule.getFields);
-const aggType = $computed(() => aggregationModule.getTypes.find(type => type.id === props.id));
-const resultAggTitle: string = $computed(() => aggregationModule.getTitle(props.id));
-const resultAggDescription: string = $computed(() => aggregationModule.getDescription(props.id));
-const resultAggAnyActive: boolean = $computed(() => aggregationModule.getAnyActive(props.id, props.item?.buckets));
+const aggType = $computed(() => aggregationModule.getTypes.find(type => type.id === id));
+const resultAggTitle: string = $computed(() => aggregationModule.getTitle(id));
+const resultAggDescription: string = $computed(() => aggregationModule.getDescription(id));
+const resultAggAnyActive: boolean = $computed(() => aggregationModule.getAnyActive(id, item?.buckets));
 
 const hasMoreDocs: number = $computed(() => {
-  const options = aggregationModule.getOptions[props.id];
+  const options = aggregationModule.getOptions[id];
   let count;
-
   if (options?.search) {
     count = options?.data?.sum_other_doc_count;
   }
   else {
-    count = props.item?.sum_other_doc_count;
+    count = item?.sum_other_doc_count;
   }
-
   return count ?? 0;
 });
 
 const initShow: boolean = $computed(() => {
-  const options = aggregationModule.getOptions[props.id];
+  const options = aggregationModule.getOptions[id];
   return !!(options?.search || resultAggAnyActive);
 });
 
 const filteredAndSortedBuckets: Array<any> = $computed(() => {
-  let list = props.item?.buckets;
-  const options = aggregationModule.getOptions[props.id];
-
+  let list = item?.buckets;
+  const options = aggregationModule.getOptions[id];
   if (options) {
     let { search, sortBy, sortOrder, data } = options;
 
@@ -140,10 +184,14 @@ const filteredAndSortedBuckets: Array<any> = $computed(() => {
       list = data.buckets;
     }
 
-    // return sorted
-    return utils.sortListByValue(list, sortBy, sortOrder);
-  }
+    // sort
+    list = utils.sortListByValue(list, sortBy, sortOrder);
 
+    // period filters needs extra sorting here to put active items at top
+    if (id === 'temporalRegion' || id === 'filterByCulturalPeriods') {
+      list.sort((a: any, b: any) => resultAggIsActive(id, a.key) ? -1 : 1)
+    }
+  }
   return list;
 });
 
@@ -151,12 +199,14 @@ const resultAggIsActive = (key: string, bucketKey: string): boolean => {
   return aggregationModule.getIsActive(key, bucketKey);
 };
 
-const getFilterText = (text: string): string => {
-  if (aggType?.unformatted) {
+const getFilterText = (text: string ): string => {
+  if (aggType?.unformatted || !sentenceCaseFilterText ) {
     return text;
   }
   return utils.sentenceCase(text);
 };
+
+const findPublisher = (key: string): any => generalModule.findPublisher(key);
 
 const noBucketMatch = (id: string): boolean => {
   const options = aggregationModule.getOptions[id];
@@ -171,6 +221,11 @@ const setBucketListHeight = () => {
   nextTick(() => {
     height = document.getElementById(bucketListId)?.scrollHeight || 0;
   });
+};
+
+const toggleTooltip = (e: any, show: boolean) => {
+  const rect = e.target.getBoundingClientRect();
+  e.target.nextElementSibling.style.cssText = `width:300px; top: ${rect.top}px; left: ${rect.left + 25}px; display:${show ? 'block' : 'none'}`;
 };
 
 watch($$(filteredAndSortedBuckets), setBucketListHeight, { deep: true });

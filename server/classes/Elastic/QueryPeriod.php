@@ -5,21 +5,22 @@ namespace Elastic;
 class QueryPeriod {
 
   public function __construct() {
-   
+
   }
 
   /**
    * Get countries aggregation query from periods index
-   * 
+   *
    * @return array Query
    */
-  public function getCountriesAggQuery() {
+  public function getPeriodRegionsQuery() {
     $query['size'] = 0;
-    $query['aggregations'] = [
-      'periodCountries' => [
+    $query['aggs'] = [
+      'periodCountry' => [
         'terms' => [
           'field' => 'spatialCoverage.label.raw',
-          'size' => 250
+          'size' => 20,
+          'order' => [ '_key' => 'asc' ]
         ]
       ]
     ];
@@ -28,35 +29,74 @@ class QueryPeriod {
 
   /**
    * Get periods for country
-   * 
+   *
    * @param string Country
    * @return array Query
    */
-  public function getPeriodsForCountryQuery($countryLabel) {
-    $query['size'] = 50;
+  public function getPeriodsForCountryQuery($temporalRegion) {
+    $query['size'] = 20;
+    $query['sort'] = [
+      'start.year' => [ 'order' => 'asc']
+    ];
     $query['_source'] = [
+      "authority",
+      "label",
       "spatialCoverage",
       "localizedLabels",
-      "spatialCoverageDescription",
       "start",
-      "stop"
+      "stop",
+      // "spatialCoverageDescription",
     ];
-    if($countryLabel !== '') {
+    if ($temporalRegion) {
+      $parts = [];
+      foreach (explode('|', $temporalRegion) as $region) {
+        $parts[] = [
+          'match' => [
+            'spatialCoverage.label.raw' => Utils::escapeLuceneValue($region),
+          ],
+        ];
+      }
       $query['query'] = [
         'bool' => [
           'must' => [
-            'term' => [
-              'spatialCoverage.label.raw' => $countryLabel
-            ]
-          ]
-        ]
-      ];        
+            'bool' => [
+              'should' => $parts,
+            ],
+          ],
+        ],
+      ];
+
     } else {
       // get all
       $query['query']['bool']['must'] = array('match_all'=> new \stdClass());
     }
 
+    /*$query['aggregations'] = [
+      'localizedLabels' => [
+        'nested' => [
+          'path' => 'localizedLabels'
+        ],
+        'aggs' => [
+          'filtered_aggs' => [
+            'filter' => [
+              'term' => [
+                'localizedLabels.language.raw' => 'en'
+              ]
+              ],
+              'aggs' => [
+                'labels' => [
+                  'terms' => [
+                    'field' => 'localizedLabels.label.raw',
+                    'size' => 20
+                  ]
+                ]
+              ]
+          ]
+        ]
+      ]
+    ];*/
+    
     return $query;
-  }  
+  }
 
 }

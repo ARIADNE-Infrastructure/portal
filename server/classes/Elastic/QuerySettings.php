@@ -33,58 +33,58 @@ class QuerySettings {
 
   /**
    * Valid searchable fields with metadata for constructing Elastic querys.
-   * NOTICE: These fields are the only fields allowed to be searchable by user 
+   * NOTICE: These fields are the only fields allowed to be searchable by user
    * input in combo with or without q-param.
-   * 
+   *
    * @param $searchString
    * @return array
    */
   public static function getValidSearchableFields($searchString = ''): array {
 
     return [
-      'title' => [ 
+      'title' => [
         'fieldPath' => 'title.text^4',
-        'query' => 
-          [ 
-            'match' => [ 
+        'query' =>
+          [
+            'match' => [
               'title.text' => [
                 'query' => $searchString,
                 'operator' => 'and'
               ]
-            ] 
+            ]
           ]
       ],
       'description' => [
         'fieldPath' => 'description.text^3',
-        'query' => [ 
-          'match' => [ 
+        'query' => [
+          'match' => [
             'description.text' => [
               'query' => $searchString,
               'operator' => 'and'
             ]
-          ] 
-        ]  
+          ]
+        ]
       ],
       'nativeSubject' => [
         'fieldPath' => 'nativeSubject.prefLabel^2',
-        'query' => [ 
-          'match' => [ 
+        'query' => [
+          'match' => [
             'nativeSubject.prefLabel' => [
               'query' => $searchString,
               'operator' => 'and'
             ]
-          ] 
+          ]
         ]
       ],
       'derivedSubject' => [
         'fieldPath' => 'derivedSubject.prefLabel^2',
-        'query' => [ 
-          'match' => [ 
+        'query' => [
+          'match' => [
             'derivedSubject.prefLabel' => [
               'query' => $searchString,
               'operator' => 'and'
             ]
-          ] 
+          ]
         ]
       ],
       'location' => [
@@ -93,16 +93,16 @@ class QuerySettings {
           [
             'nested' => [
               'path' => 'spatial',
-              'query' => [ 
-                'match' => [ 
+              'query' => [
+                'match' => [
                   'spatial.placeName' => [
                     'query' => $searchString,
                     'operator' => 'and'
                   ]
-                ] 
+                ]
               ]
             ]
-          ]           
+          ]
         ]
       ],
       'time' => [
@@ -111,21 +111,33 @@ class QuerySettings {
           [
             'nested' => [
               'path' => 'temporal',
-              'query' => [ 
-                'match' => [ 
+              'query' => [
+                'match' => [
                   'temporal.periodName' => [
                     'query' => $searchString,
                     'operator' => 'and'
                   ]
-                ] 
+                ]
               ]
             ]
-          ]           
+          ]
         ]
-      ]
+      ],
+      'originalId' => [
+        'fieldPath' => 'originalId',
+        'query' =>
+          [
+            'match_phrase' => [
+              'originalId' => [
+                'query' => $searchString,
+                'operator' => 'and'
+              ]
+            ]
+          ]
+      ],                  
     ];
 
-  } 
+  }
 
   /**
    * Helper function for filter querys
@@ -137,9 +149,7 @@ class QuerySettings {
           'path' => $filter['fieldPath'],
           'query' => [
             'bool'=> [
-              'must' => [
-                $filter['innerQuery']
-              ]
+              'must' => !empty($filter['isArrayNested']) ? $filter['innerQuery'] : [ $filter['innerQuery'] ],
             ]
           ]
         ]
@@ -153,21 +163,21 @@ class QuerySettings {
   /**
    * Match incoming get params to valid filters.
    * If found, filters are pushed to filter array
-   * 
+   *
    * @param $inParam equivalent to $_GET content
    * @return $filters Array with valid filters to throw at Elastic
    */
   public static function getFilters($inParams) {
     $filters = [];
-    // loop alla inParams, check if it's a valid filter
+    // loop all inParams, check if it's a valid filter
     foreach($inParams as $param => $paramValue) {
       foreach(explode('|', $paramValue) as $value) {
         // filters may be multiple separated by pipe character (|)
-        $filter = self::getValidFilter($param, $value);  
+        $filter = self::getValidFilter($param, $value);
         if($filter) {
           $filters[] = self::getFilterInnerQuery($filter);
-        } 
-      } 
+        }
+      }
     }
     return $filters;
   }
@@ -253,9 +263,15 @@ class QuerySettings {
       'range' => [
         'fieldPath' => 'temporal',
         'isNested' => true,
-        //'innerQuery' => $filterName !== 'range' ?: self::buildRangeInnerQuery($filterValue)
+        'isArrayNested' => true,
         'innerQuery' => $filterName !== 'range' ?: Timeline::buildRangeInnerQuery($filterValue)
-      ]
+      ],
+      // POC - Period search
+      'period' => [
+        'fieldPath' => 'temporal',
+        'isNested' => true,
+        'innerQuery' => ['term' => ['temporal.periodName.raw' => strtolower($filterValue)]]
+      ],      
     ];
 
     //return $validFilters;
@@ -321,6 +337,7 @@ class QuerySettings {
           'size' => self::AGGS_BUCKET_SIZE
         ]
       ],
+      // remove when centroids are uploaded to public
       'geogrid' => [
         'nested' => [
           'path' => 'spatial'
@@ -334,7 +351,21 @@ class QuerySettings {
             ]
           ]
         ]
-      ]
+      ],
+      'geogrid_centroid' => [
+        'nested' => [
+          'path' => 'spatial'
+        ],
+        'aggs' => [
+          'grids' => [
+            'geohash_grid' => [
+              'field' => 'spatial.centroid',
+              'precision' => 7,
+              'size' => 5000
+            ]
+          ]
+        ]
+      ]            
     ];
   }
 

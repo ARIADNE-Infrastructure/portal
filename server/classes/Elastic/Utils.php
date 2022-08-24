@@ -21,13 +21,6 @@ class Utils {
   }
 
   /**
-   * Returns if valid resource id
-   */
-  public static function isValidId ($id) {
-    return preg_match('/^[a-zA-Z0-9\-]+$/', $id);
-  }
-
-  /**
    * Returns if locations are equals
    */
   public static function isLocationDoublet ($a, $b) {

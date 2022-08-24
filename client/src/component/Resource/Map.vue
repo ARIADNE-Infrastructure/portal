@@ -76,7 +76,7 @@
 <script setup lang="ts">
 import { nextTick, onMounted } from 'vue';
 import { $ref, $computed } from 'vue/macros';
-import { generalModule, resourceModule, searchModule } from "@/store/modules";
+import { resourceModule, searchModule } from "@/store/modules";
 import * as L from 'leaflet';
 import 'leaflet.heat';
 import 'leaflet/dist/leaflet.css';
@@ -90,7 +90,7 @@ import Wkt from 'wicket';
 
 let mapObj: any = null;
 
-let hasMapData: boolean = $ref(false);
+let hasMapData: boolean = $ref(true);
 let showNearby: boolean = $ref(true); // Show similar as default
 let isPolygonSpatial: boolean = $ref(false);
 let locationIsApproximate: boolean = $ref(false);
@@ -101,17 +101,14 @@ const nearbyMarkersGroup = L.featureGroup();
 const resourceMarkersGroup = L.featureGroup();
 const mapZoomPadding = { padding: [20,20] };
 
-onMounted(() => {
-  nextTick(() => {
-    setupMap();
-    nextTick(setMap);
-  });
-});
-
 const resource = $computed(() => resourceModule.getResource);
-const assets: string = $computed(() => generalModule.getAssetsDir);
 const hasNearbyResources: boolean = $computed(() => !!resource?.nearby?.length);
 const params = $computed(() => searchModule.getParams);
+
+onMounted(() => {
+  setupMap();
+  nextTick(setMap);
+});
 
 const setMapSize = (size: string) => {
   mapSize = size;
@@ -147,7 +144,6 @@ const toggleNearby = (): void => {
  * Map body
  */
 const setupMap = () => {
-  hasMapData = true;
   mapObj = L.map('map', {
     zoomControl: false,
     scrollWheelZoom: false
@@ -167,35 +163,31 @@ const setMap = async () => {
   isPolygonSpatial = false;
 
   // Pane allows for settings z-index. All other documented approaches fail!
-  mapObj.createPane( 'resourceMarkersPane' );
+  mapObj.createPane('resourceMarkersPane');
   mapObj.getPane('resourceMarkersPane').style.zIndex = 20;
 
   // Get locations from resource and create markers
   resource.spatial?.forEach((spatial: any, i: number) => {
-
-    if(spatial.spatialPrecision || spatial.coordinatePrecision ) {
+    if (spatial.spatialPrecision || spatial.coordinatePrecision ) {
       // If either of these props are set, means that resource location is apporoximate!
       locationIsApproximate = true;
     }
 
     // Handle geopoint data
     if (spatial?.geopoint) {
-
       if (resource.spatial[i + 1]?.placeName && !resource.spatial[i + 1]?.geopoint) {
         spatial.placeName = resource.spatial[i + 1]?.placeName;
       }
 
       // Create and set marker to current map
-      marker = getMarker(resource.id, spatial, mapUtils.markerType.point.current, resource.title.text);
-      marker.addTo( resourceMarkersGroup );
-
+      marker = getMarker(resource.id, spatial, mapUtils.markerType.point.current, resourceModule.getMainTitle(resource) );
+      marker.addTo(resourceMarkersGroup);
     }
 
     // Handle polygon data and/or boundingbox
-    if(spatial?.polygon || spatial?.boundingbox) {
-
+    if (spatial?.polygon || spatial?.boundingbox) {
       // incoming data can either be polygon or boundingbox. Handles the same way.
-      let shape = spatial?.polygon || spatial?.boundingbox;
+      let shape = spatial?.polygon || spatial?.boundingbox;
 
       // Create a new Wicket instance
       // DOCS: http://arthur-e.github.io/Wicket/doc/out/Wkt.Wkt.html
@@ -207,15 +199,13 @@ const setMap = async () => {
 
       // Add polygon for fitbounds
       //feature.bringToFront();
-      feature.addTo( resourceMarkersGroup );
+      feature.addTo(resourceMarkersGroup);
       isPolygonSpatial = true;
-
     }
-
   });
 
   // No locations found means no map needed, return.
-  if(!resourceMarkersGroup?.getLayers().length) {
+  if (!resourceMarkersGroup?.getLayers().length) {
     // Set map null to hide!
     mapObj = null;
     hasMapData = false;
@@ -223,12 +213,11 @@ const setMap = async () => {
   }
 
   // Get current resources nearby locations and create markers
-  if(resource.nearby) {
-    let nearbys: any[] = [];
+  if (resource.nearby) {
     resource.nearby?.forEach((nearbyResource: any) => {
       nearbyResource.spatial?.forEach((spatial: any) => {
-        let marker = getMarker(nearbyResource.id, spatial, null, nearbyResource.title.text);
-        if(marker) {
+        let marker = getMarker(nearbyResource.id, spatial, null, resourceModule.getMainTitle(nearbyResource));
+        if (marker) {
           marker.addTo(nearbyMarkersGroup);
         }
       });
@@ -257,14 +246,14 @@ const setMap = async () => {
 const getMarker = (resourceId: any, spatial: any, markerType: any, markerLabel: string): L.Marker | null => {
   let latLng: L.LatLng | null = null;
 
-  if(spatial.geopoint) {
+  if (spatial.geopoint) {
     // spatial is geopoint
     latLng = L.latLng(spatial.geopoint.lat, spatial.geopoint.lon );
     markerType == null ? markerType = mapUtils.markerType.point.marker : markerType = markerType;
   } else {
     // spatial is geoshape
-    let geoShape = spatial?.polygon || spatial?.boundingbox;
-    if(geoShape) {
+    let geoShape = spatial?.polygon || spatial?.boundingbox;
+    if (geoShape) {
       // get center of geoshape
       const wkt = new Wkt.Wkt();
       wkt.read(geoShape);
@@ -274,21 +263,20 @@ const getMarker = (resourceId: any, spatial: any, markerType: any, markerLabel: 
     }
   }
 
-  if(latLng) {
+  if (latLng) {
     let marker = L.marker(latLng, getMarkerStyle(markerType));
     if(markerLabel) {
       //marker.bindTooltip(latLng.toString());
       marker.bindTooltip(markerLabel);
     }
     // Link all makrkers that are not current resource
-    if(markerType != mapUtils.markerType.point.current) {
+    if (markerType != mapUtils.markerType.point.current) {
       marker.on('click', () => {
         resourceModule.navigateToResource(resourceId);
       });
     }
     return marker;
   }
-
   return null;
 }
 

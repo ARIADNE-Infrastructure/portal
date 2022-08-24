@@ -11,13 +11,12 @@
 
 <script setup lang="ts">
 import { $computed } from 'vue/macros';
-import { PropType } from '@vue/runtime-core';
 import { searchModule, aggregationModule } from "@/store/modules";
 import utils from '@/utils/utils';
 
-const props = defineProps({
-  ignoreParams: { type: Array as PropType<string[]>, required: true }
-})
+const props = defineProps<{
+  ignoreParams: Array<string>,
+}>();
 
 const params = $computed(() => searchModule.getParams);
 const hasParams: boolean = $computed(() => !utils.objectEquals(params, { q: ''}, props.ignoreParams))

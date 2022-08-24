@@ -191,8 +191,10 @@ module.exports = {
     },
 
     zIndex: {
+      'neg30': -30,
       'neg20': -20,
-      'neg10':  -10,
+      'neg10': -10,
+      '5' :    5,
       '10':    10,
       '20':    20,
       '30':    30,
@@ -217,6 +219,7 @@ module.exports = {
 
     maxHeight: {
       '500': '500px',
+      'full': '100%',
     },
 
     minHeight: {

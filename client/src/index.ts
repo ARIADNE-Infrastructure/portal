@@ -10,7 +10,6 @@ import store from './store';
 import App from './App.vue';
 import VueClickAway from 'vue3-click-away'
 
-
 // app
 createApp(App)
   .use(router)

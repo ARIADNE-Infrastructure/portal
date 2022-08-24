@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import { generalModule } from "@/store/modules";
+import { generalModule, resourceModule } from "@/store/modules";
 import { breadCrumbModule } from "@/store/modules";
 
 // components
@@ -12,12 +12,14 @@ import FrontPage from './component/FrontPage.vue';
 import NotFound from './component/NotFound.vue';
 import Resource from './component/Resource.vue';
 import Subject from './component/Subject.vue';
+import Publisher from './component/Publisher.vue';
 import Result from './component/Result.vue';
 import Services from './component/Services.vue';
 import Theme from './component/Theme.vue';
 import Contact from './component/Contact.vue';
 import Infographic from './component/Infographic.vue';
 import Guide from './component/Guide.vue';
+import MaintenancePage from './component/MaintenancePage.vue';
 
 /**
  * Router - component url paths
@@ -28,6 +30,11 @@ const router = createRouter({
   history: createWebHistory(),
   mode: 'history',
   routes: [
+    /*  Maintenance mode */
+    // {
+    //   path: '/:pathMatch(.*)*',
+    //   component: MaintenancePage
+    // },
     {
       path: '/',
       component: FrontPage,
@@ -49,6 +56,11 @@ const router = createRouter({
       path: '/subject/:id',
       props: true,
       component: Subject,
+    },
+    {
+      path: '/publisher/:id',
+      props: true,
+      component: Publisher,
     },
     {
       path: '/page/:id',
@@ -148,9 +160,9 @@ const router = createRouter({
     },
   ],
 
-  scrollBehavior(to, from, pos) {
+  scrollBehavior(to: any, from: any, pos: any) {
     if (from.path !== to.path) {
-      return { x: 0, y: 0 };
+      return { top: 0 };
     }
     return pos;
   },
@@ -164,13 +176,18 @@ router.beforeEach((to: any, from: any, next: any) => {
     });
   }
 
+  // maybe update resource back link
+  resourceModule.maybeUpdateFromPath({
+    from: from?.path,
+    to: to?.path,
+  });
+
   // Let breadCrumbModule module know from where user is landing on page
-  if(from?.path) {
+  if (from?.path) {
     breadCrumbModule.setFrom(from.path);
   }
 
   next();
-
 });
 
 export default router;

@@ -6,17 +6,23 @@
       type="text"
       placeholder="Year (from)"
       :disabled="isLoading"
-      @input="validateAndSearch"
+      @keydown.enter.prevent="validateAndSearch"
     />
 
     <input
       v-model="yearTo"
-      class="p-sm text-md outline-none focus:border-blue border-base border-gray rounded-r-base disabled:bg-white w-1/2"
+      class="p-sm text-md outline-none focus:border-blue border-base border-gray disabled:bg-white w-1/2"
       type="text"
       placeholder="Year (to)"
       :disabled="isLoading"
-      @input="validateAndSearch"
+      @keydown.enter.prevent="validateAndSearch"
     />
+
+    <button
+      class="bg-blue-50 px-md py-sm text-center text-md text-white cursor-pointer hover:bg-blue transition-color rounded-r-base duration-300"
+      @click.prevent="validateAndSearch">
+      Apply
+    </button>
   </div>
 </template>
 
@@ -24,7 +30,6 @@
 import { watch } from 'vue';
 import { $ref, $computed, $$ } from 'vue/macros';
 import { generalModule, searchModule } from "@/store/modules";
-import utils from '@/utils/utils';
 
 let yearFrom = $ref(null);
 let yearTo = $ref(null);
@@ -34,7 +39,7 @@ const params = $computed(() => searchModule.getParams);
 
 const validateAndSearch = (event: any) => {
   if (validateYear(event)) {
-    utils.debounce('yearsSearch', setSearch, 1000);
+    setSearch();
   }
 };
 

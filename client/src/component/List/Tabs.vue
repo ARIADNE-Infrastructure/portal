@@ -30,9 +30,9 @@
 <script setup lang="ts">
 import { $ref, computed, provide, getCurrentInstance, onMounted, nextTick } from 'vue';
 
-const props = defineProps({
-  initiallySelectedTabTitle: { type: String, required: true },
-});
+const props = defineProps<{
+  initiallySelectedTabTitle: string,
+}>();
 
 let selectedTabTitle: string = $ref('');
 const tabs = getCurrentInstance().slots.default();

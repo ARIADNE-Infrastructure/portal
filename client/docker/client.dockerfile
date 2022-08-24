@@ -6,6 +6,7 @@
 # If you build for production/staging make sure you have the correct API-URI set on webpack.config.js
 #
 # ariadneApiPath  = 'http://localhost:8080';
+# Staging env: https://ariadne-portal-staging.d4science.org:8080
 #
 
 
@@ -28,7 +29,7 @@ FROM nginx:1.19.0-alpine AS ariadne-client
 # Copy app to server default web root
 COPY --from=ariadne-build /app/dist /usr/share/nginx/html
 
-# Copy nginx configuration to
+# Copy nginx configuration to 
 COPY --from=ariadne-build /app/docker/default.conf /etc/nginx/conf.d/
 
 # Restart and reload new configuration

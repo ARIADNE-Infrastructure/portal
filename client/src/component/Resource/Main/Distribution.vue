@@ -50,10 +50,10 @@ import utils from '@/utils/utils';
 import BLink from '@/component/Base/Link.vue';
 import ResourceFilteredItems from '../FilteredItems.vue';
 
-defineProps({
-  itemClass: String,
-  bClass: String,
-})
+defineProps<{
+  itemClass: string,
+  bClass: string,
+}>();
 
 const resource = $computed(() => resourceModule.getResource);
 </script>

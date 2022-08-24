@@ -71,9 +71,9 @@ import FilterMiniMap from '@/component/Filter/MiniMap.vue';
 import FilterTimeLine from '@/component/Filter/TimeLine.vue';
 import FilterAggregation from '@/component/Filter/Aggregation.vue';
 
-const props = defineProps({
-  show: Array as PropType<string[]>,
-});
+const props = defineProps<{
+  show: Array<string>,
+}>();
 
 let isUnmounted: boolean = false;
 const route = useRoute();

@@ -93,7 +93,7 @@ class Contact {
 
     if (!$SMTP_HOST || !$SMTP_PORT || !$SMTP_CHANNEL || !$SMTP_USER || !$SMTP_PASS ) {
 
-      if (!empty($this->settings->environment->debugMode)) {
+      if ($this->settings->environment->contact->debugMode) {
         $this->logger->info('ERROR: Missing mandatory environment settings in mail system!');
       }
 
@@ -121,7 +121,7 @@ class Contact {
       //Recipients
       $mail->setFrom($fromEmail, 'Ariadne Portal');
       $mail->addReplyTo($fromEmail, $fromName);
-      $mail->addAddress($settings->environment->contact->email, $fromName);
+      $mail->addAddress($this->settings->environment->contact->email, $fromName);
       $mail->addCC($fromEmail);
 
       // Content
@@ -138,7 +138,7 @@ class Contact {
       ];
 
     } catch (Exception $e) {
-      if (!empty($this->settings->environment->debugMode)) {
+      if ($this->settings->environment->contact->debugMode) {
         $this->logger->info($e);
       }
       return [

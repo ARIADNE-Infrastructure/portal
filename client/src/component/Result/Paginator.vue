@@ -1,18 +1,16 @@
 <!-- Paginator for search results -->
 <template>
-  <div class="flex">
-    <template v-if="active">
-      <span
-        v-for="(page, key) in getPaging()"
-        v-bind:key="key"
-        class="leading-1 mx-none my-none py-md px-base text-sm border-base transition-all duration-300"
-        :class="pageClasses(page)"
-        :title="'page ' + (page.val < 2 ? 1 : page.val)"
-        @click.prevent="changePage(page.val, page.hover)"
-        v-html="page.label"
-      >
-      </span>
-    </template>
+  <div class="flex" v-if="active">
+    <span
+      v-for="(page, key) in getPaging()"
+      v-bind:key="key"
+      class="leading-1 mx-none my-none py-md px-base text-sm border-base transition-all duration-300"
+      :class="pageClasses(page)"
+      :title="'page ' + (page.val < 2 ? 1 : page.val)"
+      @click.prevent="changePage(page.val, page.hover)"
+      v-html="page.label"
+    >
+    </span>
   </div>
 </template>
 
@@ -21,9 +19,9 @@ import { $computed } from 'vue/macros';
 import { searchModule } from "@/store/modules";
 import VueScrollTo from 'vue-scrollto';
 
-const props = defineProps({
-  scrollTop: Boolean
-});
+const props = defineProps<{
+  scrollTop?: boolean,
+}>();
 
 const params = $computed(() => searchModule.getParams);
 const result = $computed(() => searchModule.getResult);

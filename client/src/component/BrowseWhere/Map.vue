@@ -186,6 +186,12 @@ const setupClusterMarkers = async () => {
   clusterMarkers = new L.MarkerClusterGroup();
 
   resources.forEach((resource: any) => {
+
+    let resourceTitle = 'No title';
+    if(resource.data?.title?.text) {
+      resourceTitle = resource.data?.title?.text
+    }
+
     resource.data.spatial.forEach((spatial: any) => {
 
       let markerType: any = mapUtils.markerType.point;
@@ -200,7 +206,7 @@ const setupClusterMarkers = async () => {
           { icon: mapUtils.getMarkerIconType(markerType.marker) }
         );
 
-        marker.bindTooltip(resource.data.title.text);
+        marker.bindTooltip(resourceTitle);        
         marker.bindPopup(getMarkerPopup(resource));
 
         clusterMarkers!.addLayer(marker);
@@ -226,7 +232,7 @@ const setupClusterMarkers = async () => {
           { icon: mapUtils.getMarkerIconType(markerType.shape) }
         );
 
-        polygonMarker.bindTooltip(resource.data.title.text);
+        polygonMarker.bindTooltip(resourceTitle);
         polygonMarker.bindPopup(getMarkerPopup(resource));
 
         clusterMarkers!.addLayer(polygonMarker);
@@ -257,7 +263,14 @@ const getIsAboveMaxNativeZoom: boolean = $computed(() => {
  * Build marker popup
  */
 const getMarkerPopup = (resource: any): string => {
-  let title = "<p><strong>"+resource.data.title.text+"</strong></p>";
+
+  // Some records are missing title
+  let resourceTitle = 'No Title';
+  if(resource.data?.title?.text) {
+    resourceTitle = resource.data?.title?.text;
+  }
+
+  let title = "<p><strong>"+resourceTitle+"</strong></p>";
   let description = resource.data.description?.text;
   let resourceLocationsLatLon = "";
   let resourceLocation = "";
@@ -300,8 +313,11 @@ const getMarkerPopup = (resource: any): string => {
  * Setup heatmap with geogrids from aggs
  */
 const setupHeatMap = async () => {
-  const currentHeatPoints = currentResultState.aggs?.geogrid?.grids.buckets;
 
+  const currentHeatPoints = currentResultState.aggs?.geogrid?.grids.buckets;
+  // CENTROID HEATS - Run instead of above when centroids are loaded to public portal
+  //const currentHeatPoints = currentResultState.aggs?.geogrid_centroid?.grids.buckets;
+  
   let max = Math.max.apply(
     null,
     currentHeatPoints.map((hp: any) => hp.doc_count || 0)

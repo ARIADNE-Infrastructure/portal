@@ -31,12 +31,12 @@
 <script setup lang="ts">
 import { $computed } from 'vue/macros';
 
-const props = defineProps({
-  name: String,
-  currentValue: String,
-  value: String,
-  label: String
-});
+const props = defineProps<{
+  name: string,
+  currentValue: string,
+  value: string,
+  label: string
+}>();
 
 const isChecked: boolean = $computed(() => props.currentValue === props.value)
 </script>

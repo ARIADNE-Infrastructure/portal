@@ -1,4 +1,3 @@
-
 /**
  * Synonyms
  */
@@ -23,6 +22,18 @@ export default {
     }
     return 'N/A';
 
-  }
+  },
+
+  /**
+   * Get country short name
+   *  
+   *
+   * @param country The language short name. Example, 'EN|en' will be translted to 'English'
+   */
+ getCountryCode(country: string) {
+  const lookup = require('country-code-lookup');
+  return lookup.byCountry(country)?.iso3 ?? country;
+}
+
 
 }

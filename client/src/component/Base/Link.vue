@@ -33,14 +33,14 @@ import utils from '@/utils/utils';
 import { onMounted } from 'vue';
 import { $ref } from 'vue/macros';
 
-const props = defineProps({
-  href: String,
-  to: String,
-  target: String,
-  useDefaultStyle: Boolean,
-  breakWords: Boolean,
-  clickFn: Function,
-});
+const props = defineProps<{
+  href?: string,
+  to?: string,
+  target?: string,
+  useDefaultStyle?: boolean,
+  breakWords?: boolean,
+  clickFn?: Function,
+}>();
 
 let cssClasses = $ref('');
 const linkId = 'b-link-' + utils.getUniqueId();

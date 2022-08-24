@@ -10,13 +10,13 @@
     </div>
 
     <div v-else class="text-mmd">
-      <div v-if="utils.objectIsNotEmpty(params)">
+      <div v-if="fromPath">
         <b-link
-          :to="utils.paramsToString('/search', params)"
+          :to="utils.paramsToString(fromPath.path, params)"
           class="p-md bg-black-80 text-white border-b-base border-black hover:bg-blue transition-bg duration-300 w-full block text-center"
         >
           <i class="fas fa-long-arrow-alt-left mr-sm"></i>
-          Back to search results
+          Back to {{ fromPath.title }}
         </b-link>
       </div>
 
@@ -64,9 +64,9 @@ import ResourceMain from './Resource/Main.vue';
 import ResourceSidebar from './Resource/Sidebar.vue';
 import BreadCrumb from './Resource/BreadCrumb.vue';
 
-const props = defineProps({
-  id: String,
-});
+const props = defineProps<{
+  id: string
+}>();
 
 const router = useRouter();
 const route = useRoute();
@@ -75,6 +75,7 @@ let forced: boolean = $ref(false);
 const isLoading: boolean = $computed(() => generalModule.getIsLoading);
 const resource = $computed(() => resourceModule.getResource);
 const params = $computed(() => searchModule.getParams);
+const fromPath = $computed(() => utils.objectIsNotEmpty(params) ? resourceModule.getFromPath : null);
 
 onMounted(() => {
   initResource(props.id);

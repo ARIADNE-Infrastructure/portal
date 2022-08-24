@@ -1,12 +1,10 @@
 # The ARIADNE portal
 
-### Production
+### Hosts running Ariadne-Portal
 
-https://portal.ariadne-infrastructure.eu/
-
-### Demo
-
-https://demo.snd.gu.se/ariadne/
+- https://demo.snd.gu.se/ariadne/
+- https://ariadne-portal-staging.d4science.org/
+- https://ariadne-portal-dev.d4science.org/
 
 ### Server
 ---
@@ -16,9 +14,6 @@ https://demo.snd.gu.se/ariadne/
 - Elasticsearch (remote)
 
 ``` bash
-# copy settings.json (server/classes dir)
-cp settings-example.json settings.json
-
 # install all packages (server dir)
 composer install
 
@@ -46,9 +41,7 @@ npm run dev
 npm run dev-external
 
 # release build (client dir)
-npm run build # prod
-npm run build-dev # dev
-npm run build-staging # staging
+npm run build-staging
 
 ```
 
@@ -62,14 +55,14 @@ npm run build-staging # staging
 example: debug: false
 
 /client/webpack.config.js
-example: ariadneApiPath  = 'https://localhost:8080/api';
+example: ariadneApiPath  = 'https://ariadne-staging-client.d4science.org/api';
 ```
 
 
 #### Create image and publish to Docker Hub
 
 ``` bash
-# CD to your local Ariadne root folder
+# CD to your local Ariadne root folder 
 cd <ariadne-root>
 
 # Delete client 'dist' and 'node_modules' - Optional but recommended

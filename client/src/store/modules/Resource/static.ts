@@ -25,6 +25,7 @@ export const types = {
   12: 'inscription',
 
   /* ISSUE: 19956
+  https://support.d4science.org/issues/19956
 
   Site/monument > 10
   Fieldwork > 11
@@ -40,15 +41,30 @@ export const types = {
 
 };
 
+export const validFromPaths = [
+  { path: '/search', title: 'search results' },
+  { path: '/publisher', title: 'publisher' },
+  { path: '/browse/where', title: 'browse where' },
+  { path: '/browse/when', title: 'browse when' },
+  { path: '/browse/what', title: 'browse what' },
+];
+
 export const typesTemporary = {
   'Artefact': 'artefact',
+  'Building survey': 'buildingsurvey',
+  'Burial': 'burial',
+  'Coin': 'coin',
   'Date': 'date',
-  'Fieldwork': 'excavation',
-  'Fieldworkarchive': 'excavation', // later switch to new icon (spade w/ database)
-  'Fieldworkreport': 'excavation', // later switch to new icon (spade w/ text document)
-  'Inscription': 'inscription', // later to new icon
-  'RockArt': 'inscription', // later switch to new icon
-  'Site/monument': 'site',
+  'Fieldwork': 'fieldwork',
+  'Fieldwork archive': 'fieldworkarchive',
+  'Fieldwork report': 'fieldworkreport',
+  'Inscription': 'inscription',
+  'Maritime': 'maritime',
+  'Remote': 'remote', // to be added to data..
+  'Rock Art': 'rockart',
+  'Scientific analysis': 'scientificanalysis',
+  'Site/monument': 'sitemonument',
+  'Thematic Survey (http://purl.org/heritagedata/schemes/agl_et/concepts/147326)': 'thematicsurvey', // naming to be fixed..
 };
 
 export const thematicals = {

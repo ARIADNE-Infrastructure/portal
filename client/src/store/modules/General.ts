@@ -1,6 +1,7 @@
 // store/modules/MyStoreModule.ts
 import { VuexModule, Module, Mutation, Action } from "vuex-class-modules";
-import { frontPageLinks, mainNavigation, services } from './General/static';
+import { frontPageLinks, mainNavigation, services, frontPageImagesTotal, frontPageImageTexts } from './General/static';
+import { publishers } from './General/publishers';
 
 export enum LoadingStatus { None, Locked, Background };
 
@@ -13,6 +14,9 @@ export class GeneralModule extends VuexModule {
   private mainNavigation: any[] = mainNavigation;
   private services: any = services;
   private frontPageLinks: any[] = frontPageLinks;
+  private frontPageImagesTotal: number = frontPageImagesTotal;
+  private frontPageImageTexts: any = frontPageImageTexts;
+  private publishers: any[] = publishers;
   private window: any = {};
 
   @Action
@@ -69,6 +73,26 @@ export class GeneralModule extends VuexModule {
 
   get getFrontPageLinks(): any[] {
     return this.frontPageLinks;
+  }
+
+  get getFrontPageImageTotal(): number {
+    return this.frontPageImagesTotal;
+  }
+
+  get getFrontPageImageTexts(): any {
+    return this.frontPageImageTexts;
+  }
+
+  get getPublishers(): any[] {
+    return this.publishers;
+  }
+
+  get findPublisher() {
+    return (key: string) => {
+      key = (key || '').toLowerCase().split(/[^a-z\s]/)[0];
+      const publisher = this.publishers.find((p: any) => p.title.toLowerCase().startsWith(key));
+      return publisher || null;
+    }
   }
 
   get getAssetsDir(): string {

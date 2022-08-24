@@ -6,7 +6,7 @@
   >
     <template v-if="Array.isArray(autocomplete.hits)">
       <div
-        class="overflow-y-scroll max-h-500 border-gray border-base"
+        class="overflow-y-auto max-h-500 border-gray border-base"
         :class="{ 'rounded-b-base': !autocomplete.hasMoreResults }"
       >
         <span
@@ -75,12 +75,14 @@ import { useRouter } from 'vue-router'
 import utils from '@/utils/utils';
 import { searchModule, aggregationModule } from "@/store/modules";
 
-const props = defineProps({
-  newSearch: { type: String, required: true },
-  fieldValue: String,
-  stayOnPage: Boolean,
-  updateComponents: Number,
-  absolute: { type: Boolean, default: true },
+const props = withDefaults(defineProps<{
+  newSearch: string,
+  fieldValue?: string,
+  stayOnPage?: boolean,
+  updateComponents?: number,
+  absolute: boolean,
+}>(), {
+  absolute: true,
 });
 
 let autocomplete: string = $ref('');

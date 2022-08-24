@@ -7,112 +7,142 @@ spl_autoload_register(function ($class_name) {
   include $class_name . '.php';
 });
 
-use Application\App;
 use Application\Contact;
+use Elastic\Query;
+use Elastic\Utils;
 use Elastic\DummyResource;
+use Monolog\Formatter\LineFormatter;
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
 
-//use Periodo\Periodo;
-//$p = new Periodo();
+header('Access-Control-Allow-Origin: *');
+header('Content-Type: application/json');
+header_remove('X-Powered-By');
 
 $settings = json_decode(file_get_contents('../../classes/settings.json'));
-$app = new App('api/', $settings);
 
-$app->route('getAllRecords', function ($q, $parts) {
-  $this->json($q->getAllRecords());
-});
+// Hide all errors and warnings for prod environment
+if( strtolower($settings->environment->elasticsearchEnv) === 'prod' ) {
+  error_reporting(0); 
+}
 
-$app->route('getNearbySpatialResources', function ($q, $parts) {
-  $this->json($q->getNearbySpatialResources($parts[0] ?? ''), true);
-});
+$logger = new Logger('main');
+if ($settings->environment->logLevel !== 'NONE') {
+  $logLevel = $settings->environment->logLevel;
+  $handler = new StreamHandler($settings->environment->logPath, constant("Monolog\Logger::$logLevel"));
+  $handler->setFormatter(new LineFormatter(null, null, false, true));
+  $logger->pushHandler($handler);
+}
 
-$app->route('getRecord', function ($q, $parts) {
-  $slug = $parts[0] ?? '';
+$q = new Query($settings, $logger);
 
-  if ($slug === 'dummyRecord') {
-    $res = $q->getNormalizer()->splitLanguages(DummyResource::getDummy());
-  } else {
-    $res = $q->getRecord($slug);
-  }
+$base = 'api/';
+$parts = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$parts = substr($parts, strrpos($parts, $base) + strlen($base));
+$uriParts = explode('/', $parts);
 
-  if ($parts[1] ?? '' === 'xml') {
-    $this->xml($res);
-  } else {
-    $this->json($res, true);
-  }
-});
+switch ($uriParts[0]) {
+  case 'getAllRecords':
+    echo json_encode($q->getAllRecords());
+    break;
 
-$app->route('getSubject', function ($q, $parts) {
-  $this->json($q->getSubject($parts[0] ?? ''));
-});
+  case 'getRecord':
+    if (($uriParts[1] ?? '') === 'dummyRecord') {
+      $res = $q->getNormalizer()->splitLanguages(DummyResource::getDummy());
+    } else {
+      $res = $q->getRecord($uriParts[1] ?? '');
+    }
+    if (($uriParts[2] ?? '') === 'xml') {
+      header('Content-Type: application/xml');
+      echo Utils::getRecordAsXML($res);
+    } else {
+      echo json_encode($res, JSON_PRETTY_PRINT);
+    }
+    break;
 
-$app->route('search', function ($q, $parts) {
-  $this->json($q->search());
-});
+  case 'getSubject':
+    echo json_encode($q->getSubject($uriParts[1] ?? ''));
+    break;
 
-$app->route('autocomplete', function ($q, $parts) {
-  $this->json($q->autocomplete());
-});
+  case 'search':
+    echo json_encode($q->search());
+    break;
 
-$app->route('autocompleteFilter', function ($q, $parts) {
-  $this->json($q->autocompleteFilter());
-});
+  case 'autocomplete':
+    echo json_encode($q->autocomplete());
+    break;
 
-$app->route('getMiniMapData', function ($q, $parts) {
-  $this->json($q->getMiniMapData());
-});
+  case 'autocompleteFilter':
+    echo json_encode($q->autocompleteFilter());
+    break;
 
-$app->route('getMapData', function ($q, $parts) {
-  $this->json($q->getMiniMapData());
-});
+  case 'getMiniMapData':
+    echo json_encode($q->getMiniMapData());
+    break;
 
-$app->route('getSearchAggregationData', function ($q, $parts) {
-  $this->json($q->getSearchAggregationData());
-});
+  case 'getMapData':
+    echo json_encode($q->getMiniMapData());
+    break;
 
-$app->route('getPeriodsCountryAggregationData', function ($q, $parts) {
-    // $this->q->setClient($this->settings->elasticsearchEnv->{$this->settings->environment->elasticsearchEnv}->periodHost);
-    $this->json($q->getPeriodsCountryAggregationData());
-  },
-  $settings->elasticsearchEnv->{$settings->environment->elasticsearchEnv}->periodHost
-);
+  case 'getSearchAggregationData':
+    echo json_encode($q->getSearchAggregationData());
+    break;
 
-$app->route('getPeriodsForCountry', function ($q, $parts) {
-    // $this->q->setClient($this->settings->elasticsearchEnv->{$this->settings->environment->elasticsearchEnv}->periodHost);
-    $this->json($q->getPeriodsForCountry());
-  },
-  $settings->elasticsearchEnv->{$settings->environment->elasticsearchEnv}->periodHost
-);
+  case 'getPeriodRegions':
+    echo json_encode($q->getPeriodRegions());
+    break;
 
-$app->route('mail', function ($q, $parts) {
-  header('Access-Control-Allow-Methods: GET, POST');
-  header('Access-Control-Allow-Headers: Content-Type');
-  $contact = new Contact($this->getSettings(), $this->getLogger());
-  $this->json($contact->sendMail());
-});
+  case 'getPeriodsForCountry':
+    echo json_encode($q->getPeriodsForCountry());
+    break;
 
-// 404
-$app->route('*', function () {
-  $settings = $this->getSettings();
-  $esHost = $settings->elasticsearchEnv->{$settings->environment->elasticsearchEnv}->host;
-  $esIndex = $settings->elasticsearchEnv->{$settings->environment->elasticsearchEnv}->index;
-  $esAATIndex = $settings->elasticsearchEnv->{$settings->environment->elasticsearchEnv}->subject_index;
+  case 'getNearbySpatialResources':
+    echo json_encode($q->getNearbySpatialResources($uriParts[1] ?? ''), true);
+    break;
 
-  $this->json([
-    'Api_Title' => 'ARIADNE PORTAL',
-    'ES_Index' => $esHost . '/' . $esIndex,
-    'ES_AAT_Index' => $esHost . '/' . $esAATIndex,
-    'Valid_REST_endpoints' => [
-      'api/getRecord/{id}',
-      'api/getRecord/{id}/xml',
-      'api/getAllRecords',
-      'api/getSubject/{id}',
-      'api/getNearbySpatialResources/{id}',
-      'api/search?q={searchString}',
-      'api/autocomplete?q={searchString}',
-      'api/autocompleteFilter?q={searchString}&filter={filterName}',
-      'api/mail',
-    ],
-  ], true);
-});
+  case 'mail':
+    header('Access-Control-Allow-Methods: GET, POST');
+    header('Access-Control-Allow-Headers: Content-Type');
+    $contact = new Contact($settings, $logger);
+    echo json_encode($contact->sendMail());
+    break;
 
-$app->run();
+  case 'updatePeriods':
+    header('Content-Type: text/html; charset=utf-8');
+    if ($_GET['id'] === $settings->environment->periodsId) {
+      new Periodo\Periodo($settings);
+    }
+    break;
+
+  case 'getTotalRecordsCount':
+    echo json_encode($q->getTotalRecordsCount());
+    break;
+
+  default:
+    $esHost = $settings->elasticsearchEnv->{$settings->environment->elasticsearchEnv}->host;
+    $esIndex = $settings->elasticsearchEnv->{$settings->environment->elasticsearchEnv}->index;
+    $esAATIndex = $settings->elasticsearchEnv->{$settings->environment->elasticsearchEnv}->subject_index;
+
+    $periodHost = $settings->elasticsearchEnv->{$settings->environment->elasticsearchEnv}->periodHost;
+    $periodIndex = $settings->elasticsearchEnv->{$settings->environment->elasticsearchEnv}->periodIndex;
+    $periodAuthorities = $settings->periodAuthorities;
+
+    echo json_encode([
+      'Api_Title' => 'ARIADNE PORTAL',
+      'ES_Index' => $esHost . '/' . $esIndex,
+      'ES_AAT_Index' => $esHost . '/' . $esAATIndex,
+      'PERIOD_Index' => $periodHost . '/' . $periodIndex,
+      'PERIOD_Authorities' => $periodAuthorities,
+      'Valid_REST_endpoints' => [
+        'api/getRecord/{id}',
+        'api/getRecord/{id}/xml',
+        'api/getAllRecords',
+        'api/getSubject/{id}',
+        'api/getNearbySpatialResources/{id}',
+        'api/search?q={searchString}',
+        'api/autocomplete?q={searchString}',
+        'api/autocompleteFilter?q={searchString}&filter={filterName}',
+        'api/mail',
+      ],
+    ], JSON_PRETTY_PRINT);
+}

@@ -14,18 +14,15 @@ export interface helpText {
 
 @Module
 export class SearchModule extends VuexModule {
-  private generalModule: GeneralModule;
 
-  constructor(generalModule: GeneralModule, options: RegisterOptions) {
-    super(options);
-    this.generalModule = generalModule;
-  }
+  private generalModule: GeneralModule;
 
   private params: any = {};
   private result: any = {};
   private autocomplete: any = {};
   private sortOptions: any[] = sortOptions;
   private helpTexts: helpText[] = helpTexts;
+  private totalRecordsCount: any = '';
 
   // aggregations
   private aggsResult: any = {};
@@ -33,6 +30,11 @@ export class SearchModule extends VuexModule {
 
   // minimap
   private miniMapSearchResult: any = {};
+
+  constructor(generalModule: GeneralModule, options: RegisterOptions) {
+    super(options);
+    this.generalModule = generalModule;
+  }
 
   @Action
   async setAutocomplete(payload: any) {
@@ -130,17 +132,6 @@ export class SearchModule extends VuexModule {
         router.push(utils.paramsToString(path, params));
       }
     }
-    if (path === '/search') {
-      // reset to default sorting if current option is disabled
-      if (params.sort && this.getSortOptionDisabled(params.q, params.sort)) {
-        params = { ...params, ...this.getDefaultSort(params.q) };
-      }
-
-      // set to default sorting if none is specified
-      else if (!params.sort) {
-        params = { ...params, ...this.getDefaultSort(params.q) };
-      }
-    }
 
     const time = Date.now();
 
@@ -151,7 +142,7 @@ export class SearchModule extends VuexModule {
 
     try {
       const url = process.env.apiUrl + '/search';
-      const res = await axios.get(utils.paramsToString(url, { ...params }));
+      const res = await axios.get(utils.paramsToString(url, { ...params, ...this.getDefaultSort() }));
       data = res?.data;
     } catch (ex) {}
 
@@ -200,7 +191,7 @@ export class SearchModule extends VuexModule {
 
     try {
       const url = process.env.apiUrl + '/getSearchAggregationData';
-      const res = await axios.get(utils.paramsToString(url, {...params} ));
+      const res = await axios.get(utils.paramsToString(url, { ...params, ...this.getDefaultSort() } ));
 
       let data = res?.data;
       if (utils.objectIsNotEmpty(data?.aggregations)) {
@@ -225,8 +216,19 @@ export class SearchModule extends VuexModule {
   }
 
   @Action
+  async setTotalRecordsCount() {
+    const res = await axios.get(process.env.apiUrl + '/getTotalRecordsCount');
+    this.updateTotalRecordsCount( res.data );
+  }
+
+  @Action
   actionResetResultState() {
     this.resetResultState();
+  }
+
+  @Mutation
+  updateTotalRecordsCount(count: any) {
+    this.totalRecordsCount = count;
   }
 
   @Mutation
@@ -266,6 +268,10 @@ export class SearchModule extends VuexModule {
     this.autocomplete[res.type + res.q] = res.data;
   }
 
+  get getTotalRecordsCount(): any {
+    return new Intl.NumberFormat('en',{style: 'decimal'}).format(this.totalRecordsCount);
+  }
+
   get getParams(): any {
     return this.params;
   }
@@ -287,14 +293,19 @@ export class SearchModule extends VuexModule {
   }
 
   get getDefaultSort(): any {
-    return (q: any) => {
-      if (q) {
+    return () => {
+      if (this.params.sort && this.params.order) {
+        return {
+          sort: this.params.sort,
+          order: this.params.order,
+        };
+      }
+      if (this.params.q) {
         return {
           sort: '_score',
           order: 'desc',
         }
       }
-
       return {
         sort: 'issued',
         order: 'desc',
@@ -303,28 +314,11 @@ export class SearchModule extends VuexModule {
   }
 
   get getSortOptions(): any[] {
-    return this.sortOptions.map((item: any) => {
-      const disabled = this.getSortOptionDisabled(this.params.q, item.val);
-      return { ...{ disabled }, ...item };
-    });
+    return this.sortOptions;
   }
 
   get getHelpTexts(): helpText[] {
     return this.helpTexts;
-  }
-
-  get getSortOptionDisabled() {
-    return (q: any, option: string) => {
-      if (option.includes('_score')) {
-        if (!q) {
-          return true;
-        }
-
-        return false;
-      }
-
-      return false;
-    }
   }
 
   /**

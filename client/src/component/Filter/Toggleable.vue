@@ -34,7 +34,7 @@
           <div
             v-if="view === 'filters'"
             :id="toggleId"
-            class="p-base overflow-y-scroll"
+            class="p-base overflow-y-auto overflow-x-hidden"
             @scroll.passive="setScrollPosition"
             :style="{ 'max-height': `${ style.maxHeight }px` }"
           >
@@ -60,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { watch, onUnmounted } from 'vue';
+import { watch, onUnmounted, onMounted } from 'vue';
 import { $ref, $computed, $$ } from 'vue/macros';
 import { generalModule } from "@/store/modules";
 import utils from '@/utils/utils';
@@ -70,13 +70,14 @@ interface iStyle {
   maxHeight: number,
 }
 
-defineProps({
-  lockBodyOnActive: { type: Boolean, default: true },
-});
+const props = defineProps<{
+  lockBodyOnActive?: Boolean,
+  defaultView?: Boolean
+}>();
 
 const toggleId: string = 'toggleable-' + utils.getUniqueId();
 let view: string = $ref('filters');
-let showView: boolean = $ref(false);
+let showView: Boolean = $ref(false);
 let scrollPosition: number = $ref(0);
 let style: iStyle = $ref({
   maxWidth: 0,
@@ -112,6 +113,12 @@ const resize = () => {
   }
 }
 
+onMounted(() => {
+  if(props.defaultView) {
+    showView = props.defaultView;
+  }
+});
+
 watch($$(window), resize);
 watch($$(showView), () => {
   if (showView) {
@@ -124,4 +131,5 @@ watch($$(showView), () => {
     (document.body as any).style.overflowY = null;
   }
 });
+
 </script>

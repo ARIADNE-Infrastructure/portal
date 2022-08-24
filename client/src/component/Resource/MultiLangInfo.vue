@@ -50,11 +50,11 @@ import synonyms from '@/utils/synonyms';
 import HelpTooltip from '@/component/Help/Tooltip.vue';
 import ListAccordion from '@/component/List/Accordion.vue';
 
-defineProps({
-  nativeInfoText: String,
-  nativeInfoIconHelpText: String,
-  nonNativeInfoTitleActive: String,
-  nonNativeInfoTitleInactive: String,
-  nonNativeInfoList: Array,
-});
+defineProps<{
+  nativeInfoText: string,
+  nativeInfoIconHelpText: string,
+  nonNativeInfoTitleActive: string,
+  nonNativeInfoTitleInactive: string,
+  nonNativeInfoList: Array<any>,
+}>();
 </script>

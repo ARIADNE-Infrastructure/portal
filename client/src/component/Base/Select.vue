@@ -84,11 +84,13 @@
 import { $ref, $computed } from 'vue/macros';
 import utils from '@/utils/utils';
 
-const props = defineProps({
-  color: String,
-  selectClass: String,
-  options: { type: Array, required: true },
-  value: { type: String, default: '' },
+const props = withDefaults(defineProps<{
+  color: string,
+  selectClass?: string,
+  options: Array<any>,
+  value?: string,
+}>(), {
+  value: '',
 });
 
 const emit = defineEmits(['input', 'change']);

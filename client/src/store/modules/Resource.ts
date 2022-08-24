@@ -2,7 +2,7 @@
 import { VuexModule, Module, Mutation, Action, RegisterOptions } from "vuex-class-modules";
 import axios from 'axios';
 import { LoadingStatus, GeneralModule } from './General';
-import { fields, types, typesTemporary, thematicals, ctsCertified } from './Resource/static';
+import { fields, types, typesTemporary, thematicals, ctsCertified, validFromPaths } from './Resource/static';
 import utils from "@/utils/utils";
 import router from '@/router';
 
@@ -21,6 +21,7 @@ export class ResourceModule extends VuexModule {
   private typesTemporary: any = typesTemporary;
   private ctsCertified: string[] = ctsCertified;
   private thematicals: any = thematicals;
+  private fromPath: any = validFromPaths[0];
   private resourceParams: any = {
     thematical: ''
   };
@@ -62,12 +63,27 @@ export class ResourceModule extends VuexModule {
   }
 
   @Mutation
-  public updateResource(resource: any) {
+  updateResource(resource: any) {
     this.resource = resource;
+  }
+
+  @Mutation
+  maybeUpdateFromPath(payload: any) {
+    if (!payload?.to?.startsWith('/resource')) {
+      return;
+    }
+    const fromPath = validFromPaths.find(from => payload?.from?.startsWith(from.path));
+    if (fromPath) {
+      this.fromPath = { ...fromPath, path: payload.from };
+    }
   }
 
   get getResource() {
     return this.resource;
+  }
+
+  get getFromPath(): string {
+    return this.fromPath;
   }
 
   get getTypes() {
@@ -93,9 +109,9 @@ export class ResourceModule extends VuexModule {
 
   get getIconByTypeNameTemporary() {
     return (name: string) => {
-      name = (name || '').replace(/\s/g, '');
+      // name = (name || '').replace(/\s/g, '');
 
-      const defaultIcon = 'site';
+      const defaultIcon = 'sitemonument';
       const list: any = this.typesTemporary;
       const resourceIcon = list.hasOwnProperty(name) ? list[name] : null;
 
@@ -125,9 +141,10 @@ export class ResourceModule extends VuexModule {
   // title
   get getMainTitle() {
     return (resource: any) => {
-      const text = resource?.title?.text;
-
-      return text.trim() ?? 'No title';
+      if( resource?.title?.text ) {
+        return resource.title.text.trim();
+      } 
+      return 'No title';
     }
   }
 

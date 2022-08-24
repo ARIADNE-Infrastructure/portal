@@ -19,9 +19,8 @@ import { $computed } from 'vue/macros';
 import { searchModule } from "@/store/modules";
 import BSelect from '@/component/Base/Select.vue';
 
-const params = $computed(() => searchModule.getParams);
 const options = $computed(() => searchModule.getSortOptions);
-const order: string = $computed(() => `${ params.sort }-${ params.order }`);
+const order: string = $computed(() => searchModule.getDefaultSort().sort + '-' + searchModule.getDefaultSort().order);
 
 const setOrder = (orderStr: string) => {
   const arr = orderStr.split('-');

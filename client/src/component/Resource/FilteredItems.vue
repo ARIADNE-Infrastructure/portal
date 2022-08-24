@@ -9,7 +9,7 @@
 
     <b
       v-if="title"
-      class="mr-sm"
+      class="mr-xs"
       :class="filtered.length > 1 ? 'block mb-sm' : ''"
     >
       {{ title }}:
@@ -40,7 +40,7 @@
 
           <span v-else-if="slotType === 'resource'">
             <span v-if="prop">{{ item[prop] }}</span>
-            <span v-else>{{ item.title.text || 'No title' }}</span>
+            <span v-else>{{ item.title.text || 'No title' }}</span>
           </span>
 
           <span v-else>
@@ -48,13 +48,19 @@
           </span>
         </b-link>
 
+        <b-link v-if="query === 'publisher' && findPublisher(item.name)"
+          class="block md:ml-md md:inline text-blue hover:underline hover:text-darkGray transition-color duration-300"
+          :to="utils.paramsToString('/publisher/' + findPublisher(item.name).slug, { publisher: item.name })">
+          <i class="fas fa-info-circle mr-xs"></i>
+        </b-link>
+
         <b-link
           v-if="getHomepage(item)"
           :href="getHomepage(item)"
           target="_blank"
-          class="hover:text-black group block mt-sm md:mt-none md:ml-md md:inline"
+          class="block mt-sm md:mt-none md:ml-md md:inline text-blue hover:underline hover:text-darkGray transition-color duration-300"
         >
-          <i class="fa fa-home mr-sm text-blue group-hover:text-black"></i>
+          <i class="fa fa-home mr-xs"></i>
           {{ item.institution ? item.institution : getHomepage(item) }}
         </b-link>
 
@@ -86,17 +92,17 @@ import utils from '@/utils/utils';
 import BLink from '@/component/Base/Link.vue';
 import HelpTooltip from '@/component/Help/Tooltip.vue';
 
-const props = defineProps({
-  items: Array,
-  title: String,
-  header: String,
-  filter: String,
-  prop: String,
-  slotType: String,
-  query: String,
-  icon: String,
-  fields: String,
-});
+const props = defineProps<{
+  items?: Array<any>,
+  title?: string,
+  header?: string,
+  filter?: string,
+  prop?: string,
+  slotType?: string,
+  query?: string,
+  icon?: string,
+  fields?: string,
+}>();
 
 const assets: string = $computed(() => generalModule.getAssetsDir);
 const isSingleItem: boolean = $computed(() => filtered.length === 1 && props.title ? true : false);
@@ -178,4 +184,6 @@ const getEmail = (item: any): string => {
   }
   return '';
 }
+
+const findPublisher = (key: string): any => generalModule.findPublisher(key);
 </script>

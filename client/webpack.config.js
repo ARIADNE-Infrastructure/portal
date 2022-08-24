@@ -24,7 +24,7 @@ if (process.argv.some(arg => arg === '0.0.0.0')) { // localhost over wifi
   })
 }
 
-let ariadneApiPath = `http://${ localhostUrl }:8080/api`;
+let ariadneApiPath;
 let ariadneAssetPath = '/static/assets';
 
 module.exports = env => {
@@ -78,6 +78,9 @@ module.exports = env => {
       ]
     },
     plugins: [
+      new webpack.DefinePlugin({
+        __VUE_PROD_DEVTOOLS__: false,
+      }),
 
       new CleanWebpackPlugin(),
       new VueLoaderPlugin(),
@@ -120,6 +123,8 @@ module.exports = env => {
     target: 'web'
   }
 
+
+  console.log( 'ENV: ', env );
   /**
    * Development config
    */
@@ -148,10 +153,17 @@ module.exports = env => {
     console.log('ARIADNE Portal - Building with public STAGING config...');
 
     process.env.NODE_ENV = 'staging';
+    ariadneApiPath = 'https://ariadne-portal-staging.d4science.org/api';
 
-    config.mode = 'dev';
+    // SND - DEMO environment only
+    //config.output.publicPath = '/ariadneplus/html/';
+    //ariadneApiPath = 'https://demo.snd.gu.se/ariadneplus/html/api';
+    //ariadneAssetPath = '/ariadneplus/html/static/assets';
+
+    config.mode = 'development';
     config.devtool = false;
     config.optimization = {
+      minimize: true,
       minimizer: [
         new TerserPlugin({}),
         new CssMinimizerPlugin(),
@@ -166,10 +178,12 @@ module.exports = env => {
     console.log('ARIADNE Portal - Building with public DEV config...');
 
     process.env.NODE_ENV = 'staging';
+    ariadneApiPath = 'https://ariadne-portal-dev.d4science.org/api';
 
-    config.mode = 'dev';
+    config.mode = 'development';
     config.devtool = false;
     config.optimization = {
+      minimize: true,
       minimizer: [
         new TerserPlugin({}),
         new CssMinimizerPlugin(),
@@ -185,9 +199,12 @@ module.exports = env => {
 
     process.env.NODE_ENV = 'production';
 
+    ariadneApiPath = 'https://portal.ariadne-infrastructure.eu/api';
+
     config.mode = 'production';
     config.devtool = false;
     config.optimization = {
+      minimize: true,
       minimizer: [
         new TerserPlugin({}),
         new CssMinimizerPlugin(),
@@ -203,6 +220,9 @@ module.exports = env => {
 
   console.log( 'Building with asset path: ' );
   console.log(ariadneAssetPath);
+
+  console.log( 'Building with API path:: ' );
+  console.log(ariadneApiPath);
 
   const argvStr = process.argv.includes('--no-purge') ? '--no-purge' : ''
 

@@ -1,5 +1,7 @@
 <template>
-  <list-tabs :initiallySelectedTabTitle="initiallySelectedTabTitle">
+  <div>
+  <!-- FILTER PERIODS AND YEARS - PERIODO -->
+  <!--list-tabs :initiallySelectedTabTitle="initiallySelectedTabTitle">
     <list-tab
       title="Filter By Year"
       icon="fa fa-calendar-alt"
@@ -33,7 +35,10 @@
 
       <filter-periods />
     </list-tab>
-  </list-tabs>
+  </list-tabs-->
+  
+    <filter-years/>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -46,8 +51,8 @@ import FilterPeriods from '@/component/Filter/YearsAndPeriods/Periods.vue';
 
 const params = $computed(() => searchModule.getParams);
 
-const initiallySelectedTabTitle: string = $computed(() => {
-  return params?.publisher || params?.ariadneSubject ? 'Filter By Time Periods' : 'Filter By Year';
+const initiallySelectedTabTitle = $computed(() => {
+  return params?.temporalRegion || params?.filterByCulturalPeriods ? 'Filter By Time Periods' : 'Filter By Year';
 });
 
 const activeYearsFilterWarning: string = $computed(() => {

@@ -14,6 +14,7 @@ export interface iKeyVal {
 export class AggregationModule extends VuexModule {
   private searchModule: SearchModule;
 
+
   constructor(searchModule: SearchModule, options: RegisterOptions) {
     super(options);
     this.searchModule = searchModule;
@@ -28,7 +29,6 @@ export class AggregationModule extends VuexModule {
   @Action
   async setSearch(payload: any) {
     if (payload.value.search) {
-
       const searchParams = this.searchModule.getParams;
       const params = { ...{ filterQuery: payload.value.search, filterName: payload.id }, ...searchParams };
       const url = process.env.apiUrl + '/autocompleteFilter';
@@ -36,10 +36,8 @@ export class AggregationModule extends VuexModule {
       try {
         const res = await axios.get(utils.paramsToString(url, params));
         let data = res?.data?.filtered_agg;
-
         if (utils.objectIsNotEmpty(data)) {
           const value = { ...payload.value, ...{ data } };
-
           this.updateOptions({ id: payload.id, value });
         }
       } catch (ex) {}
@@ -47,6 +45,7 @@ export class AggregationModule extends VuexModule {
     else {
       this.updateOptions(payload);
     }
+
   }
 
   @Action
@@ -61,6 +60,7 @@ export class AggregationModule extends VuexModule {
 
   @Action
   setActive(payload: any) {
+
     const params: any = this.searchModule.getParams;
 
     let { key, value, add } = payload;
@@ -80,7 +80,13 @@ export class AggregationModule extends VuexModule {
       value = aggs.join('|');
     }
 
-    this.searchModule.setSearch({ [key]: value, page: 0 });
+    const data: any = { [key]: value, page: 0 }
+
+    if (key === 'periodCountry') { // when changing period country - clear selected periods (if any)
+      data.period = '';
+    }
+
+    this.searchModule.setSearch(data);
   }
 
   @Mutation
@@ -134,7 +140,6 @@ export class AggregationModule extends VuexModule {
     ];
 
     const result = this.searchModule.getAggsResult?.aggs;
-
     let sorted: any = {};
 
     if (this.hasAggs) {
@@ -182,7 +187,7 @@ export class AggregationModule extends VuexModule {
 
   // Used for displaying what user has filtered and/or search on. Not all uri params are valid for this.
   get activeFilters(): Array<iKeyVal> {
-    const valid = Object.keys(this.getTitles).concat(['q', 'range', 'derivedSubjectId', 'geogrid', 'responsible', 'periodName', 'bbox']);
+    const valid = Object.keys(this.getTitles).concat(['q', 'range', 'derivedSubjectId', 'geogrid', 'responsible', 'periodName', 'bbox', 'temporalRegion', 'filterByCulturalPeriods']);
     const params = utils.getCopy(this.searchModule.getParams);
     const filters: Array<iKeyVal> = [];
 
@@ -198,4 +203,5 @@ export class AggregationModule extends VuexModule {
     });
     return filters;
   }
+
 }

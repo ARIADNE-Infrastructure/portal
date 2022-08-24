@@ -27,6 +27,10 @@
             <!--   </i> -->
             <!-- </help-tooltip> -->
 
+            <help-tooltip title="Hold shift and drag a selection to search in time range" top="-3rem">
+              <i class="fas fa-info-circle text-yellow text-lg mr-md"></i>
+            </help-tooltip>
+
             <button
               class="bg-yellow px-md py-sm text-center text-sm text-white cursor-pointer hover:bg-green transition-color rounded-base duration-300"
               @click="navigateToRange('/browse/when')"
@@ -67,14 +71,17 @@
         <canvas
           v-show="hasChartData"
           :id="timelineId"
-          :class="{ 'pr-sm pt-md pointer-events-none': title }"
+          :class="{ 'pr-sm pt-md': title }"
         />
 
         <filter-years-and-periods
           v-if="title"
           class="p-md pt-lg"
         />
+
       </div>
+
+
     </div>
   </div>
 </template>
@@ -86,17 +93,19 @@ import { generalModule, searchModule } from "@/store/modules";
 import utils from '@/utils/utils';
 import Chart from 'chart.js';
 import 'chartjs-plugin-zoom';
+import '@/store/modules/TimeLine/chartjs-plugin-dragzone.js';
 import HelpTooltip from '@/component/Help/Tooltip.vue';
 import FilterYearsAndPeriods from '@/component/Filter/YearsAndPeriods.vue';
 
-defineProps({
-  title: String,
-  hasLoader: Boolean,
-});
+const props = defineProps<{
+  title?: string,
+  hasLoader?: boolean,
+}>();
 
 const timelineId: string = 'timeline-' + utils.getUniqueId();
 let chart: any = null;
 let ctx: any = null;
+let isDragging = false;
 
 let range: any = $ref(null);
 let hasChartData: boolean = $ref(false);
@@ -169,16 +178,19 @@ const setTimeLine = () => {
         },
         elements: {
           point:{
-            radius: 2
+            radius: 2,
+            hoverRadius: 4,
+            hitRadius: 4,
           }
         },
         tooltips: {
+          intersect: false,
           callbacks: {
             title: (a: any, b: any) => {
-              return `Year: ${ getUnformatted(a[0].label, ' to ') }`;
+              return isDragging && range ? 'Search years' : `Year: ${ getUnformatted(a[0].label, ' to ') }`;
             },
             label: (a: any, b: any) => {
-              return ` Amount: ${ a.value }`;
+              return isDragging && range ? ('Year: ' + range.replace(',', ' to ')) : ` Amount: ${ a.value }`;
             }
           }
         },
@@ -198,10 +210,29 @@ const setTimeLine = () => {
           chart.data = getData(buckets);
         },
         plugins: {
+          dragzone: {
+            keys: ['shiftKey', 'ctrlKey', 'metaKey'],
+            direction: 'horizontal',
+            color: 'rgba(70,146,202,0.3)',
+            onDragStart: () => isDragging = true,
+            onDragSelection: (start: number, end: number, done: boolean) => {
+              if (!chart.data.labels[start] || !chart.data.labels[end] || chart.data.labels[start] === chart.data.labels[end]) {
+                return;
+              }
+              const from = getUnformatted(chart.data.labels[start].split(' - ')[0], '');
+              const to = getUnformatted(chart.data.labels[end].split(' - ')[1], '');
+              isDragging = true;
+              range = from + ',' + to;
+              if (done) {
+                isDragging = false;
+                searchModule.setSearch({ ...params, range });
+              }
+            }
+          },
           zoom: {
             pan: {
-              enabled: !utils.isMobile(),
-              mode: 'x',
+              enabled: !utils.isMobile() && !props.title,
+              mode: () => isDragging ? '' : 'x',
               speed: 10,
               threshold: 10,
               onPanComplete: ({ chart }: { chart: any }) => {
@@ -209,7 +240,7 @@ const setTimeLine = () => {
               }
             },
             zoom: {
-              enabled: !utils.isMobile(),
+              enabled: !utils.isMobile() && !props.title,
               drag: false,
               mode: 'x',
               speed: 1,

@@ -103,6 +103,10 @@ export default {
     return '';
   },
 
+  ucFirst (str: string): string {
+    return str[0].toUpperCase() + str.slice(1);
+  },
+
   validUrl (url: any) {
     return /^https?\:\/\/[^\<\>\"\'\`]+$/.test(url);
   },
@@ -169,7 +173,7 @@ export default {
     return false;
   },
 
-  sortListByValue (list: any[], key: string, order: string): any[] {
+  sortListByValue (list: any[], key: string | number, order: string): any[] {
     if (order === 'asc') {
       return [...list].sort((a, b) => (a[key] > b[key]) ? 1 : -1);
     }
@@ -179,6 +183,16 @@ export default {
 
   groupListByKey (list: any[], key: string | number): any[] {
     return list.reduce((hash, obj) => ({...hash, [obj[key]]:( hash[obj[key]] || [] ).concat(obj)}), {});
+  },
+
+  shuffle (arr: any[]) {
+    for (let i = arr.length - 1; i > 0; i--) {
+        let j = Math.floor(Math.random() * (i + 1));
+        let tmp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = tmp;
+    }
+    return arr;
   },
 
   getGradient(opacity: number) {

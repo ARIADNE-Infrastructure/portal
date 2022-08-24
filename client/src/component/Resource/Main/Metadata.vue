@@ -81,7 +81,7 @@
                 href="https://www.getty.edu/research/tools/vocabularies/aat/about.html"
                 target="_blank"
               >
-                <i class='fas fa-question-circle'/>
+                <i class='fas fa-question-circle ml-xs'/>
               </a>
             </help-tooltip>
           </template>
@@ -126,7 +126,7 @@
           v-if="item.periodName"
           :to="utils.paramsToString('/search', { temporal: item.periodName })"
         >
-          {{ utils.sentenceCase(item.periodName) }}{{ item.periodName ? ':' : '' }}
+          {{ utils.sentenceCase(item.periodName) }}{{ item.periodName ? ': ' : '' }}
         </b-link>
 
         <template v-if="item.from && item.until">
@@ -231,10 +231,10 @@ import BLink from '@/component/Base/Link.vue';
 import HelpTooltip from '@/component/Help/Tooltip.vue';
 import ResourceFilteredItems from '../FilteredItems.vue';
 
-defineProps({
-  itemClass: String,
-  bClass: String,
-});
+defineProps<{
+  itemClass: string,
+  bClass: string,
+}>();
 
 const resource = $computed(() => resourceModule.getResource);
 </script>

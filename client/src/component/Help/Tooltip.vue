@@ -17,13 +17,20 @@
 </template>
 
 <script setup lang="ts">
-defineProps({
-  title: String,
-  top: { type: String, default: 'default' },
-  left: { type: String, default: 'default' },
-  right: { type: String, default: 'default' },
-  isCenter: { type: Boolean, default: true },
-  messageClasses: { type: String, default: 'bg-darkGray-80 text-white' },
-  enabled: { type: Boolean, default: true },
+withDefaults(defineProps<{
+  title?: string,
+  top?: string,
+  left?: string,
+  right?: string,
+  isCenter?: boolean,
+  messageClasses?: string,
+  enabled?: boolean,
+}>(), {
+  top: 'default',
+  left: 'default',
+  right: 'default',
+  isCenter: true,
+  messageClasses: 'bg-darkGray-80 text-white',
+  enabled: true,
 });
 </script>

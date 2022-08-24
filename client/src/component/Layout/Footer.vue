@@ -18,18 +18,19 @@
           to="/contact"
           class="hover:underline"
         >
-          <i class="fas fa-envelope"></i> Contact
+          <i class="fas fa-envelope mr-xs"></i> Contact
         </b-link>
 
-        <span class="px-xs">|</span>
+        <span class="pl-xs pr-sm">|</span>
 
         <b-link
           to="/guide"
           class="hover:underline"
         >
-          <i class="fas fa-info-circle text-md"></i> ARIADNE portal guide
+          <i class="fas fa-info-circle text-md mr-xs"></i> ARIADNE portal guide
         </b-link>
       </div>
+      <div id="footer-teleport-target"></div>
     </div>
   </footer>
 </template>

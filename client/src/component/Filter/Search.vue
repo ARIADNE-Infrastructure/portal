@@ -118,8 +118,9 @@
 </template>
 
 <script setup lang="ts">
+
 import { watch } from 'vue';
-import { $ref, $computed } from 'vue/macros';
+import { $ref, $computed, $$ } from 'vue/macros';
 import { useRoute, onBeforeRouteLeave } from 'vue-router'
 import { resourceModule, searchModule} from "@/store/modules";
 import utils from '@/utils/utils';
@@ -130,20 +131,20 @@ import FilterSearchAutocomplete from './Search/Autocomplete.vue';
 import SearchHelp from './Search/SearchHelp.vue';
 
 const emit = defineEmits(['submit']);
-const props = defineProps({
-  color: String,
-  hoverStyle: String,
-  focusStyle: String,
-  useCurrentSearch: Boolean,
-  clearSearch: Boolean,
-  showFields: String,
-  big: Boolean,
-  veryBig: Boolean,
-  autoFocus: Boolean,
-  hasAutocomplete: Boolean,
-  breakHg: Boolean,
-  stayOnPage: Boolean,
-});
+const props = defineProps<{
+  color: string,
+  hoverStyle?: string,
+  focusStyle?: string,
+  useCurrentSearch?: boolean,
+  clearSearch?: boolean,
+  showFields?: string,
+  big?: boolean,
+  veryBig?: boolean,
+  autoFocus?: boolean,
+  hasAutocomplete?: boolean,
+  breakHg?: boolean,
+  stayOnPage?: boolean,
+}>();
 
 const route = useRoute();
 
@@ -151,10 +152,15 @@ let updateComponents: number = $ref(-1);
 let newSearch: string = $ref('');
 let fieldValue: string = $ref('');
 
+searchModule.setTotalRecordsCount();
+let totalRecordsCount = $computed(() => searchModule.getTotalRecordsCount);
+
 const canUseSendButton: boolean = $computed(() => fieldValue !== 'aatSubjects');
-const placeholder: string = $computed(() => props.useCurrentSearch ? 'Search for resources...' : 'Start a new search...');
+const placeholder: any = $computed(() => props.useCurrentSearch?'Search '+totalRecordsCount+' resources...':'Search in '+totalRecordsCount+' resources...');
 const helpTexts = $computed(() => searchModule.getHelpTexts);
 const fields = $computed(() => resourceModule.getFields);
+
+
 
 const sendButtonActiveStyle: string = $computed(() => {
   if (canUseSendButton) {
@@ -209,6 +215,10 @@ const onSelectInput = (val: string) => {
 const onInputInput = () => {
   updateComponents++
 }
+
+watch($$(totalRecordsCount), () => {
+
+});
 
 const unwatch = watch(route, () => {
   if (props.useCurrentSearch) {

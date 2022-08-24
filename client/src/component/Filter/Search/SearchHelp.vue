@@ -14,17 +14,17 @@
     </template>
   </help-tooltip>
 
-  <div class="fixed bg-black-60 text-hg z-40 w-full h-full top-0 left-0 flex items-center justify-center"
-    v-if="showPopup"
+  <div class="fixed bg-black-60 text-hg w-full h-full top-0 left-0 flex items-center justify-center transition-all duration-300"
+    :class="showPopup ? 'z-40 opacity-1 visible' : 'z-neg30 opacity-0 invisible'"
     @click.self="showPopup = false"
   >
-    <div class="bg-white text-hg max-w-screen-lg">
+    <div class="bg-white text-hg max-w-screen-lg max-h-full overflow-y-auto">
       <h2 class="text-xl mb-md bg-yellow text-white px-xl py-md flex items-center justify-between">
         <div>
           Search help
           <i class="fas fa-question-circle text-lg ml-sm" />
         </div>
-        <i class="fas fa-times text-xl cursor-pointer pl-sm" @click="showPopup = false"></i>
+        <i class="fas fa-times text-xl cursor-pointer pl-sm py-sm hover:text-red transition-color duration-300" @click="showPopup = false"></i>
       </h2>
       <div class="px-xl py-md">
         <p class="mb-md">Welcome to the ARIADNE Portal where you can search over 2 million records relating to archaeological fieldwork reports, research papers, scientific datasets, sites and monuments through to individual artefacts from across the world.</p>

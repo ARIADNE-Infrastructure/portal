@@ -16,7 +16,7 @@
 
       <b-link
         v-if="resource.collection.total"
-        :to="utils.paramsToString('/search', { isPartOf: resource.id, isPartOfLabel: resource.title ? resource.title.text : '' })"
+        :to="utils.paramsToString('/search', { isPartOf: resource.identifier, isPartOfLabel: resource.title ? resource.title.text : '' })"
         class="mb-sm block"
         :useDefaultStyle="true"
       >
@@ -157,9 +157,9 @@ import BLink from '@/component/Base/Link.vue';
 import HelpTooltip from '@/component/Help/Tooltip.vue';
 import ResourceFilteredItems from './FilteredItems.vue';
 
-defineProps({
+defineProps<{
   initResource: Function,
-});
+}>();
 
 const sectionClass: string = 'py-base pb-sm rounded-base mb-md';
 const resource = $computed(() => resourceModule.getResource);

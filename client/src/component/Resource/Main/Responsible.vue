@@ -57,10 +57,10 @@ import { resourceModule } from "@/store/modules";
 import BLink from '@/component/Base/Link.vue';
 import ResourceFilteredItems from '../FilteredItems.vue';
 
-defineProps({
-  itemClass: String,
-  bClass: String,
-});
+defineProps<{
+  itemClass: string,
+  bClass: string,
+}>();
 
 const persons = [
   { prop: 'creator', title: 'Creator', query: 'creator' },
