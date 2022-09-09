@@ -26,9 +26,7 @@ import MaintenancePage from './component/MaintenancePage.vue';
  */
 
 const router = createRouter({
-  base: process.env.ARIADNE_PUBLIC_PATH,
-  history: createWebHistory(),
-  mode: 'history',
+  history: createWebHistory(process.env.ARIADNE_PUBLIC_PATH),
   routes: [
     /*  Maintenance mode */
     // {
