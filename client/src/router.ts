@@ -19,7 +19,8 @@ import Theme from './component/Theme.vue';
 import Contact from './component/Contact.vue';
 import Infographic from './component/Infographic.vue';
 import Guide from './component/Guide.vue';
-import MaintenancePage from './component/MaintenancePage.vue';
+import Form from './component/Form.vue';
+//import MaintenancePage from './component/MaintenancePage.vue';
 
 /**
  * Router - component url paths
@@ -56,7 +57,7 @@ const router = createRouter({
       component: Subject,
     },
     {
-      path: '/publisher/:id',
+      path: '/publisher',
       props: true,
       component: Publisher,
     },
@@ -146,6 +147,14 @@ const router = createRouter({
       meta: {
         title: 'Theme',
         description: 'Site theme',
+      }
+    },
+    {
+      path: '/form',
+      component: Form,
+      meta: {
+        title: 'Form',
+        description: 'Form',
       }
     },
     {

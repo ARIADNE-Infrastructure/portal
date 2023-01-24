@@ -17,59 +17,6 @@
     "dynamic": "false",
     "properties": {
       "authority": {
-        "type": "nested",
-        "properties": {
-          "title": {
-            "type": "text"
-          },
-          "citation": {
-            "type": "text"
-          },
-          "url": {
-            "type": "text"
-          },
-          "yearPublished": {
-            "type": "date",
-            "format": "year || date_optional_time"
-          },
-          "creator": {
-            "properties": {
-              "name": {
-                "type": "text",
-                "fields": {
-                  " raw": {
-                    "type": "keyword",
-                    "normalizer": "useLowercase"
-                  }
-                }
-              }
-            }
-          },
-          "contributor": {
-            "properties": {
-              "name": {
-                "type": "text",
-                "fields": {
-                  " raw": {
-                    "type": "keyword",
-                    "normalizer": "useLowercase"
-                  }
-                }
-              }
-            }
-          },
-          "authorityType": {
-            "type": "text"
-          },
-          "id": {
-            "type": "text"
-          },
-          "editorialNote": {
-            "type": "text"
-          }
-        }
-      },
-      "periodType": {
         "type": "text"
       },
       "language": {
@@ -83,6 +30,12 @@
       },
       "label": {
         "type": "text"
+      },
+      "total": {
+        "type": "long"
+      },
+      "timestamp": {
+        "type": "long"
       },
       "localizedLabels": {
         "type": "nested",
@@ -126,30 +79,11 @@
           }
         }
       },
-      "broader": {
-        "type": "text"
-      },
-      "spatialCoverageDescription": {
-        "type": "keyword"
-      },
-      "note": {
-        "type": "text"
-      },
-      "derivedFrom": {
-        "type": "text"
-      },
-
       "start": {
         "properties": {
           "year": {
             "type": "long"
           },
-          "earliestYear": {
-            "type": "long"
-          },
-          "latestYear": {
-            "type": "long"
-          },          
           "label": {
             "type": "keyword",
             "normalizer": "useLowercase"
@@ -159,12 +93,6 @@
       "stop": {
         "properties": {
           "year": {
-            "type": "long"
-          },
-          "earliestYear": {
-            "type": "long"
-          },
-          "latestYear": {
             "type": "long"
           },
           "label": {

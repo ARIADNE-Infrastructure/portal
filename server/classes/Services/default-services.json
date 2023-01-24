@@ -1,0 +1,135 @@
+[
+    {
+        "title": "Training Hub",
+        "topic": "Data management training and tools",
+        "description": "The ARIADNEplus Training Hub provides training resources selected for archaeological researchers and practitioners. A number of key topics are covered through resources of partners and external sources. The topics include application of the Open/FAIR data principles to archaeology, metadata and vocabularies for archaeological datasets, managing datasets from large archaeological projects, depositing datasets in a digital repository, and more.\n\nProvider: ARIADNEplus",
+        "url": "https://training.ariadne-infrastructure.eu",
+        "img": "Training_hub.png"
+    },
+    {
+        "title": "Data Management Plan Tool and Templates",
+        "topic": "Data management training and tools",
+        "description": "ARIADNEplus offers an online Data Management Plan Tool which supports archaeological data managers and archaeologists who want (or are obliged to) make a data management plan for producing and sharing data that comply with the FAIR data principles (see: https://www.go-fair.org/fair-principles/.\n\nA complication is that the requirements for a DMP, although similar in intention, vary across research funders and organisations. Therefore ARIADNEplus currently provides the tool with three DMP templates:\n\n* the Protocol for Archaeological Data Management, which is based on the widely recognised Science Europe guidance for research data management and the principle of “comply or explain”.\n* the ARIADNEplus DMP Researcher Template for Archaeological Datasets, developed from the Horizon 2020 requirements and tailored to community standards and practices:\n* the Horizon Europe Template for Archaeological Datasets which includes links to information and suggestions for answering the questions of the template; the related guide can also be consulted for the above protocol and template: https://training.ariadne-infrastructure.eu/dmp-guidance/\n\nProvider of the DMP Tool and Templates: PIN VastLab and Data Archiving and Networked Services (DANS)",
+        "url": "https://vast-lab.org/dmp/index.html",
+        "img": "DMP_tools.png"
+    },
+    {
+        "title": "ARIADNEplus_Lab",
+        "topic": "Data processing and visualisation services",
+        "description": "The ARIADNEplus_Lab offers researchers a set of tools to process, visualise and analyse ARIADNE as well as own data. The tools include JupyterHub (pre-installed and ready to use), RStudio and the DataMiner analytics engine to specify and execute data computing tasks on the D4Science Cloud-based infrastructure. The virtual research lab also provides access to the ARIADNEplus Linked Data in the semantic graph database (GraphDB, see below).\n\nMore information: https://ariadne-infrastructure.eu/the-ariadneplus-lab-vre/\n\nProvider: CNR ISTI, InfraScience\n(new users will have to register the first time they access ARIADNEplus on D4Science)",
+        "url": "https://ariadne.d4science.org/web/ariadneplus_lab/",
+        "img": "ARIADNEplus_Lab.png"
+    },
+    {
+        "title": "ARIADNEplus Linked Open Data (GraphDB)",
+        "topic": "Data processing and visualisation services",
+        "description": "The ARIADNEplus Linked Open Data (LOD), which includes all data providers' records modelled according to the ARIADNE Ontology, is being managed with GraphDB. Through GraphDB researchers can explore the LOD with the available web GUI or programmatically with SPARQL queries. Access to the GraphDB and documentation is provided by the ARIADNEplus_Lab (see above).\n\nDocumentation (KB-guide-v1.0) is available as a python notebook, a PDF file or in Markdown format at https://data.d4science.net/EvVX. The python notebook can be run on the JupyterHub tool available in the ARIADNEplus_Lab. The guide also contains examples of queries that can be run on the ARIADNEplus LOD. Users should copy the notebook to a Jupyter instance in order to play with it and to create their own notebooks for their analysis of the ARIADNEplus LOD.\n\n(new users will have to register the first time they access ARIADNEplus on D4Science)",
+        "url": "https://ariadne.d4science.org/web/ariadneplus_lab/",
+        "img": "ARIADNEplus_GraphDB.png"
+    },
+    {
+        "title": "GeoPortal Framework",
+        "topic": "Data processing and visualisation services",
+        "description": "GeoPortal is a feature-complete framework enabling the publication, access and management of GIS projects consisting of multiple documents, images, and datasets. It can be configured with the XML specification of the GIS project data model.\n\nThe framework includes:\n\nthe Data Collection Form assisting users to publish GIS projects; a GIS Viewer allowing any user to visualize projects on a map; the Project Viewer assisting users to access all the information, documents, images and datasets associated to the GIS project; the GeoPortal service managing validation and management of GIS projects. The service relies on the D4Science Workspace for storing and accessing attached documents and on the D4Science SDI (Spatial Data Infrastructure) to offer OGC Compliant Services (e.g. WMS, WFS, WCS, etc.). It also uses an internal archive of registered documents for the management of Projects lifecycle and for querying purposes.\n\nProvider: CNR ISTI, InfraScience",
+        "url": "https://wiki.gcube-system.org",
+        "img": "geo-portale.png"
+    },
+    {
+        "title": "Visual Media Service",
+        "topic": "Data processing and visualisation services",
+        "description": "The Visual Media Service provides easy publication on the web for complex visual media assets: images, relightable images and 3D models. The assets are uploaded, converted into a multiresolution, compressed format optimized for streaming on the web. The presentation can be customized and the resulting assets can be either downloaded or accessed directly in the Visual Media Service.\n\nProvider: CNR ISTI, Visual Computing Lab",
+        "url": "https://visual.ariadne-infrastructure.eu",
+        "img": "VisualMediaService.png"
+    },
+    {
+        "title": "Landscape Services",
+        "topic": "Data processing and visualisation services",
+        "description": "Landscape Services for ARIADNE are a set of responsive web services that include large terrain dataset generation, 3D landscape composing and 3D model processing, leveraging powerful open-source frameworks and toolkits such as GDAL, OSGjs, OpenSceneGraph and ownCloud. The main components include: the cloud service, the terrain generation service, the terrain gallery and the front-end web component for interactive visualization.\n\nProvider: CNR ITABC, VHLab",
+        "url": "http://landscape.ariadne-infrastructure.eu",
+        "img": "landscape-services.png"
+    },
+    {
+        "title": "EpHEMERA",
+        "topic": "Data processing and visualisation services",
+        "description": "The EpHEMERA service, developed by the Cyprus Institute, is a platform allowing users to visualize in 3D the layers of archaeological excavations, ancient buildings, archaeological areas, and their related documentation. Specifically, the primary objective of the service is the documentation and management of Cultural Heritage at risk (e.g., invasive urban development, war conflicts, natural and human agents, inaccessibility). The 3D interactive online geo-service is aimed at the preservation of endangered architectural and archaeological heritage. The system is intended to serve as infrastructure where it is possible to visualize online and through standard web browser 3D architectural and archaeological models under risk, query the database system and retrieve metadata attached to every single virtual object; extract geometric and morphological information.Requirements/needs:\n\nCharacteristics of the 3D models:\n* Point cloud (coloured or not)\n* Data quality (resolution)\n* Geo-referencing (yes or not)\n* Images gallery (yes or not)\n\nProvider: The Cyprus Institute, STARC",
+        "url": "http://ephemera.cyi.ac.cy/?q=collection",
+        "img": "ephemera.png"
+    },
+    {
+        "title": "Mapping Memory Manager - 3M",
+        "topic": "Vocabulary Services",
+        "description": "The 3M web application is a schema mapping tool that allows data managers to transform their internal structured data to other schemas and, in particular, the CIDOC CRM (Conceptual Reference Model). Fields or elements from a source database are aligned with one or more entities described in the target schema so that the data from an entire system can be transformed. The purpose of this is typically for publication on the Web and in particular meaningful integration with other data also transformed to the same target schema. In ARIADNEplus the data providers map their database schemas to the CRM-based ARIADNE Object Catalogue (AO-Cat) model. Based on this mapping their data records can be aggregated and integrated in the ARIADNE data catalogue and provided to the search portal.\n\nOpen source code: https://github.com/isl/Mapping-Memory-Manager\n\nProvider: Foundation for Research and Technology - Hellas, Institute of Computer Science (FORTH-ICS)",
+        "url": "http://www.ics.forth.gr/isl/3M",
+        "img": "3m-MappingMemoryManager.png"
+    },
+    {
+        "title": "Vocabulary Matching Tool",
+        "topic": "Vocabulary Services",
+        "description": "The Vocabulary Matching Tool allows users to align Linked Data vocabulary concepts with Getty Art & Architecture Thesaurus concepts. The tool is a browser based application that presents concepts from chosen source and target vocabularies side by side, exposing additional contextual evidence to allow the user to make an informed choice when deciding on potential mappings (expressed as SKOS mapping relationships). The tool is intended for vocabularies already expressed in RDF/SKOS and can work directly with the data – querying external SPARQL endpoints rather than storing any local copies of complete vocabularies. The set of mappings developed can be saved locally, reloaded and exported to a number of different output formats.\n\nProvider: University of South-Wales, Hypermedia Research Group",
+        "url": "https://vmt.ariadne.d4science.org/vmt/vmt-app.html",
+        "img": "VocabularyMatchingTool.png"
+    },
+    {
+        "title": "Getty Arts & Architecture (AAT)",
+        "topic": "Vocabulary Services",
+        "description": "The Getty Research Institute provides vocabularies as Linked Open Data (LOD) in RDF/SKOS format. These include the widely used, very rich and multilingual Art & Architecture Thesaurus (AAT), which ARIADNE has selected as a common “semantic hub” for the subjects of data collections and records. In order to enable subject-based searches across collections and records, partners map subject terms from their thesauri or term lists to AAT concepts. For such mappings ARIADNEplus provides the browser-based interactive Vocabulary Matching Tool (see above). Other data interoperability initiatives where providers apply different thesauri or term lists can benefit from using this freely available service to map them to the AAT or another core vocabulary in RDF/SKOS.\n\nProvider: Getty Research Institute",
+        "url": "http://vocab.getty.edu",
+        "img": "Getty-Vocabularies-LOD.png"
+    },
+    {
+        "title": "PeriodO - Periods, Organized",
+        "topic": "Vocabulary Services",
+        "description": "PeriodO is a gazetteer that records the spatial and temporal boundaries assigned to a given cultural period by an authoritative source. The description of a period includes a unique identifier (URI) which allows clear and stable linking and integration of data resources which refer to the same period. ARIADNE adopted PeriodO for this purpose and partners already in 2015 contributed to it one of the largest collections, including 606 named periods from Paleolithic to Modern times (including time-ranges) for 24 European countries and regions. ARIADNEplus partners provided additional periods (not in the collection), e.g., the ROCEEH project contributed 134 periods common in Paleoanthropology which relate to regions of Africa, the Levant, Eurasia and Europe. Through the PeriodO system other institutions and projects can also use the cultural periods mobilised by ARIADNE/plus, enabling wider interlinking of data in Linked Data initiatives.\n\nARIADNE collection of cultural periods: http://n2t.net/ark:/99152/p0qhb66\nROCEEH periods: http://n2t.net/ark:/99152/p0s2rwk\n\nProviders: Adam Rabinowitz (University of Texas at Austin) and Ryan Shaw (University of North Carolina at Chapel Hill)",
+        "url": "http://perio.do",
+        "img": "PeriodO.png"
+    },
+    {
+        "title": "Heritage Data - Linked Data Vocabularies for Cultural Heritage (UK)",
+        "topic": "Vocabulary Services",
+        "description": "National cultural heritage thesauri and other vocabularies have acted as standards for use by both national organizations and local authority Historic Environment Records, but lacked the persistent Linked Open Data (LOD) URIs that would allow them to act as vocabulary hubs for the Web of Data. The AHRC funded SENESCHAL project made vocabularies of Historic England, Historic Environment Scotland, and the Royal Commission on Ancient & Historic Monuments Wales (RCAHMW) available online as Semantic Web resources with persistent URIs. Web services are available that make the vocabulary resources programmatically accessible and searchable. The SKOS RDF files of the vocabularies can also be downloaded.\n\nProvider of the Linked Data vocabularies and services: University of South Wales, Hypermedia Research Group",
+        "url": "https://www.heritagedata.org/blog/vocabularies-provided/",
+        "img": "Heritage-Data.png"
+    },
+    {
+        "title": "Thesaurus RA - Strumenti terminologici Scheda RA Reperti Archeologici",
+        "topic": "Vocabulary Services",
+        "description": "RA Thesaurus - A terminological tool for the compilation of RA (“Archaeological Find”) forms of the Italian Ministry of Cultural Heritage.\n\nThe RA terminological tool, developed by ICCU (Italian Central Institute for Unique Catalogue) and PIN, is an online facility for Italian archaeologists, providing a reworked version of the RA Thesaurus issued by ICCD, the Italian Central Institute for Documentation and Standards of the Italian Ministry of Cultural Heritage (MiBAC). The RA Thesaurus contains all the necessary terminological facilities for an efficient and well structured recording of the artefacts coming from Italian archaeological excavations. The vocabulary has been implemented by ICCD to support the encoding of two specific fields (OGTD - CLS) of MiBAC's official “Archaeological Find” (RA) form. These two fields are intended to describe the definition of the archaeological objects and their classes of production.\n\nProvider of the terminology tool: PIN VastLab",
+        "url": "https://vast-lab.org/thesaurus/ra/vocab/",
+        "img": "thesaurus-ra-service.png"
+    },
+    {
+        "title": "DCCD: Digital Collaboratory for Cultural Dendrochronology",
+        "topic": "Other services, tools and resources",
+        "description": "The DCCD is a digital repository and interactive library of tree-ring data (established in 2012). Its content comes from research of European organisations and projects on archaeological sites (including old landscapes), ship wrecks, historical buildings and mobile heritage (e.g. furniture, sculptures, paintings). The DCCD is based on the Tree-Ring Data Standard (TRiDaS) and allows for conversion of other widely used data formats. It contains digital tree-ring measurement series and average chronologies, as well as their descriptive and interpretative metadata. Since 2021 the DCCD uses DataverseNL as platform for depositing, disseminating and downloading the tree-ring data. It allows contributors to control and manage access to their data.\n\nProvider: Data Archiving and Networked Services (DANS)",
+        "url": "https://dataverse.nl/dataverse/dccd",
+        "img": "DCCD_tree-ring_data.png"
+    },
+    {
+        "title": "Demonstrator for ARIADNE Dendrochronology Data/NLP Integration Case Study",
+        "topic": "Other services, tools and resources",
+        "description": "The Demonstrator is a SPARQL query builder for a Wood/Dendrochronology data integration case study in the original ARIADNE project that seeked to hide the complexity of the underlying ontology. As the user selects from the interface, an underlying SPARQL query is automatically constructed in terms of the corresponding ontological entities. A set of interactive controls offer search and browsing of the extracted archaeological data. The controls are designed to be browser agnostic and the Demonstrator will run in most modern browsers. The experimental Web application cross searches over information extracted from datasets and text reports and expressed as CRM/AAT based RDF. Information from Dutch, English, Swedish archaeological reports was extracted by Natural Language Processing pipelines. Hierarchical expansion has been implemented over the Getty AAT and results from narrower concepts are included when available.\n\nDemonstrator: http://ariadne-lod.isti.cnr.it\nOpen source code: https://github.com/cbinding/ARIADNE-data-integration\n\nProvider: University of South Wales, Hypermedia Research Group",
+        "url": "https://github.com/cbinding/ARIADNE-data-integration",
+        "img": "ariadne-data-integration-case-study-demonstrator.png"
+    },
+    {
+        "title": "STELETO data conversion tool",
+        "topic": "Other services, tools and resources",
+        "description": "STELETO is an open source, cross-platform application for converting tabular data into other textual formats, via a custom template. It takes a delimited text file as input, applies the specified template and creates a text file as output. It was used in ARIADNE to convert the data used in the Wood/Dendrochronology data integration case study to a CIDOC CRM compatible RDF format. The source code is available (open source) for download and installation.\n\nProvider: University of South Wales, Hypermedia Research Group",
+        "url": "https://github.com/cbinding/STELETO/",
+        "img": "steleto-data-conversion-tool.png"
+    },
+    {
+        "title": "English, Dutch, Swedish rule-based Natural Language Processing pipelines",
+        "topic": "Other services, tools and resources",
+        "description": "Seven Named Entity Recognition (NER) pipelines for the text mining of English, Dutch and Swedish archaeological reports developed by University of South Wales. The pipelines run on the GATE (https://gate.ac.uk) open source platform and match a range of entities of archaeological interest such as Physical Objects, Materials, Structure Elements, Dates, etc. The pipelines have been used in ARIADNE data integration case studies. There are Dutch, English, Swedish general archaeological pipelines (for the above entities), experimental Dutch, English, Swedish specific pipelines for entities of dendrochronology interest, such as architectural elements, wood materials and dates, and a specific pipeline targeted at English entities of numismatic interest, such as coins, denomination, material and date. The English language pipelines build on previous work, while the Dutch and Swedish pipelines are more exploratory.\n\nProvider: University of South Wales, Hypermedia Research Group",
+        "url": "https://github.com/avlachid/Multilingual-NLP-for-Archaeological-Reports-Ariadne-Infrastructure",
+        "img": "english-etc-nlp.png"
+    },
+    {
+        "title": "MeshLab",
+        "topic": "Other services, tools and resources",
+        "description": "MeshLab is an open source, portable, and extensible system for the processing and editing of unstructured 3D triangular meshes. The system is aimed to help the processing of the typical not-so-small unstructured models arising in 3D scanning, providing a set of tools for editing, cleaning, healing, inspecting, rendering and converting this kind of meshes. In the archeoleogical field, MeshLab is strongly used by the community in the context of 3D reconstruction from scanning, mesh cleaning, mesh comparison and data presentation.\n\nProvider: CNR ISTI, Visual Computing Lab",
+        "url": "https://www.meshlab.net",
+        "img": "MeshLab.png"
+    }
+]

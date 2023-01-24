@@ -7,18 +7,15 @@ class AutocompleteFilterQuery {
   /**
    * Autocomplete query for Contributor field
    */
-  public static function contributor($q,$currentQuery) {
-
+  public static function contributor($q, $currentQuery, $size) {
     $query = [
-      
       'size' => 0,
       'query' => $currentQuery,
       'aggregations' => [
-        'filtered_agg' => [ 
+        'filtered_agg' => [
           'terms' => [
             'field' => 'contributor.name.raw',
-            'include' => self::getIncludeRegexp($q),
-            'size' => '20',
+            'size' => $size,
             'order' => ['_count' => 'desc'],
           ]
         ],
@@ -26,120 +23,116 @@ class AutocompleteFilterQuery {
           'cardinality' => [
             'field' => 'contributor.name.raw'
           ]
-        ]         
+        ]
       ],
     ];
-    
+    if ($q) {
+      $query['aggregations']['filtered_agg']['terms']['include'] = self::getIncludeRegexp($q);
+    }
     return $query;
-
   }
 
   /**
    * Autocomplete query for NativeSubject field
    */
-  public static function nativeSubject($q,$currentQuery) {
-
+  public static function nativeSubject($q, $currentQuery, $size) {
     $query = [
       'size' => 0,
       'query' => $currentQuery,
       'aggregations' => [
-        'filtered_agg' => [ 
+        'filtered_agg' => [
           'terms' => [
             'field' => 'nativeSubject.prefLabel.raw',
-            'include' => '(.*'.strtolower($q).'.*)',
-            'size' => '20',
+            'size' => $size,
             'order' => ['_count' => 'desc'],
-          ] 
+          ]
         ],
         'unique_agg_count' => [
           'cardinality' => [
             'field' => 'nativeSubject.prefLabel.raw'
           ]
-        ] 
+        ]
       ],
     ];
-
+    if ($q) {
+      $query['aggregations']['filtered_agg']['terms']['include'] = '(.*'.strtolower($q).'.*)';
+    }
     return $query;
-
   }
 
   /**
    * Autocomplete query for archaeologicalResourceType field
    */
-  public static function ariadneSubject($q,$currentQuery) {
-
+  public static function ariadneSubject($q, $currentQuery, $size) {
     $query = [
       'size' => 0,
       'query' => $currentQuery,
       'aggregations' => [
-        'filtered_agg' => [ 
+        'filtered_agg' => [
           'terms' => [
             'field' => 'ariadneSubject.prefLabel.raw',
-            'include' => self::getIncludeRegexp($q),
-            'size' => '20',
+            'size' => $size,
             'order' => ['_count' => 'desc'],
-          ] 
+          ]
         ],
         'unique_agg_count' => [
           'cardinality' => [
             'field' => 'ariadneSubject.prefLabel.raw'
           ]
-        ] 
+        ]
       ],
     ];
-
+    if ($q) {
+      $query['aggregations']['filtered_agg']['terms']['include'] = self::getIncludeRegexp($q);
+    }
     return $query;
-
   }
 
   /**
    * Autocomplete query for DerivedSubject field
    */
-  public static function derivedSubject($q,$currentQuery) {
-
+  public static function derivedSubject($q, $currentQuery, $size) {
     $query = [
       'size' => 0,
       'query' => $currentQuery,
       'aggregations' => [
-        'filtered_agg' => [ 
+        'filtered_agg' => [
           'terms' => [
             'field' => 'derivedSubject.prefLabel.raw',
-            'include' => '(.*'.strtolower($q).'.*)',
-            'size' => '20',
+            'size' => $size,
             'order' => ['_count' => 'desc'],
-          ] 
+          ]
         ],
         'unique_agg_count' => [
           'cardinality' => [
             'field' => 'derivedSubject.prefLabel.raw'
           ]
-        ]          
+        ]
       ],
     ];
-
+    if ($q) {
+      $query['aggregations']['filtered_agg']['terms']['include'] = '(.*'.strtolower($q).'.*)';
+    }
     return $query;
-
   }
 
   /**
    * Autocomplete query for Temporal field
    */
-  public static function temporal($q,$currentQuery) {
-
+  public static function temporal($q, $currentQuery, $size) {
     $query = [
       'size' => 0,
       'query' => $currentQuery,
       'aggregations' => [
-        'temporal_agg' => [ 
+        'temporal_agg' => [
           'nested' => [ 'path' => 'temporal'],
           'aggs' => [
             'filtered_agg' => [
               'terms' => [
                 'field' => 'temporal.periodName.raw',
-                'include' => '(.*'.strtolower($q).'.*)',
-                'size' => '20',
+                'size' => $size,
                 'order' => ['_count' => 'desc'],
-              ] 
+              ]
             ],
             'unique_agg_count' => [
               'cardinality' => [
@@ -150,27 +143,26 @@ class AutocompleteFilterQuery {
         ]
       ],
     ];
-
+    if ($q) {
+      $query['aggregations']['temporal_agg']['aggs']['filtered_agg']['terms']['include'] = '(.*'.strtolower($q).'.*)';
+    }
     return $query;
-
   }
 
   /**
    * Autocomplete query for Publisher field
    */
-  public static function publisher($q,$currentQuery) {
-
+  public static function publisher($q, $currentQuery, $size) {
     $query = [
       'size' => 0,
       'query' => $currentQuery,
       'aggregations' => [
-        'filtered_agg' => [ 
+        'filtered_agg' => [
           'terms' => [
             'field' => 'publisher.name.raw',
-            'include' => self::getIncludeRegexp($q),
-            'size' => '20',
+            'size' => $size,
             'order' => ['_count' => 'desc'],
-          ] 
+          ]
         ],
         'unique_agg_count' => [
           'cardinality' => [
@@ -179,40 +171,39 @@ class AutocompleteFilterQuery {
         ]
       ],
     ];
-
+    if ($q) {
+      $query['aggregations']['filtered_agg']['terms']['include'] = self::getIncludeRegexp($q);
+    }
     return $query;
-
   }
 
   /**
    * Autocomplete query for Periods Countries in perio.do index
    */
-  public static function temporalRegion($q,$currentQuery) {
-
+  public static function temporalRegion($q, $currentQuery, $size) {
     $query = [
       'size' => 0,
       'aggregations' => [
-        'filtered_agg' => [ 
+        'filtered_agg' => [
           'terms' => [
             'field' => 'spatialCoverage.label.raw',
-            'include' => '('.strtolower($q).'.*)',
-            'size' => '20',
+            'size' => $size,
             'order' => ['_count' => 'desc'],
-          ] 
-        ] 
+          ]
+        ]
       ],
     ];
-
+    if ($q) {
+      $query['aggregations']['filtered_agg']['terms']['include'] = '('.strtolower($q).'.*)';
+    }
     return $query;
-
   }
 
   /**
    * Autocomplete query for Periods Countries in perio.do index
    */
-  public static function periods($q, $temporalRegion) {
-
-    foreach (explode('|', $temporalRegion) as $region) {  
+  public static function periods($q, $temporalRegion, $size) {
+    foreach (explode('|', $temporalRegion) as $region) {
       if(empty($region)) {
         $filterRegionQuery['bool']['should'] = array('match_all'=> new \stdClass());
         break;
@@ -224,7 +215,8 @@ class AutocompleteFilterQuery {
       ];
     }
 
-    $query['size'] = 20;
+    $query['size'] = $size;
+    $query['sort'] = ['start.year' => ['order' => 'asc']];
 
     $query['query']['bool']['must'] = [
       'nested' => [
@@ -250,15 +242,13 @@ class AutocompleteFilterQuery {
 
     $query['query']['bool']['filter'] = $filterRegionQuery;
     return $query;
-
   }
 
   /**
    * Build regular expression for include clause in Elastic query
-   *  
+   *
    */
   private static function getIncludeRegexp($q) {
-
     $q = preg_split('/[\s]+/', $q);
     $regexpInclude = '';
 
@@ -267,7 +257,5 @@ class AutocompleteFilterQuery {
     }
 
     return $regexpInclude;
-
   }
-
 }

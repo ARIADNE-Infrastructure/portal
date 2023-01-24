@@ -11,7 +11,7 @@
     </template>
 
     <!-- main content -->
-    <section class="lg:w-2/3 lg:pl-lg block">
+    <section class="lg:w-2/3 lg:pl-lg block cloud-wrapper">
       <h2 class="text-2xl">Browse what</h2>
       <p class="mb-lg">Click on a word in the word cloud to make a search in the catalogue.</p>
 
@@ -46,27 +46,18 @@ const errorText: string = $computed(() => error || searchModule.getAggsResult.er
 const isLoading: boolean = $computed(() => generalModule.getIsLoading || searchModule.getIsAggsLoading);
 
 const wordCloud = $computed(() => {
-  const wordCloudElemens: Array<Array<number>> = [];
-
-  try {
-    const buckets = result?.derivedSubject?.['buckets'];
-    const max = Math.max.apply(null, buckets.map((word: any) => word.doc_count));
-
-    // Notice, bucket size is set by API backend and aggregations size.
-    buckets.forEach((element: any) => {
-      let count = Math.round((element.doc_count / max) * 100);
-      if (count > 100) {
-        count = 100;
-      } else if (count < 10) {
-        count = 10;
-      }
-      wordCloudElemens.push([element.key, count]);
-    });
-  } catch(e) {
-    // too soon, wait
+  const buckets = result?.derivedSubject?.buckets;
+  if (!buckets?.length) {
+    return [];
   }
 
-  return wordCloudElemens;
+  const max = Math.max.apply(null, buckets.map((word: any) => word.doc_count));
+
+  return buckets.map((element: any) => {
+    let count = Math.round(((element.doc_count) / max) * 100);
+    count = Math.min(Math.max(count, 20), 100);
+    return [element.key, count];
+  });
 });
 
 // Do search and set result.
@@ -80,8 +71,9 @@ onMounted(async () => {
 
 const startWordCloud = () => {
   const canvas: any = document.getElementById('cloud');
-  canvas.width = window.innerWidth;
-  canvas.height = Math.max(300, window.innerHeight - 100);
+  const rect = document.querySelector('.cloud-wrapper')!.getBoundingClientRect();
+  canvas.width = Math.round(rect.width);
+  canvas.height = Math.min(Math.max(300, window.innerHeight - 100), 500);
 
   try {
     WordCloud(
@@ -91,6 +83,8 @@ const startWordCloud = () => {
       gridSize: Math.round(16 * canvas.width / 1024),
       rotateRatio: 0,
       rotationSteps: 2,
+      shrinkToFit: true,
+      drawOutOfBound: false,
       shuffle: true,
       weightFactor (size: number) {
         return size * canvas.width / 1024;
@@ -117,7 +111,7 @@ const startWordCloud = () => {
         if (word) {
           searchModule.setSearch({
             path: '/search',
-            clear: true,
+            clear: false,
             derivedSubject: word[0]
           });
         }

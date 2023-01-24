@@ -52,7 +52,7 @@
       <div class="transform rotate-12 w-1/3 -mt-6x" style="height: 1000px;">
         <div class="transform -rotate-12 text-center mt-8x ml-6x pt-8x text-white" style="height: 500px">
           <div style="margin-left: -90px">
-            <h3 class="text-2x mb-md">Elasticsearch</h3>
+            <h3 class="text-2x mb-md">OpenSearch</h3>
             <i class="fa fa-database text-white-50 text-3x" style="font-size: 100px" />
           </div>
 

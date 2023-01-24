@@ -16,7 +16,10 @@
 
       <div class="md:flex mt-sm items-center justify-between pt-none">
         <result-paginator />
-        <result-sort-order class="mt-lg md:mt-none" />
+        <div class="flex mt-lg md:mt-none">
+          <result-sort-order class="mr-md" />
+          <result-per-page />
+        </div>
       </div>
 
       <div class="mb-base mt-xl">
@@ -46,6 +49,7 @@ import ResultList from './Result/List.vue';
 import ResultInfo from './Result/Info.vue';
 import ResultPaginator from './Result/Paginator.vue';
 import ResultSortOrder from './Result/SortOrder.vue';
+import ResultPerPage from './Result/PerPage.vue';
 
 let first: boolean = true;
 

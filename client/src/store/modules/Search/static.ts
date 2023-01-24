@@ -9,6 +9,11 @@ export const sortOptions = [
   // { val: 'title-asc',  text: 'Title - ASC' },
 ];
 
+export const perPageOptions = Array.from(new Array(50 / 5)).map((val, i) => {
+  i = i * 5 + 5;
+  return { val: i.toString(), 'text': i.toString(), group: 'default' };
+});
+
 export const helpTexts: helpText[] = [
   {
     id: '',

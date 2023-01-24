@@ -52,7 +52,7 @@ import ResourceMainImages from './Main/Images.vue';
 
 const resource = $computed(() => resourceModule.getResource);
 const digitalImages: Array<string> = $computed(() => resourceModule.getDigitalImages(resource));
-const sectionClass: string = 'py-md rounded-base mb-lg';
+const sectionClass: string = 'py-md mb-lg';
 const itemClass: string = 'border-b-base border-gray mb-md pb-md last:border-b-0 last:pb-none last:mb-none';
 const bClass: string = 'mr-sm';
 </script>

@@ -8,6 +8,7 @@
     "dev-external": "webpack-dev-server --env development --hot --host 0.0.0.0 --open",
     "build-staging": "webpack --env staging",
     "build-dev": "webpack --env dev",
+    "build-local": "webpack --env local",
     "build": "webpack --env production"
   },
   "author": "SND",

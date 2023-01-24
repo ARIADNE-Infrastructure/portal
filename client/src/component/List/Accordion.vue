@@ -1,9 +1,9 @@
 <!-- Front page -->
 <template>
-  <div class="border-base border-gray rounded-base mb-md">
+  <div class="border-base border-gray mb-md">
     <div
-      class="rounded-base p-md text-md bg-lightGray cursor-pointer select-none flex items-center justify-between"
-      :class="{ 'rounded-b-0': show, 'transition-all duration-300 hover:bg-gray': hover }"
+      class="p-md text-md bg-lightGray cursor-pointer select-none flex items-center justify-between"
+      :class="{ 'transition-all duration-300 hover:bg-gray': hover }"
       @click="toggle"
     >
       <help-tooltip
@@ -39,7 +39,8 @@
       <!-- overflow-hidden -->
       <div
         v-if="show"
-        class="ease-out duration-200 overflow-hidden"
+        :style="maxHeight && maxHeight < reactiveHeight ? ('max-height:' + maxHeight + 'px') : ''"
+        :class="'ease-out duration-200 overflow-hidden' + (maxHeight && maxHeight < reactiveHeight ? ' overflow-y-scroll' : '')"
         :id="contentId"
       >
         <slot />
@@ -62,6 +63,7 @@ const props = withDefaults(defineProps<{
   initShow?: boolean,
   hover?: boolean,
   height?: number,
+  maxHeight?: number,
   autoShow?: boolean,
 }>(), {
   title: 'List',

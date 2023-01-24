@@ -28,6 +28,7 @@ import HelpLoader from './component/Help/Loader.vue';
 import '../static/fa/css/all.min.css';
 
 onMounted(() => {
+  generalModule.setServicesAndPublishers();
   generalModule.setWindow();
   window.addEventListener('resize', () => generalModule.setWindow());
 });

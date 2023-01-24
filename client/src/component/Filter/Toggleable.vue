@@ -12,7 +12,7 @@
       :class="{ 'z-30 w-auto': showView }"
     >
       <div
-        class="mt-2xl w-toolbar bg-white rounded-br-base transition-all ease-out transform duration-300"
+        class="mt-2xl w-toolbar bg-white transition-all ease-out transform duration-300"
         :class="{
           '-translate-x-toolbar': !showView,
           'shadow-full': showView,
@@ -21,7 +21,7 @@
       >
         <div class="relative">
           <ul
-            class="bg-yellow text-white rounded-r-base inline-block shadow-full absolute top-0 left-full cursor-pointer hover:bg-green transition-color duration-300"
+            class="bg-yellow text-white inline-block shadow-full absolute top-0 left-full cursor-pointer hover:bg-green transition-color duration-300"
           >
             <li
               @click="toggleView('filters')"
@@ -48,7 +48,7 @@
             </div>
 
             <div v-if="style.maxHeight"
-              class="absolute bottom-0 left-0 w-full h-lg rounded-br-base"
+              class="absolute bottom-0 left-0 w-full h-lg"
               style="background-image: linear-gradient(to bottom, transparent, #fff);"
             >
             </div>

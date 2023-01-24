@@ -19,11 +19,16 @@
     <div
       v-for="(item, key) in filtered"
       :key="key"
-      class="mb-sm"
-      :class="{ 'inline': isSingleItem }"
+      :class="{ 'mb-sm': !isSingleItem && key < filtered.length - 1, 'inline': isSingleItem }"
     >
       <span v-if="slotType" :class="{ 'mb-md': !isSingleItem }">
         <i v-if="icon" :class="icon"></i>
+
+        <b-link v-if="query === 'publisher' && findPublisher(item.name)"
+          class="text-blue hover:underline hover:text-darkGray transition-color duration-300"
+          :to="utils.paramsToString('/publisher/', { publisher: item.name })">
+          <i class="fas fa-info-circle"></i>&nbsp;
+        </b-link>
 
         <b-link :to="getUrl(item)">
           <span v-if="slotType === 'person' || slotType === 'organisation'">
@@ -46,12 +51,6 @@
           <span v-else>
             {{ utils.sentenceCase(item) }}
           </span>
-        </b-link>
-
-        <b-link v-if="query === 'publisher' && findPublisher(item.name)"
-          class="block md:ml-md md:inline text-blue hover:underline hover:text-darkGray transition-color duration-300"
-          :to="utils.paramsToString('/publisher/' + findPublisher(item.name).slug, { publisher: item.name })">
-          <i class="fas fa-info-circle mr-xs"></i>
         </b-link>
 
         <b-link
@@ -97,6 +96,7 @@ const props = defineProps<{
   title?: string,
   header?: string,
   filter?: string,
+  filterUnique?: string,
   prop?: string,
   slotType?: string,
   query?: string,
@@ -125,7 +125,7 @@ const filtered: Array<any> = $computed(() => {
 
   return itemsList.filter((item: any) => {
     if (filter.some((prop: string) => item[prop] && !utils.isInvalid(item[prop]))) {
-      if (!doublets.some((doublet: any) => utils.objectEquals(doublet, item))) {
+      if (!doublets.some((doublet: any) => props.filterUnique ? item[props.filterUnique] === doublet[props.filterUnique] : utils.objectEquals(doublet, item))) {
         doublets.push(item);
         return true;
       }
@@ -148,24 +148,15 @@ const getHomepage = (item: any): string | null => {
 };
 
 const getUrl = (item: any): string => {
-  if (props.slotType === 'resource' || props.slotType === 'subject') {
-    return '/' + props.slotType + '/' + encodeURIComponent(item[props.prop || 'id']);
+  if (props.slotType === 'resource') {
+    return '/resource/' + encodeURIComponent(item[props.prop || 'id']);
+  }
+  if (props.slotType === 'subject') {
+    return utils.paramsToString('/subject/' + encodeURIComponent(item[props.prop || 'id']), { derivedSubject: item.prefLabel });
   }
 
   let params = {
     [props.query || 'q']: props.prop ? item[props.prop] : (props.filter ? item[props.filter] : item)
-  }
-
-  if (props.query === 'derivedSubjectId') {
-    if (item.id) {
-      let parts = item.id.split('/');
-      params = {
-        [props.query] : parts[parts.length-1]
-      }
-      if (item.prefLabel) {
-        params.derivedSubjectIdLabel = item.prefLabel;
-      }
-    }
   }
   if (props.fields) {
     params.fields = props.fields;
@@ -179,7 +170,7 @@ const getEmail = (item: any): string => {
     const regex = new RegExp("^(.+)@(.+)$");
     let email = item?.email;
     if (regex.test(email)) {
-      return '<a href="mailto:'+email+'">Email</a>';
+      return '<a href="mailto:' + utils.escHtml(email) + '">Email</a>';
     }
   }
   return '';

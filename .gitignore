@@ -7,3 +7,5 @@ logs/
 server/html/*
 !server/html/api/
 !server/html/.htaccess
+server/classes/AAT/data/*
+server/classes/settings.json

@@ -8,8 +8,8 @@
       v-show="title || hasChartData"
       class="w-max-full relative"
     >
-      <div :class="{ 'rounded-base mb-lg border-base border-gray': title }">
-        <div v-if="title" class="rounded-t-base bg-lightGray items-center p-sm flex justify-between">
+      <div :class="{ 'mb-lg border-base border-gray': title }">
+        <div v-if="title" class="bg-lightGray items-center p-sm flex justify-between">
           <span class="text-md">{{ title }}</span>
 
           <div class="flex items-center">
@@ -32,7 +32,7 @@
             </help-tooltip>
 
             <button
-              class="bg-yellow px-md py-sm text-center text-sm text-white cursor-pointer hover:bg-green transition-color rounded-base duration-300"
+              class="bg-yellow px-md py-sm text-center text-sm text-white cursor-pointer hover:bg-green transition-color duration-300"
               @click="navigateToRange('/browse/when')"
             >
               <i class="fas fa-search mr-xs" />
@@ -43,22 +43,22 @@
         <div v-else>
           <div
             v-if="!isLoading"
-            class="absolute top-2xl right-0 shadow-full z-10 rounded-base"
+            class="absolute top-2xl right-0 shadow-full z-10"
           >
             <div class="text-center">
               <div
                 v-if="searchResult.error"
-                class="bg-white p-md text-mmd border-b-base border-red text-red rounded-t-base text-mmd"
+                class="bg-white p-md text-mmd border-b-base border-red text-red text-mmd"
               >
                 {{ searchResult.error}}
               </div>
 
-              <div class="bg-white p-md text-mmd rounded-t-base">
+              <div class="bg-white p-md text-mmd">
                 Range: {{ getSearchRange() }}
               </div>
 
               <div
-                class="bg-yellow py-md px-base text-mmd text-white cursor-pointer hover:bg-green transition-color rounded-b-base duration-300"
+                class="bg-yellow py-md px-base text-mmd text-white cursor-pointer hover:bg-green transition-color duration-300"
                 @click="navigateToRange('/search')"
               >
                 <i class="fas fa-search mr-sm"></i>
@@ -202,6 +202,9 @@ const setTimeLine = () => {
 
             searchModule.setSearch({
               range: getUnformatted(label, ','),
+              temporalRegion: '',
+              culturalPeriods: '',
+              culturalLabels: '',
               page: 0
             });
           }
@@ -225,7 +228,13 @@ const setTimeLine = () => {
               range = from + ',' + to;
               if (done) {
                 isDragging = false;
-                searchModule.setSearch({ ...params, range });
+                searchModule.setSearch({
+                  ...params,
+                  range,
+                  temporalRegion: '',
+                  culturalPeriods: '',
+                  culturalLabels: '',
+                });
               }
             }
           },

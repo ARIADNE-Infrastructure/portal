@@ -1,13 +1,12 @@
 {
   "environment": {
-    "_about_logLevel": " Valid levels: NONE|DEBUG|INFO|NOTICE|WARNING|ERROR|CRITICAL|ALERT|EMERGENCY",
-    "logLevel": "DEBUG",
+    "logActive": false,
     "logPath": "/var/www/logs/app.log",
     "elasticsearchEnv": "staging",
     "defaultLanguage": "en",
     "mapMarkerThreshhold": 500,
-    "periodsDataFile" : "https://n2t.net/ark:/99152/p0dataset.json",
-    "periodsId": "ariadne-portal-periods",
+    "periodsRemotePath" : "https://n2t.net/ark:/99152/p0dataset.json",
+    "portalUpdateSecret": "xxx",
     "contact": {
       "email": "xxx@xxx.xxx",
       "captchaSecret": "xxx"
@@ -17,41 +16,43 @@
     "prod": {
       "host": "xxx:9200",
       "index": "xxx",
-      "subject_index": "xxx",
+      "subjectIndex": "xxx",
       "periodHost": "xxx:9200",
-      "periodIndex": "xxx"
+      "periodIndex": "xxx",
+      "aatTermDescendantsIndex": "xxx",
+      "servicesIndex": "xxx",
+      "publishersIndex": "xxx"
     },
     "staging": {
       "host": "xxx:9200",
       "index": "xxx",
-      "subject_index": "xxx",
+      "subjectIndex": "xxx",
       "periodHost": "xxx:9200",
-      "periodIndex": "xxx"
+      "periodIndex": "xxx",
+      "aatTermDescendantsIndex": "xxx",
+      "servicesIndex": "xxx",
+      "publishersIndex": "xxx"
     },
     "dev": {
       "host": "xxx:9200",
       "index": "xxx",
-      "subject_index": "xxx",
+      "subjectIndex": "xxx",
       "periodHost": "xxx:9200",
-      "periodIndex": "xxx"
+      "periodIndex": "xxx",
+      "aatTermDescendantsIndex": "xxx",
+      "servicesIndex": "xxx",
+      "publishersIndex": "xxx"
+    },
+    "local": {
+      "remoteHost": "xxx:9200",
+      "host": "elasticsearch:9200",
+      "index": "xxx",
+      "subjectIndex": "xxx",
+      "periodHost": "elasticsearch:9200",
+      "periodIndex": "xxx",
+      "aatTermDescendantsIndex": "xxx",
+      "servicesIndex": "xxx",
+      "publishersIndex": "xxx"
     }
-  },
-  "periodAuthorities": {
-    "p0qhb66": "http://n2t.net/ark:/99152/p0qhb66",
-    "p0wctqt": "http://n2t.net/ark:/99152/p0wctqt",
-    "p0kh9ds": "http://n2t.net/ark:/99152/p0kh9ds",
-    "p06v8w4": "http://n2t.net/ark:/99152/p06v8w4",
-    "p0h9ttq": "http://n2t.net/ark:/99152/p0h9ttq",
-    "p0pqptc": "http://n2t.net/ark:/99152/p0pqptc",
-    "p0r8d9c": "http://n2t.net/ark:/99152/p0r8d9c",
-    "p0vn2fr": "http://n2t.net/ark:/99152/p0vn2fr",
-    "p0s2rwk": "http://n2t.net/ark:/99152/p0s2rwk",
-    "p02kbfn": "http://n2t.net/ark:/99152/p02kbfn",
-    "p02chr4": "http://n2t.net/ark:/99152/p02chr4",
-    "p03dr36": "http://n2t.net/ark:/99152/p03dr36",
-    "p02kkd9": "http://n2t.net/ark:/99152/p02kkd9",
-    "p0m63nj": "http://n2t.net/ark:/99152/p0m63nj",
-    "p0cwscs": "http://n2t.net/ark:/99152/p0cwscs",
-    "p0g8mw8": "http://n2t.net/ark:/99152/p0g8mw8"
   }
 }

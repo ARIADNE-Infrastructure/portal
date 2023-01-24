@@ -127,6 +127,7 @@
         filter="prefLabel"
         query="derivedSubject"
         icon="fas fa-tag mr-sm mb-xs"
+        class="mb-sm"
       />
 
       <resource-filtered-items
@@ -135,6 +136,7 @@
         filter="periodName"
         query="temporal"
         icon="far fa-clock mr-sm mb-xs"
+        class="mb-sm"
       />
 
       <resource-filtered-items
@@ -161,7 +163,7 @@ defineProps<{
   initResource: Function,
 }>();
 
-const sectionClass: string = 'py-base pb-sm rounded-base mb-md';
+const sectionClass: string = 'py-base pb-sm mb-md';
 const resource = $computed(() => resourceModule.getResource);
 const thematicals = $computed(() => resourceModule.getThematicals);
 const resourceParams = $computed(() => resourceModule.getResourceParams);

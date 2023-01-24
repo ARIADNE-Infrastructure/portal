@@ -4,7 +4,7 @@
       <li
         v-for="(tab, index) in tabs"
         :key="tab.props.title"
-        class="text-white -mb-1 text-md p-md rounded-t-base transition-all duration-300 focus:outline-none cursor-pointer flex-1"
+        class="text-white -mb-1 text-md p-md transition-all duration-300 focus:outline-none cursor-pointer flex-1"
         :class="{
           'bg-blue': tab.props.title === selectedTabTitle,
           'bg-blue-50 hover:bg-blue': tab.props.title !== selectedTabTitle,
@@ -21,7 +21,7 @@
       </li>
     </ul>
 
-    <div class="border-base rounded-t-0 border-gray rounded-base px-md py-base">
+    <div class="border-base border-gray px-md py-base">
       <slot />
     </div>
   </div>
@@ -33,6 +33,8 @@ import { $ref, computed, provide, getCurrentInstance, onMounted, nextTick } from
 const props = defineProps<{
   initiallySelectedTabTitle: string,
 }>();
+
+const emit = defineEmits(['onTabChange']);
 
 let selectedTabTitle: string = $ref('');
 const tabs = getCurrentInstance().slots.default();
@@ -46,5 +48,6 @@ onMounted(() => nextTick(() => selectTab(props.initiallySelectedTabTitle)));
 // select tab by title
 const selectTab = (title: string): void => {
   selectedTabTitle = title
+  emit('onTabChange', title);
 };
 </script>

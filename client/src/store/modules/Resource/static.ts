@@ -17,7 +17,7 @@ export const types = {
   6: 'burial',
 
   // new
-  7: 'date',
+  7: 'dating',
   8: 'survey',
   9: 'remote',
   10: 'structure',
@@ -54,7 +54,7 @@ export const typesTemporary = {
   'Building survey': 'buildingsurvey',
   'Burial': 'burial',
   'Coin': 'coin',
-  'Date': 'date',
+  'Dating': 'dating',
   'Fieldwork': 'fieldwork',
   'Fieldwork archive': 'fieldworkarchive',
   'Fieldwork report': 'fieldworkreport',
@@ -79,4 +79,6 @@ export const ctsCertified = [
   'Archaeology Data Service',
   'Data Archiving and Networked Services (DANS)',
   'Swedish National Data Service',
+  'Historic Environment Scotland ',
+  'Austrian Academy of Sciences (OeAW)',
 ];

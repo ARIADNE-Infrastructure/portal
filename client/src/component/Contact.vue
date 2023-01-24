@@ -81,7 +81,7 @@ let isSending: boolean = $ref(false);
 const captcha: any = $ref(null);
 
 const headerClasses: string = 'text-hg mb-xs';
-const fieldClasses: string = 'w-full p-sm border-base rounded-base';
+const fieldClasses: string = 'w-full p-sm border-base';
 
 const mail = $computed(() => contactModule.getMail);
 const errorMsg: string = $computed(() => contactModule.getErrorMsg);

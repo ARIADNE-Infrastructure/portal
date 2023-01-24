@@ -2,12 +2,12 @@
 	<div class="text-center">
     <div
       v-if="result.error"
-      class="bg-white p-md text-mmd border-b-base border-red rounded-tr-base text-red"
+      class="bg-white p-md text-mmd border-b-base border-red text-red"
     >
       {{ result.error }}
     </div>
 
-    <div class="bg-white p-md text-mmd rounded-tr-base">
+    <div class="bg-white p-md text-mmd">
       <div v-if="data === true">
         <i class="fas fa-circle-notch fa-spin mr-sm backface-hidden"></i>
         Loading..

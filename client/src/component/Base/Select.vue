@@ -10,7 +10,7 @@
       v-click-away="leave"
     >
       <input
-        class="rounded-base flex-grow truncate outline-none cursor-default p-sm pr-none text-md"
+        class="flex-grow truncate outline-none cursor-default p-sm pr-none text-md"
         :class="{ 'placeholder-black': !open }"
         :placeholder="selectedText"
         ref="searchRef"
@@ -99,7 +99,7 @@ let open: boolean = $ref(false);
 let search: string = $ref('');
 const searchRef: any = $ref(null);
 
-const dropdownClass: string = $computed(() => `rounded-base rounded-t-0 border-${props.color}`);
+const dropdownClass: string = $computed(() => `border-${props.color}`);
 const altGroupFirstItemClass: string = $computed(() => `border-t-base border-${props.color}`);
 const selected: any = $computed(() => props.options.find((item: any) => item.val === props.value));
 const selectedText: string = $computed(() => selected ? selected.text : '');
@@ -119,9 +119,9 @@ const selectedClass: string = $computed(() => {
     classes = props.selectClass + ' ';
   }
   if (open) {
-    classes += `rounded-base rounded-b-0 border-${props.color}`;
+    classes += `border-${props.color}`;
   } else {
-    classes += 'rounded-base border-gray';
+    classes += 'border-gray';
   }
   return classes;
 });

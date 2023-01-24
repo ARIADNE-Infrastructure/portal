@@ -1,0 +1,25 @@
+{
+  "mappings": {
+    "dynamic": "false",
+    "properties": {
+      "id": {
+        "type": "long"
+      },
+      "title": {
+        "type": "text"
+      },
+      "topic": {
+        "type": "text"
+      },
+      "description": {
+        "type": "text"
+      },
+      "url": {
+        "type": "text"
+      },
+      "img": {
+        "type": "text"
+      }
+    }
+  }
+}

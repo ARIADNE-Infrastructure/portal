@@ -3,7 +3,9 @@ import { VuexModule, Module, Mutation, Action, RegisterOptions } from "vuex-clas
 import axios from 'axios';
 import utils from '@/utils/utils';
 import { SearchModule } from './Search';
+import { PeriodsModule } from "./Periods";
 import { titles, descriptions, resultTitles, types } from './Aggregation/static';
+import synonyms from "@/utils/synonyms";
 
 export interface iKeyVal {
   key: string,
@@ -13,11 +15,13 @@ export interface iKeyVal {
 @Module
 export class AggregationModule extends VuexModule {
   private searchModule: SearchModule;
+  private periodsModule: PeriodsModule;
 
 
-  constructor(searchModule: SearchModule, options: RegisterOptions) {
+  constructor(searchModule: SearchModule, periodsModule: PeriodsModule, options: RegisterOptions) {
     super(options);
     this.searchModule = searchModule;
+    this.periodsModule = periodsModule;
   }
 
   private options: any = {};
@@ -28,21 +32,40 @@ export class AggregationModule extends VuexModule {
 
   @Action
   async setSearch(payload: any) {
-    if (payload.value.search) {
+    if (payload.value.search || payload.value.size) {
       const searchParams = this.searchModule.getParams;
       const params = { ...{ filterQuery: payload.value.search, filterName: payload.id }, ...searchParams };
+      if (payload.value.size) {
+        params.filterSize = payload.value.size;
+      }
+      if (params.filterName === 'ariadneSubject' && /^dati/.test(params.filterQuery)) {
+        params.filterQuery = 'date';
+      }
+      if (params.ariadneSubject?.includes('Dating')) {
+        params.ariadneSubject = params.ariadneSubject.replace('Dating', 'Date')
+      }
       const url = process.env.apiUrl + '/autocompleteFilter';
 
       try {
         const res = await axios.get(utils.paramsToString(url, params));
         let data = res?.data?.filtered_agg;
         if (utils.objectIsNotEmpty(data)) {
+          data.buckets?.forEach(b => {
+            if (b?.key?.toLowerCase() === 'date') {
+              b.key = 'Dating';
+            }
+          });
+          if ((params.filterName === 'temporalRegion' || params.filterName === 'culturalPeriods') && data.buckets) {
+            data.buckets = await this.periodsModule.getMissingBuckets({ key: params.filterName, buckets: data.buckets });
+          }
           const value = { ...payload.value, ...{ data } };
           this.updateOptions({ id: payload.id, value });
+          if (params.filterName === 'culturalPeriods' && Array.isArray(data.buckets)) {
+            this.periodsModule.updateCachedPeriods(data.buckets)
+          }
         }
       } catch (ex) {}
-    }
-    else {
+    } else {
       this.updateOptions(payload);
     }
 
@@ -60,10 +83,9 @@ export class AggregationModule extends VuexModule {
 
   @Action
   setActive(payload: any) {
-
     const params: any = this.searchModule.getParams;
-
     let { key, value, add } = payload;
+    const origValue = value
 
     if (params[key]) {
       let aggs = params[key].split('|');
@@ -73,7 +95,7 @@ export class AggregationModule extends VuexModule {
 
       } else {
         aggs = aggs.filter((agg: any) => {
-          return String(agg || '').toLowerCase() !== String(value || '').toLowerCase();
+          return String(agg || '').toLowerCase() !== String(value || '').toLowerCase();
         });
       }
 
@@ -82,8 +104,24 @@ export class AggregationModule extends VuexModule {
 
     const data: any = { [key]: value, page: 0 }
 
-    if (key === 'periodCountry') { // when changing period country - clear selected periods (if any)
-      data.period = '';
+    if ((key === 'temporalRegion' || key === 'culturalPeriods')) { // clear range filter if selecting periods
+      data.range = '';
+      if (key === 'culturalPeriods') { // store label in url, add / remove here
+        const labels = (params.culturalLabels ? params.culturalLabels.split('|') : []).filter((l: string) => (value || '').split('|').some((v: string) => v === l.split(':')[0]));
+        if (add) {
+          const label = this.periodsModule.getCachedPeriods?.find((b: any) => b?.key === origValue);
+          if (label) {
+            const langCode = label.region ? synonyms.getCountryCode(label.region) : '';
+            labels.push(origValue + ':' + label.filterLabel + (langCode ? ' (' + langCode + ')' : ''));
+          }
+        }
+        data.culturalLabels = labels.length ? labels.join('|') : ''
+      }
+    }
+    if (key === 'range') { // clear periods if selecting range
+      data.temporalRegion = '';
+      data.culturalPeriods = '';
+      data.culturalLabels = '';
     }
 
     this.searchModule.setSearch(data);
@@ -187,7 +225,7 @@ export class AggregationModule extends VuexModule {
 
   // Used for displaying what user has filtered and/or search on. Not all uri params are valid for this.
   get activeFilters(): Array<iKeyVal> {
-    const valid = Object.keys(this.getTitles).concat(['q', 'range', 'derivedSubjectId', 'geogrid', 'responsible', 'periodName', 'bbox', 'temporalRegion', 'filterByCulturalPeriods']);
+    const valid = Object.keys(this.getTitles).concat(['q', 'range', 'geogrid', 'responsible', 'periodName', 'bbox', 'temporalRegion', 'culturalPeriods']);
     const params = utils.getCopy(this.searchModule.getParams);
     const filters: Array<iKeyVal> = [];
 

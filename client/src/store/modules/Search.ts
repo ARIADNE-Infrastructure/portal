@@ -4,7 +4,7 @@ import axios from 'axios';
 import utils from '@/utils/utils';
 import router from '@/router';
 import { LoadingStatus, GeneralModule } from './General';
-import { sortOptions, helpTexts } from './Search/static';
+import { sortOptions, perPageOptions, helpTexts } from './Search/static';
 
 export interface helpText {
   id: string,
@@ -21,6 +21,7 @@ export class SearchModule extends VuexModule {
   private result: any = {};
   private autocomplete: any = {};
   private sortOptions: any[] = sortOptions;
+  private perPageOptions: any[] = perPageOptions;
   private helpTexts: helpText[] = helpTexts;
   private totalRecordsCount: any = '';
 
@@ -58,8 +59,11 @@ export class SearchModule extends VuexModule {
   async setMiniMapSearch(mapParams: any) {
     let res;
     try {
+      if (mapParams.ariadneSubject?.includes('Dating')) {
+        mapParams = { ...mapParams, ariadneSubject: mapParams.ariadneSubject.replace('Dating', 'Date') };
+      }
       const url = process.env.apiUrl + '/getMiniMapData';
-      res = await axios.get(utils.paramsToString(url, {...mapParams}));
+      res = await axios.get(utils.paramsToString(url, mapParams));
     }
     catch (ex) {
 
@@ -95,21 +99,7 @@ export class SearchModule extends VuexModule {
       if (payload[key] && key !== 'clear' && key !== 'path') {
         params[key] = payload[key];
       } else {
-        if (key === 'derivedSubjectId' && params.derivedSubjectIdLabel) {
-          delete params.derivedSubjectIdLabel;
-        }
         delete params[key];
-      }
-
-      // makes sure previous periods filters are reseted if year range is selected
-      // todo: switch to periodo regions & periods when available
-      if (key === 'range') {
-        delete params.publisher;
-        delete params.ariadneSubject;
-      }
-      // reverse of above check
-      else if (key === 'publisher' || key === 'ariadneSubject') {
-        delete params.range;
       }
     }
     if (params.page) {
@@ -141,8 +131,12 @@ export class SearchModule extends VuexModule {
     this.updateParams(params);
 
     try {
+      const sendParams = { ...params, ...this.getDefaultSort() }
+      if (sendParams.ariadneSubject?.includes('Dating')) {
+        sendParams.ariadneSubject = sendParams.ariadneSubject.replace('Dating', 'Date')
+      }
       const url = process.env.apiUrl + '/search';
-      const res = await axios.get(utils.paramsToString(url, { ...params, ...this.getDefaultSort() }));
+      const res = await axios.get(utils.paramsToString(url, sendParams));
       data = res?.data;
     } catch (ex) {}
 
@@ -152,19 +146,46 @@ export class SearchModule extends VuexModule {
           hit.data.derivedSubject = [...hit.data.derivedSubject, ...hit.data.aatSubjects];
           hit.data.aatSubjects = [];
         }
+        for (let key in hit.data) {
+          if (Array.isArray(hit.data[key])) {
+            hit.data[key] = hit.data[key].filter(v => v);
+          }
+        }
+        if (hit.data.resourceType?.toLowerCase() === 'date') {
+          hit.data.resourceType = 'dating';
+        }
+        if (Array.isArray(hit.data.ariadneSubject)) {
+          hit.data.ariadneSubject.forEach(s => {
+            if (s.prefLabel === 'Date') {
+              s.prefLabel = 'Dating';
+            }
+          });
+        }
       });
     }
-    if (data) {
+
+    if ( data && !data.ERROR ) {
+
       this.updateResult({
         total: data.total,
         hits: data.hits,
         time: Math.round(((Date.now() - time) / 1000) * 100) / 100,
         aggs: data.aggregations
       });
+
     } else {
-      this.updateResult({ error: 'Internal error. Search failed..' });
+
+      if(data.ERROR) {
+        if(data.ERROR.msg == 'Scrolling exceeded maximum') {
+          this.updateResult({ error: 'Scrolling exceeded maximum. Please use filters and/or search to narrow down your search.' });
+        } else {
+          this.updateResult({ error: 'Internal error. Search failed..' });
+        }
+      }
+
       this.generalModule.updateLoadingStatus(LoadingStatus.None);
       return;
+
     }
 
     this.generalModule.updateLoadingStatus(LoadingStatus.None);
@@ -191,12 +212,23 @@ export class SearchModule extends VuexModule {
 
     try {
       const url = process.env.apiUrl + '/getSearchAggregationData';
-      const res = await axios.get(utils.paramsToString(url, { ...params, ...this.getDefaultSort() } ));
+      const sendParams = { ...params, ...this.getDefaultSort() }
+      if (sendParams.ariadneSubject?.includes('Dating')) {
+        sendParams.ariadneSubject = sendParams.ariadneSubject.replace('Dating', 'Date')
+      }
+      const res = await axios.get(utils.paramsToString(url, sendParams));
 
       let data = res?.data;
       if (utils.objectIsNotEmpty(data?.aggregations)) {
         if (data.aggregations.temporal?.temporal) {
           data.aggregations.temporal = data.aggregations.temporal.temporal;
+        }
+        if (Array.isArray(data?.aggregations?.ariadneSubject?.buckets)) {
+          data?.aggregations.ariadneSubject.buckets.forEach(b => {
+            if (b?.key === 'Date') {
+              b.key = 'Dating';
+            }
+          });
         }
         this.updateAggsResult({
           total: data.total,
@@ -315,6 +347,14 @@ export class SearchModule extends VuexModule {
 
   get getSortOptions(): any[] {
     return this.sortOptions;
+  }
+
+  get getPerPageOptions(): any[] {
+    return this.perPageOptions;
+  }
+
+  get getPerPage(): string {
+    return this.params?.size || '20';
   }
 
   get getHelpTexts(): helpText[] {

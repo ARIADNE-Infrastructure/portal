@@ -11,7 +11,14 @@
     >
       <b :class="bClass">Access Rights:</b>
 
-      <span :class="{ 'break-word': utils.validUrl(resource.accessRights) }">
+      <b-link v-if="utils.validUrl(resource.accessRights)"
+        :href="resource.accessRights"
+        target="_blank"
+        class="break-word"
+        :useDefaultStyle="true">
+        {{ resource.accessRights }}
+      </b-link>
+      <span v-else class="break-word">
         {{ resource.accessRights }}
       </span>
     </div>

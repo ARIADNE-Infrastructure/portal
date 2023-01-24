@@ -25,22 +25,16 @@ const props = defineProps<{
 
 const params = $computed(() => searchModule.getParams);
 const result = $computed(() => searchModule.getResult);
+const perPage = $computed(() => parseInt(searchModule.getPerPage));
 const currentPage: number = $computed(() => parseInt(params.page) || 1);
 const active: boolean = $computed(() => {
   let val = result?.total?.value;
-  return val && parseInt(val) > 10;
+  return val && parseInt(val) > perPage;
 });
 
 const pageClasses = (page: any): string => {
   let classes = page.active ? 'bg-blue border-blue text-white' : 'border-gray text-blue';
-
-  if (page.hover) {
-    classes += ' hover:bg-gray-30 cursor-pointer';
-  }
-  if (page.cl) {
-    classes += ' ' + page.cl;
-  }
-  return classes;
+  return classes + (page.hover ? ' hover:bg-gray-30 cursor-pointer' : '')
 };
 
 // changes page, only if can
@@ -59,7 +53,7 @@ const getPaging = (): Array<any> => {
   let total = parseInt(result.total.value),
       pages: Array<any> = [],
       start = currentPage - 2,
-      max = Math.ceil(total / 10),
+      max = Math.ceil(total / perPage),
       amount = 5;
 
   if (amount > max) {
@@ -84,21 +78,16 @@ const getPaging = (): Array<any> => {
     });
   }
 
-  // Jump to next page button - and some cosmetics for rounded corners depending if 'jump to first' is visible
-  let roundedLeft = 'rounded-l-base';
-  if(currentPage >= 2) {
-    roundedLeft = '';
-  }
-  pages.unshift({ label: '<i class="fas fa-angle-double-left"></i>', val: currentPage - 1, hover: currentPage > 1, cl: roundedLeft });
+  pages.unshift({ label: '<i class="fas fa-angle-double-left"></i>', val: currentPage - 1, hover: currentPage > 1 });
 
   // Jump to first page button
   if(currentPage > 1 ) {
-    pages.unshift({ label: '<i class="fas fa-arrow-circle-left"></i>', val: 1, hover: currentPage > 1, cl: 'rounded-l-base' });
+    pages.unshift({ label: '<i class="fas fa-arrow-circle-left"></i>', val: 1, hover: currentPage > 1 });
   }
 
   // Jump to next page button
   if(currentPage < max ) {
-    pages.push({ label: '<i class="fas fa-angle-double-right"></i>', val: currentPage + 1 , hover: currentPage < max, cl: 'rounded-r-base' });
+    pages.push({ label: '<i class="fas fa-angle-double-right"></i>', val: currentPage + 1 , hover: currentPage < max });
   }
 
   return pages;

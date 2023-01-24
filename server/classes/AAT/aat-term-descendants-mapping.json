@@ -1,0 +1,26 @@
+{
+  "mappings": {
+    "dynamic": "false",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "prefLabel": {
+        "type": "keyword"
+      },
+      "uri": {
+        "type": "keyword"
+      },
+      "descendants": {
+        "properties": {
+          "uri": {
+            "type": "text"
+          },
+          "prefLabel": {
+            "type": "text"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,6 +1,6 @@
 <template>
   <header
-    class="hidden md:block fixed top-0 z-30 top-0 bg-blue w-full h-4x bg-lightGray shadow-bottomDark"
+    class="hidden md:block fixed top-0 z-30 top-0 w-full h-4x bg-lightGray shadow-bottomDark"
   >
     <div class="flex relative items-center max-w-screen-xl mx-auto h-4x">
       <!-- logo -->

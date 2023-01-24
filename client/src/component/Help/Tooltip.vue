@@ -5,7 +5,7 @@
   >
     <span
       v-show="enabled"
-      class="rounded-base absolute transition-opacity duration-300 text-md p-sm z-neg10 opacity-0 whitespace-no-wrap group-hover:opacity-100 group-hover:z-20"
+      class="absolute transition-opacity duration-300 text-md p-sm z-neg10 opacity-0 whitespace-no-wrap group-hover:opacity-100 group-hover:z-20"
       :class="messageClasses"
       :style="`top: ${ top }; left: ${ left }; right: ${ right }`"
     >

@@ -100,7 +100,6 @@ export const types = [
   },
   {
     id: 'aatSubjects',
-    param: 'derivedSubjectIdLabel',
     prop: 'label'
   }
 ];

@@ -4,7 +4,6 @@ namespace Elastic;
 
 use InvalidArgumentException;
 use Elastic\Query;
-use Elastic\DataNormalizer;
 
 // https://github.com/mjaschen/phpgeo
 use Location\Coordinate;

@@ -1,0 +1,72 @@
+{
+  "mappings": {
+    "dynamic": "false",
+    "properties": {
+      "broader": {
+        "properties": {
+          "id": {
+            "type": "text"
+          },
+          "matchType": {
+            "type": "text"
+          },
+          "prefLabel": {
+            "type": "text"
+          },
+          "uri": {
+            "type": "text",
+            "fields": {
+              "raw": {
+                "type": "keyword"
+              }
+            }
+          }
+        }
+      },
+      "id": {
+        "type": "long"
+      },
+      "prefLabel": {
+        "type": "text"
+      },
+      "prefLabels": {
+        "type": "nested",
+        "properties": {
+          "label": {
+            "type": "text"
+          },
+          "lang": {
+            "type": "text"
+          }
+        }
+      },
+      "providerMappings": {
+        "properties": {
+          "matchURI": {
+            "type": "text"
+          },
+          "providerId": {
+            "type": "long"
+          },
+          "sourceLabel": {
+            "type": "text"
+          },
+          "sourceURI": {
+            "type": "text"
+          }
+        }
+      },
+      "scopeNote": {
+        "type": "text"
+      },
+      "uri": {
+        "type": "text",
+        "fields": {
+          "raw": {
+            "type": "keyword"
+          }
+        }
+      }
+    }
+  }
+}

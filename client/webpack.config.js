@@ -192,6 +192,26 @@ module.exports = env => {
   }
 
   /**
+   * Public LOCAL config
+   */
+  else if (env.local) {
+    console.log('ARIADNE Portal - Building with public LOCAL config...');
+
+    process.env.NODE_ENV = 'staging';
+    ariadneApiPath = 'http://localhost:8080/api';
+
+    config.mode = 'development';
+    config.devtool = false;
+    config.optimization = {
+      minimize: true,
+      minimizer: [
+        new TerserPlugin({}),
+        new CssMinimizerPlugin(),
+      ],
+    };
+  }
+
+  /**
    * Public PRODUCTION config
    */
   else if (env.production) {

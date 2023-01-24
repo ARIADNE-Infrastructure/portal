@@ -175,10 +175,6 @@ const setMap = async () => {
 
     // Handle geopoint data
     if (spatial?.geopoint) {
-      if (resource.spatial[i + 1]?.placeName && !resource.spatial[i + 1]?.geopoint) {
-        spatial.placeName = resource.spatial[i + 1]?.placeName;
-      }
-
       // Create and set marker to current map
       marker = getMarker(resource.id, spatial, mapUtils.markerType.point.current, resourceModule.getMainTitle(resource) );
       marker.addTo(resourceMarkersGroup);

@@ -68,6 +68,15 @@
               v-html="getTitle(res.data) || 'No title'"
             />
 
+            <!-- image -->
+            <div v-if="hasValidPrimaryImage(res.data)" class="pb-base">
+              <img
+                :src="getPrimaryImage(res.data)"
+                class="backface-hidden transition-filter duration-300 grayscale group-hover:grayscale-0"
+                style="max-width:100px;max-height:60px;transform:translateZ(0)"
+              />
+            </div>
+
             <!-- description -->
             <div
               v-if="!!res.data.description"
@@ -100,7 +109,7 @@
 </template>
 
 <script setup lang="ts">
-import { $computed } from 'vue/macros';
+import { $computed, $ref } from 'vue/macros';
 import { generalModule, searchModule, aggregationModule, resourceModule } from "@/store/modules";
 
 // base & utils
@@ -114,6 +123,7 @@ const params = $computed(() => searchModule.getParams);
 const result = $computed(() => searchModule.getResult);
 const assets: string = $computed(() => generalModule.getAssetsDir);
 const isLoading: boolean = $computed(() => generalModule.getIsLoading);
+const validPrimaryImages: any = $ref({});
 
 const getTitle = (data: any): string => {
   return  getMarked( data?.title?.text ) || 'No title';
@@ -170,6 +180,31 @@ const getAggregations = (data: any): Array<any> => {
   });
 }
 
+// returns primary image url for resource, if any
+const getPrimaryImage = (data: any): string => {
+  return resourceModule.getDigitalImages(data, true)[0] || '';
+}
+
+// returns if has valid primary image - checks remote and sets if ok in obj, many returns 404 so don't want to display those
+const hasValidPrimaryImage = (data: any): boolean => {
+  const url = getPrimaryImage(data);
+
+  if (url && validPrimaryImages[url] === undefined) {
+    validPrimaryImages[url] = false;
+    const img = new Image()
+    const done = (status: boolean) => {
+      validPrimaryImages[url] = status;
+      img.onload = null;
+      img.onerror = null;
+    }
+    img.onload = () => done(true);
+    img.onerror = () => done(false);
+    img.src = url;
+  }
+
+  return url && validPrimaryImages[url];
+}
+
 const joinMatching = (data: any, agg: any): string => {
   let q = (params.q || '').trim().toLowerCase(),
       a = (params[agg.param || agg.id] || '').trim().toLowerCase(),
@@ -207,7 +242,7 @@ const getMarked = (text: string): string => {
   let q = [];
   let valid = [
     'q', 'isPartOf', 'temporal', 'range', 'ariadneSubject', 'derivedSubject', 'nativeSubject',
-    'keyword', 'publisher', 'contributor', 'geogrid', 'isPartOfLabel', 'derivedSubjectIdLabel',
+    'keyword', 'publisher', 'contributor', 'geogrid', 'isPartOfLabel', 'culturalLabels'
   ];
 
   for (let key in params) {
@@ -216,10 +251,16 @@ const getMarked = (text: string): string => {
       if (val.includes('|')) {
         val.split('|').forEach((v: string) => {
           if (v && v.trim()) {
+            if (key === 'culturalLabels') {
+              v = utils.sentenceCase((v.split(':')[1] || '').split('(')[0].trim());
+            }
             q.push(v.trim());
           }
         });
       } else {
+        if (key === 'culturalLabels') {
+          val = utils.sentenceCase((val.split(':')[1] || '').split('(')[0].trim());
+        }
         q.push(val.trim());
       }
     }

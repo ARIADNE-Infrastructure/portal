@@ -1,48 +1,46 @@
 <template>
   <div>
-  <!-- FILTER PERIODS AND YEARS - PERIODO -->
-  <!--list-tabs :initiallySelectedTabTitle="initiallySelectedTabTitle">
-    <list-tab
-      title="Filter By Year"
-      icon="fa fa-calendar-alt"
-    >
-      <p
-        class="bg-red text-white text-md rounded-base ease-in-out duration-200 overflow-hidden"
-        :class="{
-          'h-none': !activePeriodFiltersWarning,
-          'p-sm mb-md': activePeriodFiltersWarning,
-        }"
+    <!-- FILTER PERIODS AND YEARS - PERIODO POC -->
+    <list-tabs :initiallySelectedTabTitle="initiallySelectedTabTitle" @onTabChange="onTabChange">
+      <list-tab
+        title="Filter By Year"
+        icon="fa fa-calendar-alt"
       >
-        {{ activePeriodFiltersWarning }}
-      </p>
+        <p
+          class="bg-red text-white text-md ease-in-out duration-200 overflow-hidden"
+          :class="{
+            'h-none': !activePeriodFiltersWarning,
+            'p-sm mb-md': activePeriodFiltersWarning,
+          }"
+        >
+          {{ activePeriodFiltersWarning }}
+        </p>
 
-      <filter-years />
-    </list-tab>
+        <filter-years />
+      </list-tab>
 
-    <list-tab
-      title="Filter By Time Periods"
-      icon="fa fa-history"
-    >
-      <p
-        class="bg-red text-white text-md rounded-base ease-in-out duration-200 overflow-hidden"
-        :class="{
-          'h-none': !activeYearsFilterWarning,
-          'p-sm mb-md': activeYearsFilterWarning,
-        }"
+      <list-tab
+        title="Filter By Time Periods"
+        icon="fa fa-history"
       >
-        {{ activeYearsFilterWarning }}
-      </p>
+        <p
+          class="bg-red text-white text-md ease-in-out duration-200 overflow-hidden"
+          :class="{
+            'h-none': !activeYearsFilterWarning,
+            'p-sm mb-md': activeYearsFilterWarning,
+          }"
+        >
+          {{ activeYearsFilterWarning }}
+        </p>
 
-      <filter-periods />
-    </list-tab>
-  </list-tabs-->
-  
-    <filter-years/>
+        <filter-periods v-if="currentTab === 'Filter By Time Periods'" />
+      </list-tab>
+    </list-tabs>
   </div>
 </template>
 
 <script setup lang="ts">
-import { $computed } from 'vue/macros';
+import { $computed, $ref } from 'vue/macros';
 import { searchModule } from "@/store/modules";
 import ListTabs from '@/component/List/Tabs.vue';
 import ListTab from '@/component/List/Tab.vue';
@@ -52,8 +50,11 @@ import FilterPeriods from '@/component/Filter/YearsAndPeriods/Periods.vue';
 const params = $computed(() => searchModule.getParams);
 
 const initiallySelectedTabTitle = $computed(() => {
-  return params?.temporalRegion || params?.filterByCulturalPeriods ? 'Filter By Time Periods' : 'Filter By Year';
+  return params?.temporalRegion || params?.culturalPeriods ? 'Filter By Time Periods' : 'Filter By Year';
 });
+
+let currentTab: string = $ref(initiallySelectedTabTitle);
+const onTabChange = (title: string) => currentTab = title;
 
 const activeYearsFilterWarning: string = $computed(() => {
   if (params?.range) {
@@ -63,7 +64,7 @@ const activeYearsFilterWarning: string = $computed(() => {
 });
 
 const activePeriodFiltersWarning: string = $computed(() => {
-  if (params?.publisher || params?.ariadneSubject) {
+  if (params?.temporalRegion || params?.culturalPeriods) {
     return 'Your current search is filtering on Time Periods. These filters will be reseted if you use the fields below.';
   }
   return '';

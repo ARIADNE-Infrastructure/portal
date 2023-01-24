@@ -5,14 +5,13 @@ namespace Application;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
+use Application\AppSettings;
 
 class Contact {
   private $settings;
-  private $logger;
 
-  public function __construct ($settings, $logger) {
-    $this->settings = $settings;
-    $this->logger = $logger;
+  public function __construct () {
+    $this->settings = AppSettings::getSettings();
   }
 
   /**
@@ -92,10 +91,7 @@ class Contact {
     $SMTP_PASS      = getenv('SMTP_PASS');
 
     if (!$SMTP_HOST || !$SMTP_PORT || !$SMTP_CHANNEL || !$SMTP_USER || !$SMTP_PASS ) {
-
-      if ($this->settings->environment->contact->debugMode) {
-        $this->logger->info('ERROR: Missing mandatory environment settings in mail system!');
-      }
+      AppSettings::debugLog('ERROR: Missing mandatory environment settings in mail system!');
 
       return [
         'ok' => false,
@@ -138,9 +134,7 @@ class Contact {
       ];
 
     } catch (Exception $e) {
-      if ($this->settings->environment->contact->debugMode) {
-        $this->logger->info($e);
-      }
+      AppSettings::debugLog($e->getMessage());
       return [
         'ok' => false,
         'error' => $mail->ErrorInfo,

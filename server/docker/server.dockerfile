@@ -62,8 +62,8 @@ RUN echo 'alias ll="ls -la"' >> ~/.bashrc
 RUN apt-get install -y vim
 
 # Install xdebug. - Only for dev env.
-RUN pecl install xdebug \
-    && docker-php-ext-enable xdebug
+#RUN pecl install xdebug \
+#    && docker-php-ext-enable xdebug
 
 # Add xdebug configuration.
-COPY /server/docker/xdebug/xdebug.ini /usr/local/etc/php/conf.d/
+#COPY /server/docker/xdebug/xdebug.ini /usr/local/etc/php/conf.d/

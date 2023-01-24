@@ -3,7 +3,6 @@
   "description": "Ariadne-portal",
   "require": {
     "elasticsearch/elasticsearch": "^7.9",
-    "symfony/monolog-bundle": "^3.7",
     "phpmailer/phpmailer": "^6.5",
     "funiq/geophp": "dev-master",
     "mjaschen/phpgeo": "^3.2"

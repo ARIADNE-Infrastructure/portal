@@ -1,19 +1,19 @@
 <template>
-  <div class="relative rounded-base border-base border-gray ariadne-map">
+  <div class="relative border-base border-gray ariadne-map">
     <!-- map frame controls -->
     <transition
       v-on:before-enter="transitionLeave" v-on:enter="transitionEnter"
       v-on:before-leave="transitionEnter" v-on:leave="transitionLeave"
     >
       <div
-        v-if="mapHasHits"
-        class="bg-lightGray rounded-t-base ease-out duration-200 overflow-hidden"
+        v-if="mapHasHits && !noTopBar"
+        class="bg-lightGray ease-out duration-200 overflow-hidden"
       >
         <div class="p-sm items-center flex justify-between">
           <span class="text-md">{{ title }}</span>
 
           <button
-            class="bg-yellow px-md py-sm text-center text-sm text-white cursor-pointer hover:bg-green transition-color rounded-base duration-300"
+            class="bg-yellow px-md py-sm text-center text-sm text-white cursor-pointer hover:bg-green transition-color duration-300"
             @click.prevent="showResultInMapView()"
           >
             <i class="fas fa-search mr-xs" />
@@ -121,6 +121,7 @@ import HelpTooltip from "@/component/Help/Tooltip.vue";
 defineProps<{
   title?: string,
   height?: string,
+  noTopBar?: boolean,
 }>();
 
 const route = useRoute();
@@ -166,10 +167,14 @@ const setMiniMapFromState = async () => {
   }
   else {
 
-    setHeatMap(miniMapSearchResult.aggregations?.geogrid?.grids.buckets);
+    // let spatialData = miniMapSearchResult.aggregations?.geogrid?.grids.buckets;
+    // if (!spatialData || utils.objectIsEmpty(spatialData)) {
+    //   spatialData = miniMapSearchResult.aggregations?.geogrid_centroid?.grids.buckets;
+    // }
+    // setHeatMap(spatialData);
 
     // CENTROID HEATS - Run instead of above when centroids are loaded to public portal
-    //setHeatMap(miniMapSearchResult.aggregations?.geogrid_centroid?.grids.buckets);
+    setHeatMap(miniMapSearchResult.aggregations?.geogrid_centroid?.grids.buckets);
 
     showMarkerInfo = false;
     // Remove zoom control when on heatmap view

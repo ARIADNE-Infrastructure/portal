@@ -48,6 +48,21 @@ export class ResourceModule extends VuexModule {
 
       if (res?.data?.id) {
         data = res.data;
+        for (let key in data) {
+          if (Array.isArray(data[key])) {
+            data[key] = data[key].filter(v => v);
+          }
+        }
+        if (Array.isArray(data.ariadneSubject)) {
+          data.ariadneSubject.forEach(s => {
+            if (s.prefLabel === 'Date') {
+              s.prefLabel = 'Dating';
+            }
+          });
+        }
+        if (data.resourceType === 'date') {
+          data.resourceType = 'dating';
+        }
       }
     } catch (ex) {}
 
@@ -125,6 +140,10 @@ export class ResourceModule extends VuexModule {
     return this.thematicals;
   }
 
+  get getCtsCertified(): string[] {
+    return this.ctsCertified;
+  }
+
   // cts certified
   get getIsCtsCertified() {
     return (resource: any) => {
@@ -143,7 +162,7 @@ export class ResourceModule extends VuexModule {
     return (resource: any) => {
       if( resource?.title?.text ) {
         return resource.title.text.trim();
-      } 
+      }
       return 'No title';
     }
   }
@@ -199,13 +218,13 @@ export class ResourceModule extends VuexModule {
 
   // images
   get getDigitalImages() {
-    return (resource: any) => {
+    return (resource: any, onlyPrimary?: boolean) => {
       let imgs: string[] = [];
 
       if (Array.isArray(resource?.digitalImage)) {
         resource.digitalImage.forEach((img: any) => {
           ['ariadneUri', 'providerUri'].forEach((prop: string) => {
-            if (img && utils.validUrl(img[prop]) && !imgs.includes(img[prop])) {
+            if (img && utils.validUrl(img[prop]) && !imgs.includes(img[prop]) && (!onlyPrimary || img.primary)) {
               imgs.push(img[prop]);
             }
           });

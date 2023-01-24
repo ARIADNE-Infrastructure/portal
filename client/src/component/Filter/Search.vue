@@ -71,7 +71,6 @@
           v-if="showFields === 'select'"
           class="w-full sm:w-10x"
           :class="{ 'sm:w-full hg:w-10x': breakHg }"
-          selectClass="sm:rounded-r-0"
           :color="color"
           :options="fields"
           v-model:value="fieldValue"
@@ -81,8 +80,8 @@
         <div class="flex w-full">
           <!-- text -->
           <input
-            class="flex-1 outline-none border-gray border-base border-r-0 rounded-base rounded-r-0 sm:rounded-l-0 placeholder-darkGray"
-            :class="`${ focusStyle } ${ veryBig ? 'py-mmd sm:rounded-l-base' : (big ? 'py-sm' : 'py-xxs') }
+            class="flex-1 outline-none border-gray border-base border-r-0 placeholder-darkGray"
+            :class="`${ focusStyle } ${ veryBig ? 'py-mmd' : (big ? 'py-sm' : 'py-xxs') }
               ${ autoFocus ? ' auto-focus' : ''}
               ${ veryBig ? 'text-mmd px-md' : 'text-md px-sm' }`"
             type="text"
@@ -93,7 +92,7 @@
 
           <!-- send -->
           <button
-            class="rounded-base rounded-l-0 py-xs transition-all duration-300 focus:outline-none"
+            class="py-xs transition-all duration-300 focus:outline-none"
             :class="sendButtonActiveStyle + ' ' + (veryBig ? 'px-lg text-mmd' : 'px-base text-sm')"
             :disabled="!canUseSendButton"
           >
@@ -152,8 +151,10 @@ let updateComponents: number = $ref(-1);
 let newSearch: string = $ref('');
 let fieldValue: string = $ref('');
 
-searchModule.setTotalRecordsCount();
 let totalRecordsCount = $computed(() => searchModule.getTotalRecordsCount);
+if (!parseInt(totalRecordsCount)) {
+  searchModule.setTotalRecordsCount();
+}
 
 const canUseSendButton: boolean = $computed(() => fieldValue !== 'aatSubjects');
 const placeholder: any = $computed(() => props.useCurrentSearch?'Search '+totalRecordsCount+' resources...':'Search in '+totalRecordsCount+' resources...');

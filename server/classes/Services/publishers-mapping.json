@@ -1,0 +1,22 @@
+{
+  "mappings": {
+    "dynamic": "false",
+    "properties": {
+      "id": {
+        "type": "long"
+      },
+      "title": {
+        "type": "text"
+      },
+      "url": {
+        "type": "text"
+      },
+      "img": {
+        "type": "text"
+      },
+      "text": {
+        "type": "text"
+      }
+    }
+  }
+}

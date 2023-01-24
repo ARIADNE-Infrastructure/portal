@@ -1,7 +1,7 @@
 <template>
   <button
     v-if="hasParams"
-    class="p-md bg-red text-white text-md hover:bg-red-90 focus:outline-none transition-bg duration-300 w-full block text-center rounded-base"
+    class="p-md bg-red text-white text-md hover:bg-red-90 focus:outline-none transition-bg duration-300 w-full block text-center"
     @click.prevent="clearFilters"
   >
     Clear All Filters

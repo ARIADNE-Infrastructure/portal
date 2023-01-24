@@ -2,8 +2,6 @@
 
 namespace Elastic;
 
-use \geoPHP\geoPHP;
-
 class Utils {
 
 

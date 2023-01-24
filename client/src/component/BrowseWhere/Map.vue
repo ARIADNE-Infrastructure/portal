@@ -206,7 +206,7 @@ const setupClusterMarkers = async () => {
           { icon: mapUtils.getMarkerIconType(markerType.marker) }
         );
 
-        marker.bindTooltip(resourceTitle);        
+        marker.bindTooltip(resourceTitle);
         marker.bindPopup(getMarkerPopup(resource));
 
         clusterMarkers!.addLayer(marker);
@@ -270,12 +270,12 @@ const getMarkerPopup = (resource: any): string => {
     resourceTitle = resource.data?.title?.text;
   }
 
-  let title = "<p><strong>"+resourceTitle+"</strong></p>";
+  let title = "<p><strong>"+utils.escHtml(resourceTitle)+"</strong></p>";
   let description = resource.data.description?.text;
   let resourceLocationsLatLon = "";
   let resourceLocation = "";
   // @ts-ignore
-  let resourcePage = '<p><a href="'+process.env.ARIADNE_PUBLIC_PATH+'resource/'+ resource.id +'">View resource</a></p>';
+  let resourcePage = '<p><a href="'+process.env.ARIADNE_PUBLIC_PATH+'resource/'+ utils.escHtml(resource.id) +'">View resource</a></p>';
   let publishers = "";
 
   // Resource description
@@ -286,11 +286,11 @@ const getMarkerPopup = (resource: any): string => {
   } else {
     description = "";
   }
-  description = "<p>"+description+"</p>"
+  description = "<p>"+utils.escHtml(description)+"</p>"
 
   // Resource publishers
   for (let currentPublisher of resource.data.publisher) {
-    publishers += currentPublisher.name + "<br>";
+    publishers += utils.escHtml(currentPublisher.name) + "<br>";
   }
   publishers = "<p><strong>Publisher:</strong><br/>"+publishers+"</p>";
 
@@ -303,7 +303,7 @@ const getMarkerPopup = (resource: any): string => {
   if(!resourceLocationsLatLon) {
     resourceLocation = '<p><strong>Resource location:</strong><br>Resource location is a geo-shape, see details on resource page.</p>';
   } else {
-    resourceLocation = "<p><strong>Resource location:</strong><br>" + resourceLocationsLatLon + "</p>";
+    resourceLocation = "<p><strong>Resource location:</strong><br>" + utils.escHtml(resourceLocationsLatLon) + "</p>";
   }
 
   return title + description + publishers + resourceLocation + resourcePage;
@@ -314,10 +314,10 @@ const getMarkerPopup = (resource: any): string => {
  */
 const setupHeatMap = async () => {
 
-  const currentHeatPoints = currentResultState.aggs?.geogrid?.grids.buckets;
+  //const currentHeatPoints = currentResultState.aggs?.geogrid?.grids.buckets;
   // CENTROID HEATS - Run instead of above when centroids are loaded to public portal
-  //const currentHeatPoints = currentResultState.aggs?.geogrid_centroid?.grids.buckets;
-  
+  const currentHeatPoints = currentResultState.aggs?.geogrid_centroid?.grids.buckets;
+
   let max = Math.max.apply(
     null,
     currentHeatPoints.map((hp: any) => hp.doc_count || 0)

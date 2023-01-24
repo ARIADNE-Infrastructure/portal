@@ -24,6 +24,23 @@
         :useCurrentSearch="false"
         :hasAutocomplete="true"
       />
+
+      <div class="bg-darkGray-40 p-base text-white text-mmd w-full mt-mmd max-w-2xl m-auto"
+        :class="(imageText ? 'opacity-1' : 'opacity-0') + (bgCounter > 0 ? ' transition-opacity duration-500 ease-linear' : '')">
+        <p class="font-bold mb-sm flex justify-between" v-if="imageText?.title">
+          <div>{{ imageText.title }}</div>
+          <div class="whitespace-nowrap">
+            <i class="fas fa-chevron-left cursor-pointer px-sm hover:text-yellow transition-color duration-300" @click="setSlideDir(-2)"></i>
+            <span>{{ bgData ? bgData.count + 1 : 0 }} / {{ bgTotalPics }}</span>
+            <i class="fas fa-chevron-right cursor-pointer pl-sm hover:text-yellow transition-color duration-300 mr-sm" @click="setSlideDir(0)"></i>
+
+            <i class="cursor-pointer pl-sm hover:text-yellow transition-color duration-300"
+              :class="'fas fa-' + (bgIsPaused ? 'play' : 'pause')"
+              @click="bgIsPaused = !bgIsPaused"></i>
+          </div>
+        </p>
+        <p>{{ imageText?.text }}</p>
+      </div>
     </div>
 
     <div class="fixed top-0 left-0 w-screen h-screen z-neg10" style="background:linear-gradient(rgba(0,0,0,.3),rgba(0,0,0,.5))"></div>
@@ -34,24 +51,6 @@
       class="fixed top-0 left-0 w-screen h-screen z-neg20 bg-cover bg-no-repeat bg-center transition-opacity duration-500 ease-linear"
       :style="bgStyle2"></div>
   </div>
-  <Teleport to="#footer-teleport-target" :disabled="utils.isMobile()">
-    <div class="absolute z-5 top-0 right-0 bg-darkGray-40 p-base max-w-7xl 2xl:max-w-3xl text-white text-mmd" style="transform:translateY(-105%)"
-      :class="(imageText ? 'opacity-1' : 'opacity-0') + (bgCounter > 0 ? ' transition-opacity duration-500 ease-linear' : '')">
-      <p class="font-bold mb-sm flex justify-between" v-if="imageText?.title">
-        <div>{{ imageText.title }}</div>
-        <div>
-          <i class="fas fa-chevron-left cursor-pointer px-sm hover:text-yellow transition-color duration-300" @click="setSlideDir(-2)"></i>
-          <span>{{ bgData ? bgData.count + 1 : 0 }} / {{ bgTotalPics }}</span>
-          <i class="fas fa-chevron-right cursor-pointer pl-sm hover:text-yellow transition-color duration-300 mr-sm" @click="setSlideDir(0)"></i>
-
-          <i class="cursor-pointer pl-sm hover:text-yellow transition-color duration-300"
-            :class="'fas fa-' + (bgIsPaused ? 'play' : 'pause')"
-            @click="bgIsPaused = !bgIsPaused"></i>
-        </div>
-      </p>
-      <p>{{ imageText?.text }}</p>
-    </div>
-  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -90,7 +89,7 @@ const setBgSlide = (callback?: Function) => {
 
   if (!bgData) {
     try {
-      bgData = JSON.parse(window.localStorage.getItem('frontBgData'));
+      bgData = JSON.parse(window.localStorage.getItem('frontBgDataV' + bgTotalPics));
     } catch (ex) {}
   }
 
@@ -109,7 +108,7 @@ const setBgSlide = (callback?: Function) => {
   }
 
   try {
-    window.localStorage.setItem('frontBgData', JSON.stringify(bgData));
+    window.localStorage.setItem('frontBgDataV' + bgTotalPics, JSON.stringify(bgData));
   } catch (ex) {}
 
   const num = bgData.arr[bgData.count];

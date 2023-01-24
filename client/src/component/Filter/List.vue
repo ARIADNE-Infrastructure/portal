@@ -21,7 +21,7 @@
     />
 
     <filter-clear
-      :ignoreParams="['page', 'sort', 'order', 'mapq', 'bbox', 'loadingStatus', 'forceReload']"
+      :ignoreParams="['page', 'sort', 'order', 'mapq', 'bbox', 'size', 'loadingStatus', 'forceReload']"
       class="mb-lg"
     />
 
@@ -50,6 +50,7 @@
         :id="id"
         :item="item"
         :shortSortNames="true"
+        :maxHeight="1000"
       />
     </template>
   </div>

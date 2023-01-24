@@ -1,13 +1,12 @@
 <template>
   <div
     v-if="autocomplete && updateComponents !== -1"
-    class="left-0 w-full bg-white top-full z-30 rounded-b-base text-left"
+    class="left-0 w-full bg-white top-full z-30 text-left"
     :class="{ absolute }"
   >
     <template v-if="Array.isArray(autocomplete.hits)">
       <div
         class="overflow-y-auto max-h-500 border-gray border-base"
-        :class="{ 'rounded-b-base': !autocomplete.hasMoreResults }"
       >
         <span
           v-for="(hit, key) in autocomplete.hits"
@@ -30,7 +29,7 @@
               >
                 <span class="text-midGray pr-xs">/</span>
                 <span v-html="utils.getMarked(utils.sentenceCase(variant.label), newSearch)" />
-                <em class="text-midGray">({{ variant.lang}})</em>
+                <em class="text-midGray"> ({{ variant.lang}})</em>
               </div>
             </template>
 
@@ -54,7 +53,7 @@
 
       <div
         v-if="autocomplete.hasMoreResults"
-        class="bg-red text-white p-sm text-md rounded-b-base"
+        class="bg-red text-white p-sm text-md"
       >
         Some options are currently not visible. Use the search field above to narrow down this list.
       </div>
@@ -62,7 +61,7 @@
 
     <p
       v-else
-      class="px-md py-md text-md border-gray border-base rounded-b-base"
+      class="px-md py-md text-md border-gray border-base"
       v-html="autocomplete"
     />
   </div>
@@ -98,7 +97,7 @@ const getAutoCompleteLabel = (label: string, searchString: any) => {
   if (label) {
     return utils.getMarked(utils.sentenceCase(label), '')
   }
-  return '*'+searchString+'*';
+  return '*' + utils.escHtml(searchString) + '*';
 }
 
 const doAutocomplete = () => {
@@ -132,8 +131,7 @@ const autocompleteClick = (e: any, hit: any) => {
   if (autocompleteType === 'subjects') {
     if (!e.target.className || !e.target.className.includes('fas')) {
       const searchValues: any = {
-        derivedSubjectId: hit.id,
-        derivedSubject: hit.label
+        derivedSubject: hit.label,
       };
 
       if (!props.stayOnPage) {
@@ -143,7 +141,7 @@ const autocompleteClick = (e: any, hit: any) => {
       searchModule.setSearch(searchValues);
 
     } else {
-      router.push(`/subject/${ hit.id }`);
+      router.push(utils.paramsToString(`/subject/${ hit.id }`, { derivedSubject: hit.label }));
     }
   } else {
     router.push(`/resource/${ hit.id }`);

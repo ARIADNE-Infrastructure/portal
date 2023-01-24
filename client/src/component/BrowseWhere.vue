@@ -51,7 +51,7 @@
 
       <!-- display as search results -->
       <div
-        class="bg-yellow p-md text-center text-mmd text-white cursor-pointer hover:bg-green transition-color rounded-br-base duration-300"
+        class="bg-yellow p-md text-center text-mmd text-white cursor-pointer hover:bg-green transition-color duration-300"
         @click="toSearch"
       >
         <i class="fas fa-search mr-sm"></i>
@@ -69,6 +69,7 @@
 </template>
 
 <script setup lang="ts">
+import { $computed } from 'vue/macros';
 import { onMounted } from 'vue';
 import { $ref } from 'vue/macros';
 import { searchModule, generalModule } from "@/store/modules";
@@ -83,6 +84,8 @@ import router from '@/router';
 
 const data = $ref(null);
 const inMarkerView: boolean = $ref(false);
+
+const params = $computed(() => searchModule.getParams);
 
 onMounted(() => {
   // set an initial search based on current route (while still updating url)
@@ -105,6 +108,6 @@ const  markerViewLeave = (el: HTMLElement): void => {
 }
 
 const toSearch = (): void => {
-  searchModule.setSearch({ path: '/search', bbox: null, forceReload: null, mapq: null });
+  searchModule.setSearch({ path: '/search', bbox: params?.bbox, forceReload: null, mapq: null });
 }
 </script>
