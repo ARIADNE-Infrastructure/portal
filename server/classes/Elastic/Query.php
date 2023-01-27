@@ -164,25 +164,14 @@ class Query {
     /* Do roundtrip to ES to see if result is more than 500. If result count is more
        than 500 the map doesn't need records data because it's rendering heatmap with
        data from aggregations->geogrid */
-    $mainQuery['size'] = $this->getMapResultSize($mainQuery);
-
-    return $mainQuery;
-
-  }
-
-  /**
-   * Get map result size.
-   * Does an extra query roundtrip to backend to calculate the record size needed for map data.
-   *
-   * @param array Query params
-   * @return int Map specific query record size
-   */
-  private function getMapResultSize(&$query): int {
-    $count = $this->getResultCount($query);
-    if( $count <= $this->settings->environment->mapMarkerThreshhold ) {
-      return $count; // Render markers - records needed to render markers
+    $countQuery['size'] = 0;
+    $countQuery['query'] = $mainQuery['query'];
+    $result = $this->elasticDoSearch($countQuery);
+    $count = intval($result['hits']['total']['value'] ?? 0);
+    if ($count && $count <= $this->settings->environment->mapMarkerThreshhold) { // Render markers - records needed to render markers
+      $mainQuery['size'] = $count;
     }
-    return 0; // Render heatmap, no records needed
+    return $mainQuery;
   }
 
   /**
@@ -192,16 +181,14 @@ class Query {
    * @return array
    */
   public function getSearchAggregationData() {
-
-    // get main query
     $query = $this->getCurrentQuery();
-
-    // Push aggregation to main query
     $query['aggregations'] = QuerySettings::getSearchAggregations();
 
     // This is the map search requesting data. Push map specific queri attributes to main query
     if (isset($_GET['mapq'])) {
       $query = $this->getMapQuery($query);
+    } else {
+      unset($query['aggregations']['geogrid_centroid']);
     }
 
     // No records needed for aggregations
@@ -216,13 +203,14 @@ class Query {
     $range = empty($_GET['range']) ? null : explode(',', $_GET['range']);
 
     // timeline specific query
-    if( isset($_GET['timeline']) && filter_var($_GET['timeline'], FILTER_VALIDATE_BOOLEAN) ) {
+    if (!empty($_GET['timeline'])) {
+      if (!empty($_GET['onlyTimeline'])) {
+        $query['aggregations'] = [];
+      }
       $query['aggregations']['range_buckets'] = Timeline::prepareRangeBucketsAggregation($range);
     }
 
-    $result = $this->elasticDoSearch($query);
-    return $this->resultToFrontend($result);
-
+    return $this->resultToFrontend($this->elasticDoSearch($query));
   }
 
   /**
@@ -232,18 +220,14 @@ class Query {
    * @return array Mini map data
    */
   public function getMiniMapData() {
-
-    // get main query
-    $query = $this->getCurrentQuery();
-    // push map specifik attributes to query
-    $query = $this->getMapQuery($query);
+    $query = $this->getMapQuery($this->getCurrentQuery());
 
     // remove unnessesary attributes
     // Minimap only needs title and spatial data
     $query['_source'] = ['title','spatial'];
     unset($query['sort']);
 
-    if($query['size'] <= $this->settings->environment->mapMarkerThreshhold ) {
+    if ($query['size'] <= $this->settings->environment->mapMarkerThreshhold ) {
       // mini map renders heatmap, query only aggs needed for heatmap
       $query['aggregations']['geogrid_centroid'] = QuerySettings::getSearchAggregations()['geogrid_centroid'];
     } else {
@@ -251,9 +235,7 @@ class Query {
       unset($query['aggregations']);
     }
 
-    $result = $this->elasticDoSearch($query);
-    return $this->resultToFrontend($result);
-
+    return $this->resultToFrontend($this->elasticDoSearch($query));
   }
 
   /**
@@ -439,10 +421,8 @@ class Query {
           'variants' => $variants,
         ];
       }
-
       return $result;
     }
-
     return null;
   }
 
@@ -586,15 +566,14 @@ class Query {
    * @param array Result form ES to be formated
    * @return array Array formated according to frontend specs
    */
-  private function resultToFrontend($result) {
-
+  private function resultToFrontend ($result) {
     // Probably the only error message we want to pass on to frontend
-    if(isset($result['ERROR']['message'])) {
-      $jsonMsg = json_decode( $result['ERROR']['message'] );
-      if(isset($jsonMsg->error->root_cause[0]->reason)) {
-        if(str_starts_with($jsonMsg->error->root_cause[0]->reason,'Result window is too large')) {
+    if (isset($result['error']['message'])) {
+      $jsonMsg = json_decode($result['error']['message']);
+      if (isset($jsonMsg->error->root_cause[0]->reason)) {
+        if (str_starts_with($jsonMsg->error->root_cause[0]->reason, 'Result window is too large')) {
           return [
-            'ERROR' => [
+            'error' => [
               'msg' => "Scrolling exceeded maximum"
             ]
           ];
@@ -604,35 +583,20 @@ class Query {
     }
 
     $hits = [];
-    foreach ($result['hits']['hits'] as $hitMeta=>$hit) {
-      $hitNormalized = $this->normalizer->splitLanguages($hit['_source']);
-      $hits[] = [
-        'id' => $hit['_id'],
-        'data' => $hitNormalized
-      ];
+    if (!empty($result['hits']['hits'])) {
+      foreach ($result['hits']['hits'] as $hitMeta=>$hit) {
+        $hitNormalized = $this->normalizer->splitLanguages($hit['_source']);
+        $hits[] = [
+          'id' => $hit['_id'],
+          'data' => $hitNormalized
+        ];
+      }
     }
     return [
-      'total' => $result['hits']['total'],
+      'total' => $result['hits']['total'] ?? 0,
       'hits' => $hits,
       'aggregations' => $result['aggregations'] ?? [],
     ];
-
-  }
-
-  /**
-   * Get result count for given query
-   *
-   * @param array Query params
-   * @return int The total record count resulting with given query
-   */
-  private function getResultCount(&$query): int {
-    $countQuery['size'] = 0;
-    $countQuery['query'] = $query['query'];
-    $result = $this->elasticDoSearch($countQuery);
-    if($result['hits']['total']['value']) {
-      return intval( $result['hits']['total']['value'] );
-    }
-    return 0;
   }
 
   /**
@@ -1179,8 +1143,11 @@ class Query {
    * Get total records count in main index
    */
   public function getTotalRecordsCount() {
-    $searchParams = ['index'=>$this->elasticEnv->index];
-    return $this->getClient()->count($searchParams)['count'];
+    $searchParams = ['index' => $this->elasticEnv->index];
+    try {
+      return $this->getClient()->count($searchParams)['count'] ?? 0;
+    } catch (\Exception $ex) {}
+    return 0;
   }
 
   /**
@@ -1221,7 +1188,7 @@ class Query {
         AppSettings::debugLog('Request URI: '. $_SERVER['REQUEST_URI']);
         AppSettings::debugLog(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'] . ' - ' . json_encode($searchParams, JSON_UNESCAPED_SLASHES));
       }
-      return $this->normalizer->aggsBucketsBeautifier($result, $this->aggregationsReqFilter);
+      return $this->normalizer->normalizeAggs($result, $this->aggregationsReqFilter);
 
     } catch (\Exception $e) {
       if (AppSettings::isLogging()) {
@@ -1229,7 +1196,7 @@ class Query {
         AppSettings::debugLog(json_encode($searchParams, JSON_UNESCAPED_SLASHES));
       }
       return [
-        'ERROR' => [
+        'error' => [
           'code' => $e->getCode(),
           'message'=> $e->getMessage()
         ]

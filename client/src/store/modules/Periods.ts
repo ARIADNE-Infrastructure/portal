@@ -101,8 +101,14 @@ export class PeriodsModule extends VuexModule {
   @Mutation
   updatePeriods(result: any) {
     this.periods = result;
-    if (aggregationModule.getOptions?.culturalPeriods?.data?.buckets) {
-      aggregationModule.getOptions.culturalPeriods.data = this.periods;
+    if (aggregationModule.getOptions?.culturalPeriods) {
+      if (aggregationModule.getOptions.culturalPeriods.search) {
+        aggregationModule.getOptions.culturalPeriods.search = '';
+        aggregationModule.getOptions.culturalPeriods.clearSearch = true;
+      }
+      if (aggregationModule.getOptions.culturalPeriods.data?.buckets) {
+        aggregationModule.getOptions.culturalPeriods.data = this.periods;
+      }
       aggregationModule.updateOptions({ id: 'culturalPeriods', value: aggregationModule.getOptions.culturalPeriods });
     }
   }

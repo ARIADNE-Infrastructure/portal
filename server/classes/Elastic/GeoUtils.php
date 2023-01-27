@@ -17,9 +17,9 @@ use \geoPHP\geoPHP;
  */
 class GeoUtils {
   private $q;
-  private CONST TOP_LEFT = 315; // Bearing Degrees - North West
-  private CONST BOTTOM_RIGHT = 135; // Bearing Degrees - South East
-  private CONST POINT_EXTEND_KM = 2;
+  private const TOP_LEFT = 315; // Bearing Degrees - North West
+  private const BOTTOM_RIGHT = 135; // Bearing Degrees - South East
+  private const POINT_EXTEND_KM = 2;
 
   public function __construct($q) {
     $this->q = $q;

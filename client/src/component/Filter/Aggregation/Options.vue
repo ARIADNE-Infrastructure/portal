@@ -63,7 +63,8 @@
 </template>
 
 <script setup lang="ts">
-import { watch } from 'vue';
+import { watch, nextTick } from 'vue';
+import { onBeforeRouteLeave } from 'vue-router'
 import { $ref, $computed, $$ } from 'vue/macros';
 import { generalModule, searchModule, aggregationModule } from "@/store/modules";
 import utils from '@/utils/utils';
@@ -100,22 +101,25 @@ const getFilterPlaceholder = (title: string | undefined): string => {
   return 'Enter text to filter on' + (title ? ' ' + title : '') + '.';
 }
 
-const setSearch = async (): void => {
-  const payload = {
-    id: props.id,
-    value: {
-      search: localSearch,
-      sortBy: options.sortBy,
-      sortOrder: options.sortOrder,
-      data: {},
-      size: filterSize,
-    },
-  }
+const setSearch = (): void => {
+  nextTick(async () => {
+    const payload = {
+      id: props.id,
+      value: {
+        search: localSearch,
+        sortBy: options.sortBy,
+        clearSearch: false,
+        sortOrder: options.sortOrder,
+        data: {},
+        size: filterSize,
+      },
+    };
 
-  await aggregationModule.setSearch(payload);
+    await aggregationModule.setSearch(payload);
 
-  // emit list change event in order for accordion component to update its height
-  emit('searchUpdate');
+    // emit list change event in order for accordion component to update its height
+    emit('searchUpdate');
+  });
 }
 
 const debouncedSearch = () => {
@@ -128,6 +132,7 @@ const setSort = (sortBy: string): void => {
     id: props.id,
     value: {
       search: options.search,
+      clearSearch: false,
       sortBy: '',
       sortOrder: '',
       data: options.data,
@@ -147,35 +152,40 @@ const setSort = (sortBy: string): void => {
   aggregationModule.setOptions(payload);
 }
 
-watch($$(getMore), () => {
-  filterSize++;
-  setSearch();
-});
-
-watch($$(options), () => {
-  if (options) {
-    localSearch = options.search;
-
-  } else {
-  // set default options if none already exists
-    const payload = {
-      id: props.id,
-      value: {
-        search: '',
-        sortBy: props.sortKeyOption || 'doc_count',
-        sortOrder: props.sortOrder || 'desc',
-        data: {},
-        size: filterSize,
-      }
-    }
-
-    aggregationModule.setOptions(payload);
-  }
-}, { immediate: true });
-
-watch($$(params), () => {
-  if (localSearch) {
+const watches = [
+  watch($$(getMore), () => {
+    filterSize++;
     setSearch();
-  }
-}, { immediate: true });
+  }),
+
+  watch($$(options), () => {
+    if (options) {
+      localSearch = options.search;
+
+    } else {
+    // set default options if none already exists
+      const payload = {
+        id: props.id,
+        value: {
+          search: '',
+          clearSearch: false,
+          sortBy: props.sortKeyOption || 'doc_count',
+          sortOrder: props.sortOrder || 'desc',
+          data: {},
+          size: filterSize,
+        }
+      }
+
+      aggregationModule.setOptions(payload);
+    }
+  }, { immediate: true }),
+
+  watch($$(params), () => {
+    if (localSearch) {
+      setSearch();
+    }
+  }, { immediate: true })
+];
+
+onBeforeRouteLeave(() => watches.forEach(unwatch => unwatch()));
 </script>

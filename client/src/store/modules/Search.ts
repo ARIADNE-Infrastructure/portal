@@ -24,10 +24,13 @@ export class SearchModule extends VuexModule {
   private perPageOptions: any[] = perPageOptions;
   private helpTexts: helpText[] = helpTexts;
   private totalRecordsCount: any = '';
+  private reqCount: number = 0;
+  private reqWaiting: any = {};
 
   // aggregations
   private aggsResult: any = {};
   private aggsLoading: boolean = false;
+  private timelineLoading: boolean = false;
 
   // minimap
   private miniMapSearchResult: any = {};
@@ -65,9 +68,7 @@ export class SearchModule extends VuexModule {
       const url = process.env.apiUrl + '/getMiniMapData';
       res = await axios.get(utils.paramsToString(url, mapParams));
     }
-    catch (ex) {
-
-    }
+    catch (ex) {}
     this.updateMiniMapSearchResult(res?.data || {});
   }
 
@@ -164,32 +165,20 @@ export class SearchModule extends VuexModule {
       });
     }
 
-    if ( data && !data.ERROR ) {
-
+    if (data && !data.error) {
       this.updateResult({
         total: data.total,
         hits: data.hits,
         time: Math.round(((Date.now() - time) / 1000) * 100) / 100,
         aggs: data.aggregations
       });
-
+    } else if (data.error && data.error.msg == 'Scrolling exceeded maximum') {
+      this.updateResult({ error: 'Scrolling exceeded maximum. Please use filters and/or search to narrow down your search.' });
     } else {
-
-      if(data.ERROR) {
-        if(data.ERROR.msg == 'Scrolling exceeded maximum') {
-          this.updateResult({ error: 'Scrolling exceeded maximum. Please use filters and/or search to narrow down your search.' });
-        } else {
-          this.updateResult({ error: 'Internal error. Search failed..' });
-        }
-      }
-
-      this.generalModule.updateLoadingStatus(LoadingStatus.None);
-      return;
-
+      this.updateResult({ error: 'Internal error. Search failed..' });
     }
 
     this.generalModule.updateLoadingStatus(LoadingStatus.None);
-
   }
 
 
@@ -198,53 +187,103 @@ export class SearchModule extends VuexModule {
    * Aggs are used for filters on frontend
    */
    @Action
-  async setAggregationSearch(routerQuery:any) {
+  setAggregationSearch(routerQuery: any) {
+    const currentPath = router.currentRoute.value.path;
+    let sendParams = { ...routerQuery };
 
-    // Get timline aggregation only if route matches one of these
-    const timelineRoutes = ['/search','/browse/when'];
-    let getTimeline: boolean = timelineRoutes.find(element => element == router.currentRoute.value.path)?true:false;
-    let params = {
-      ...routerQuery,
-      timeline: getTimeline
-    };
-
+    this.incrReqCount();
+    const reqId = this.reqCount;
     this.updateAggsLoading(true);
 
     try {
       const url = process.env.apiUrl + '/getSearchAggregationData';
-      const sendParams = { ...params, ...this.getDefaultSort() }
+      sendParams = { ...sendParams, ...this.getDefaultSort() }
+      if (currentPath === '/browse/when') {
+        sendParams.timeline = 'true';
+      }
       if (sendParams.ariadneSubject?.includes('Dating')) {
         sendParams.ariadneSubject = sendParams.ariadneSubject.replace('Dating', 'Date')
       }
-      const res = await axios.get(utils.paramsToString(url, sendParams));
-
-      let data = res?.data;
-      if (utils.objectIsNotEmpty(data?.aggregations)) {
-        if (data.aggregations.temporal?.temporal) {
-          data.aggregations.temporal = data.aggregations.temporal.temporal;
-        }
-        if (Array.isArray(data?.aggregations?.ariadneSubject?.buckets)) {
-          data?.aggregations.ariadneSubject.buckets.forEach(b => {
-            if (b?.key === 'Date') {
-              b.key = 'Dating';
+      axios.get(utils.paramsToString(url, sendParams)).then(res => {
+        if (reqId === this.reqCount) {
+          let data = res?.data;
+          if (utils.objectIsNotEmpty(data?.aggregations)) {
+            if (data.aggregations.temporal?.temporal) {
+              data.aggregations.temporal = data.aggregations.temporal.temporal;
             }
-          });
+            if (Array.isArray(data?.aggregations?.ariadneSubject?.buckets)) {
+              data?.aggregations.ariadneSubject.buckets.forEach(b => {
+                if (b?.key === 'Date') {
+                  b.key = 'Dating';
+                }
+              });
+            }
+            if (currentPath === '/search') {
+              if (this.timelineLoading) {
+                data.aggregations.range_buckets = {};
+              } else {
+                data.aggregations.range_buckets = this.reqWaiting[reqId];
+                this.clearReqWaiting();
+              }
+            }
+            this.updateAggsResult({
+              total: data.total,
+              hits: data.hits,
+              aggs: data.aggregations,
+            });
+          } else {
+            this.updateAggsResult({});
+          }
+          this.updateAggsLoading(false);
         }
-        this.updateAggsResult({
-          total: data.total,
-          hits: data.hits,
-          aggs: data.aggregations,
-        });
-
-      } else {
-        this.updateAggsResult({});
-      }
+      }).catch(ex => {
+        if (reqId === this.reqCount) {
+          this.updateAggsResult({ error: 'Internal error. Search failed..' });
+          this.updateAggsLoading(false);
+        }
+      });
     } catch (ex) {
-      this.updateAggsResult({ error: 'Internal error. Search failed..' });
+      if (reqId === this.reqCount) {
+        this.updateAggsResult({ error: 'Internal error. Search failed..' });
+        this.updateAggsLoading(false);
+      }
     }
 
-    this.updateAggsLoading(false);
+    if (currentPath === '/search') {
+      this.setTimelineSearch({ sendParams, reqId });
+    }
+  }
 
+  // this is sometimes very slow - so do separately or search page
+  @Action
+  async setTimelineSearch(payload: any) {
+    const params = payload.sendParams;
+    const reqId = payload.reqId;
+
+    this.updateTimelineLoading(true);
+
+    try {
+      const url = process.env.apiUrl + '/getSearchAggregationData';
+      const res = await axios.get(utils.paramsToString(url, { ...params, ...{ timeline: 'true', onlyTimeline: 'true' }}));
+
+      if (reqId === this.reqCount && res?.data?.aggregations?.range_buckets) {
+        if (this.aggsLoading) {
+          this.reqWaiting[reqId] = res.data.aggregations.range_buckets;
+        } else {
+          this.aggsResult.aggs.range_buckets = res.data.aggregations.range_buckets;
+          this.clearReqWaiting();
+          this.updateAggsResult({
+            total: this.aggsResult.total,
+            hits: this.aggsResult.hits,
+            aggs: this.aggsResult.aggs,
+          });
+        }
+      }
+    } catch (ex) {}
+
+    if (reqId === this.reqCount) {
+      this.updateTimelineLoading(false);
+    }
   }
 
   @Action
@@ -256,6 +295,16 @@ export class SearchModule extends VuexModule {
   @Action
   actionResetResultState() {
     this.resetResultState();
+  }
+
+  @Mutation
+  incrReqCount() {
+    this.reqCount++;
+  }
+
+  @Mutation
+  clearReqWaiting() {
+    this.reqWaiting = {};
   }
 
   @Mutation
@@ -296,6 +345,11 @@ export class SearchModule extends VuexModule {
   }
 
   @Mutation
+  updateTimelineLoading(loading: boolean) {
+    this.timelineLoading = loading;
+  }
+
+  @Mutation
   updateAutocomplete(res: any) {
     this.autocomplete[res.type + res.q] = res.data;
   }
@@ -318,6 +372,10 @@ export class SearchModule extends VuexModule {
 
   get getIsAggsLoading(): boolean {
     return this.aggsLoading;
+  }
+
+  get getIsTimelineLoading(): boolean {
+    return this.timelineLoading;
   }
 
   get getAutoComplete(): any {

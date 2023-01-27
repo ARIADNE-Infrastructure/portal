@@ -38,14 +38,19 @@ import FilterAggregation from '@/component/Filter/Aggregation.vue';
 const params = $computed(() => searchModule.getParams);
 const regions = $computed(() => periodsModule.getRegions);
 const periods = $computed(() => periodsModule.getPeriods);
+let lastTemporal: any;
 
 onMounted(async () => {
   await periodsModule.setRegions();
+  lastTemporal = params.temporalRegion;
   periodsModule.setPeriods(params);
 });
 
 const unwatch = watch($$(params), () => {
-  periodsModule.setPeriods(params);
+  if (lastTemporal !== params.temporalRegion) {
+    lastTemporal = params.temporalRegion;
+    periodsModule.setPeriods(params);
+  }
 });
 onBeforeRouteLeave(unwatch);
 </script>

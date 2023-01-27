@@ -135,8 +135,8 @@
 <script setup lang="ts">
 import { watch, nextTick } from 'vue';
 import { $ref, $computed, $$ } from 'vue/macros';
-import { searchModule, resourceModule, aggregationModule, generalModule } from "@/store/modules";
-import { useRouter } from 'vue-router'
+import { resourceModule, aggregationModule, generalModule } from "@/store/modules";
+import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import utils from '@/utils/utils';
 import ListAccordion from '@/component/List/Accordion.vue';
 import FilterAggregationOptions from './Aggregation/Options.vue';
@@ -189,7 +189,10 @@ const filteredAndSortedBuckets: Array<any> = $computed(() => {
   let list = item?.buckets;
   const options = aggregationModule.getOptions[id];
   if (options) {
-    let { search, sortBy, sortOrder, data } = options;
+    let { search, clearSearch, sortBy, sortOrder, data } = options;
+    if (clearSearch) {
+      aggregationModule.updateOptions({ id, value: { ...options, clearSearch: false, search: '' }});
+    }
 
     // replace list with search result
     if ((search || getMore) && data?.buckets) {
@@ -240,4 +243,6 @@ const toggleTooltip = (e: any, show: boolean) => {
 };
 
 watch($$(filteredAndSortedBuckets), setBucketListHeight, { deep: true });
+
+onBeforeRouteLeave(() => aggregationModule.setOptionsToDefault());
 </script>

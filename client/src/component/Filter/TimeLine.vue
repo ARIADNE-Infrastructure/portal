@@ -68,11 +68,17 @@
           </div>
         </div>
 
-        <canvas
-          v-show="hasChartData"
-          :id="timelineId"
-          :class="{ 'pr-sm pt-md': title }"
-        />
+        <div class="relative">
+          <canvas
+            v-show="hasChartData"
+            :id="timelineId"
+            :class="{ 'pr-sm pt-md': title }"
+          />
+          <div
+            class="absolute top-0 left-0 w-full h-full transition-opacity duration-300 cursor-default flex justify-center items-center" :class="isOnlyLoadingTimeline && hasChartData ? 'z-1 opacity-100' : 'z-neg10 opacity-0'">
+            <i class="fas fa-spinner fa-spin mr-sm text-2x text-darkGray"></i>
+          </div>
+        </div>
 
         <filter-years-and-periods
           v-if="title"
@@ -113,7 +119,8 @@ let zoomLen: number = $ref(0);
 let isZoomed: boolean = $ref(false);
 
 const window = $computed(() => generalModule.getWindow);
-const isLoading: boolean = $computed(() => generalModule.getIsLoading || searchModule.getIsAggsLoading);
+const isLoading: boolean = $computed(() => generalModule.getIsLoading || searchModule.getIsAggsLoading || searchModule.getIsTimelineLoading);
+const isOnlyLoadingTimeline = $computed(() => searchModule.getIsTimelineLoading && !generalModule.getIsLoading && !searchModule.getIsAggsLoading);
 const searchResult = $computed(() => searchModule.getAggsResult);
 const result = $computed(() => searchModule.getAggsResult.aggs);
 const params = $computed(() => searchModule.getParams);

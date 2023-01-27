@@ -29,7 +29,6 @@ switch ($uriParts[0]) {
   case 'autocomplete': echo json_encode(Query::instance()->autocomplete()); break;
   case 'autocompleteFilter': echo json_encode(Query::instance()->autocompleteFilter()); break;
   case 'getMiniMapData': echo json_encode(Query::instance()->getMiniMapData()); break;
-  case 'getMapData': echo json_encode(Query::instance()->getMiniMapData()); break;
   case 'getSearchAggregationData': echo json_encode(Query::instance()->getSearchAggregationData()); break;
   case 'getPeriodRegions': echo json_encode(Query::instance()->getPeriodRegions()); break;
   case 'getPeriodsForCountry': echo json_encode(Query::instance()->getPeriodsForCountry()); break;

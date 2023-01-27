@@ -297,13 +297,13 @@ const getMarkerPopup = (resource: any): string => {
   // Resource location
   for (let resourceLocations of resource.data.spatial) {
     if(resourceLocations.geopoint) {
-      resourceLocationsLatLon += resourceLocations.geopoint.lat + ":" + resourceLocations.geopoint.lon + "<br>";
+      resourceLocationsLatLon += utils.escHtml(resourceLocations.geopoint.lat + ":" + resourceLocations.geopoint.lon) + "<br>";
     }
   }
   if(!resourceLocationsLatLon) {
     resourceLocation = '<p><strong>Resource location:</strong><br>Resource location is a geo-shape, see details on resource page.</p>';
   } else {
-    resourceLocation = "<p><strong>Resource location:</strong><br>" + utils.escHtml(resourceLocationsLatLon) + "</p>";
+    resourceLocation = "<p><strong>Resource location:</strong><br>" + resourceLocationsLatLon + "</p>";
   }
 
   return title + description + publishers + resourceLocation + resourcePage;
