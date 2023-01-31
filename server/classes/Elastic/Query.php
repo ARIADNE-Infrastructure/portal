@@ -33,18 +33,10 @@ class Query {
     return self::$inst;
   }
 
-  // sets client host
-  public function setClient($clientHost) {
-    // Setup Elastic client
-    $this->client = ClientBuilder::create()
-    ->setHosts([$clientHost])
-    ->build();
-  }
-
-  // lazy get client - default env host if not called "setClient" before
+  // get elastic client
   public function getClient() {
     if (!$this->client) {
-      $this->setClient($this->elasticEnv->host);
+      $this->client = ClientBuilder::create()->setHosts([$this->elasticEnv->host])->build();
     }
     return $this->client;
   }
@@ -53,21 +45,10 @@ class Query {
    * Search Elastic db with given URI parameters
    */
   public function search() {
-    $query = $this->getCurrentQuery();
-
     if (isset($_GET['mapq'])) {
-      // This is the Map requesting data. Push map specific query attributes to main
-      $query = $this->getMapQuery($query);
-
-      // When size is smaler than threshhold, geogrid is considered part of the result since we need to render heatmap
-      if( intval($query['size']) <= $this->settings->environment->mapMarkerThreshhold ) {
-        $query['aggregations']['geogrid_centroid'] = QuerySettings::getSearchAggregations()['geogrid_centroid'];
-      }
+      return $this->getSearchAggregationData();
     }
-
-    $result = $this->elasticDoSearch($query);
-
-    return $this->resultToFrontend($result);
+    return $this->resultToFrontend($this->elasticDoSearch($this->getCurrentQuery()));
   }
 
   /**
@@ -120,13 +101,8 @@ class Query {
   /**
    * Map specific query.
    * Adds additional map parameters to main query
-   *
-   * @param array $mainQuery Base query, containg filters, terms, aggregations and query string param.
-   * @return array Query with additional map specific attributes
    */
   private function getMapQuery($mainQuery) {
-
-    // Fetch only needed fields for map view
     $mainQuery['_source'] = ['title','description','resourceType','publisher','ariadneSubject','spatial'];
 
     // // Viewport
@@ -151,10 +127,10 @@ class Query {
         'query' => [
           'bool' => [
             'should' => [
-              array( 'exists' => ['field'=> 'spatial.geopoint']), // remove when centroids are uploaded to public
-              array( 'exists' => ['field'=> 'spatial.polygon']), // remove when centroids are uploaded to public
-              array( 'exists' => ['field'=> 'spatial.boundingbox']), // remove when centroids are uploaded to public
-              array( 'exists' => ['field'=> 'spatial.centroid'])
+              ['exists' => ['field' => 'spatial.geopoint']], // remove when centroids are uploaded to public
+              ['exists' => ['field' => 'spatial.polygon']], // remove when centroids are uploaded to public
+              ['exists' => ['field' => 'spatial.boundingbox']], // remove when centroids are uploaded to public
+              ['exists' => ['field' => 'spatial.centroid']]
             ]
           ]
         ]
@@ -164,49 +140,50 @@ class Query {
     /* Do roundtrip to ES to see if result is more than 500. If result count is more
        than 500 the map doesn't need records data because it's rendering heatmap with
        data from aggregations->geogrid */
-    $countQuery['size'] = 0;
-    $countQuery['query'] = $mainQuery['query'];
-    $result = $this->elasticDoSearch($countQuery);
-    $count = intval($result['hits']['total']['value'] ?? 0);
-    if ($count && $count <= $this->settings->environment->mapMarkerThreshhold) { // Render markers - records needed to render markers
+    $count = 0;
+    try {
+      $result = $this->getClient()->count([
+        'index' => $this->elasticEnv->index,
+        'body' => ['query' => $mainQuery['query']],
+      ]);
+      $count = intval($result['count'] ?? 0);
+    } catch (\Exception $ex) {
+      if (AppSettings::isLogging()) {
+        AppSettings::debugLog($ex->getMessage());
+      }
+    }
+    if ($count <= $this->settings->environment->mapMarkerThreshhold) { // Render markers - records needed to render markers
       $mainQuery['size'] = $count;
+    } else {
+      $mainQuery['size'] = 0;
     }
     return $mainQuery;
   }
 
   /**
    * Get data specific for aggregations / filters
-   *
-   * @param array Query params
-   * @return array
    */
   public function getSearchAggregationData() {
     $query = $this->getCurrentQuery();
     $query['aggregations'] = QuerySettings::getSearchAggregations();
+    $query['size'] = 0;
+    unset($query['_source']);
+    unset($query['sort']);
+    unset($query['from']);
 
     // This is the map search requesting data. Push map specific queri attributes to main query
     if (isset($_GET['mapq'])) {
       $query = $this->getMapQuery($query);
     } else {
-      unset($query['aggregations']['geogrid_centroid']);
+      unset($query['aggregations']['geogridCentroid']);
     }
-
-    // No records needed for aggregations
-    $query['size'] = 0;
-
-    // Remove unnessesary attributes
-    unset($query['_source']);
-    unset($query['sort']);
-    unset($query['from']);
-    unset($query['aggregations']['geogrid']);
-
-    $range = empty($_GET['range']) ? null : explode(',', $_GET['range']);
 
     // timeline specific query
     if (!empty($_GET['timeline'])) {
       if (!empty($_GET['onlyTimeline'])) {
         $query['aggregations'] = [];
       }
+      $range = empty($_GET['range']) ? null : explode(',', $_GET['range']);
       $query['aggregations']['range_buckets'] = Timeline::prepareRangeBucketsAggregation($range);
     }
 
@@ -215,21 +192,16 @@ class Query {
 
   /**
    * Get data specific for mini map
-   *
-   * @param array Query params
-   * @return array Mini map data
    */
   public function getMiniMapData() {
     $query = $this->getMapQuery($this->getCurrentQuery());
-
-    // remove unnessesary attributes
-    // Minimap only needs title and spatial data
-    $query['_source'] = ['title','spatial'];
+    $query['_source'] = ['title', 'spatial'];
     unset($query['sort']);
+    unset($query['from']);
 
-    if ($query['size'] <= $this->settings->environment->mapMarkerThreshhold ) {
+    if ($query['size'] <= $this->settings->environment->mapMarkerThreshhold) {
       // mini map renders heatmap, query only aggs needed for heatmap
-      $query['aggregations']['geogrid_centroid'] = QuerySettings::getSearchAggregations()['geogrid_centroid'];
+      $query['aggregations']['geogridCentroid'] = QuerySettings::getSearchAggregations()['geogridCentroid'];
     } else {
       // mini map renders markers, no aggs nedded because markers uses records spatial data
       unset($query['aggregations']);
@@ -470,7 +442,6 @@ class Query {
 
       case 'temporalregion':
         $query = AutocompleteFilterQuery::temporalRegion($q, $currentQuery, $size);
-        $this->setClient($this->elasticEnv->periodHost);
         $result = $this->elasticDoSearch($query, $this->elasticEnv->periodIndex)['aggregations'];
         return $result;
 
@@ -478,8 +449,6 @@ class Query {
         // Special for periods is periodCountry param to filter on user selected country
         $temporalRegion = trim($_GET['temporalRegion'] ?? '');
         $query = AutocompleteFilterQuery::periods($q, $temporalRegion, $size);
-        $this->setClient($this->elasticEnv->periodHost);
-        // Disguise result as aggregation.
         return $this->periodsToAggs($this->elasticDoSearch($query, $this->elasticEnv->periodIndex));
 
       default:
@@ -562,9 +531,6 @@ class Query {
 
   /**
    * Frontend wants data in a specifik form.
-   *
-   * @param array Result form ES to be formated
-   * @return array Array formated according to frontend specs
    */
   private function resultToFrontend ($result) {
     // Probably the only error message we want to pass on to frontend
@@ -643,7 +609,6 @@ class Query {
 
   /**
    * Get spatial nearby from given record
-   * http://localhost:8080/api/getNearbySpatialResources/CD236FB9-44EA-34C9-9231-C61B2BF13DDD
    */
   public function getNearbySpatialResources($record) {
     $gUtils = new GeoUtils($this);
@@ -719,7 +684,6 @@ class Query {
     if (empty($periods)) {
       return null;
     }
-    $this->setClient($this->elasticEnv->periodHost);
     return $this->periodsToAggs($this->elasticDoSearch([
       'query' => [
         'bool' => [
@@ -1062,7 +1026,6 @@ class Query {
   // Returns all period regions
   // Get countries aggregation query from periods index
   public function getPeriodRegions() {
-    $this->setClient($this->elasticEnv->periodHost);
     $query = [
       'size' => 0,
       'aggregations' => [
@@ -1107,13 +1070,11 @@ class Query {
         ],
       ];
     }
-    $this->setClient($this->elasticEnv->periodHost);
     return $this->periodsToAggs($this->elasticDoSearch($query, $this->elasticEnv->periodIndex)); // disguise as aggregations
   }
 
   // Automatically update periods once a day
   public function maybeUpdatePeriods() {
-    $this->setClient($this->elasticEnv->periodHost);
     $result = $this->elasticDoSearch([
       'size' => 1,
       '_source' => ['timestamp'],
@@ -1143,10 +1104,13 @@ class Query {
    * Get total records count in main index
    */
   public function getTotalRecordsCount() {
-    $searchParams = ['index' => $this->elasticEnv->index];
     try {
-      return $this->getClient()->count($searchParams)['count'] ?? 0;
-    } catch (\Exception $ex) {}
+      return $this->getClient()->count(['index' => $this->elasticEnv->index])['count'] ?? 0;
+    } catch (\Exception $ex) {
+      if (AppSettings::isLogging()) {
+        AppSettings::debugLog($ex->getMessage());
+      }
+    }
     return 0;
   }
 

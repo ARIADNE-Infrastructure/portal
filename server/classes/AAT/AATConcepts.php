@@ -2,12 +2,8 @@
 
 namespace AAT;
 
-use Elasticsearch\Common\Exceptions\Missing404Exception;
 use Application\AppSettings;
-use Elasticsearch\ClientBuilder;
-use Exception;
 use Elastic\Query;
-
 
 /**
  * LIST indices (Postman)
@@ -27,32 +23,25 @@ use Elastic\Query;
  */
 
 class AATConcepts {
-  private $subjectIndex;
   private $tree;
   private $currentRecordURI;
   private $recordList = [];
   private $client;
   private $elasticEnv;
-
-  /* Folder containing all AAT concepts. Complete Concepts list is
-  fetched by Cari Binding and uploaded to cloud somewhere */
   private $dataFolder = __DIR__ . '/data/aat-conc';
-
 
   /**
    * Constructor
    */
   public function __construct() {
     $this->elasticEnv = AppSettings::getSettingsEnv();
-    $this->subjectIndex = $this->elasticEnv->subjectIndex;
-    $this->client = ClientBuilder::create()->setHosts([$this->elasticEnv->host])->build();
+    $this->client = Query::instance()->getClient();
     $this->action();
   }
 
   /**
    * Main function.
-   * Read files, and PUT to existing $subjectIndex.
-   *
+   * Read files, and PUT to existing subjectIndex.
    */
   public function action() {
     if (!is_dir($this->dataFolder)) {
@@ -74,7 +63,7 @@ class AATConcepts {
         'index' => $this->elasticEnv->subjectIndex,
         'body' => json_decode(file_get_contents(__DIR__ . '/aat-concepts-mapping.json'), true),
       ]);
-    } catch (Exception $ex) {
+    } catch (\Exception $ex) {
       AppSettings::debugLog($ex->getMessage());
       die($ex->getMessage());
     }
@@ -121,4 +110,3 @@ class AATConcepts {
     $this->client->index($params);
   }
 }
-

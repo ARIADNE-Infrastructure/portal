@@ -32,7 +32,6 @@ switch ($uriParts[0]) {
   case 'getSearchAggregationData': echo json_encode(Query::instance()->getSearchAggregationData()); break;
   case 'getPeriodRegions': echo json_encode(Query::instance()->getPeriodRegions()); break;
   case 'getPeriodsForCountry': echo json_encode(Query::instance()->getPeriodsForCountry()); break;
-  case 'getNearbySpatialResources': echo json_encode(Query::instance()->getNearbySpatialResources($uriParts[1] ?? ''), true); break;
   case 'getTotalRecordsCount': echo json_encode(Query::instance()->getTotalRecordsCount()); break;
   case 'getAllServicesAndPublishers': echo json_encode(Query::instance()->getServicesAndPublishers()); break;
   case 'maybeUpdatePeriods': Query::instance()->maybeUpdatePeriods(); break;

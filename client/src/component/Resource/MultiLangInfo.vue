@@ -34,7 +34,7 @@
             v-if="item.language"
             class="font-bold"
           >
-            {{ synonyms.getLanguage(item.language) }}:
+            {{ utils.getLanguage(item.language) }}:
           </span>
 
           <p>{{ utils.cleanText(item.text, true) }}</p>
@@ -46,7 +46,6 @@
 
 <script setup lang="ts">
 import utils from '@/utils/utils';
-import synonyms from '@/utils/synonyms';
 import HelpTooltip from '@/component/Help/Tooltip.vue';
 import ListAccordion from '@/component/List/Accordion.vue';
 

@@ -82,7 +82,7 @@
               <span class="flex-grow break-word pr-lg">
                 {{ getFilterText(sortKey ? bucket[sortKey] : bucket.key) }}
                 <span v-if="id === 'culturalPeriods' && bucket.region" class="text-midGray">
-                  ({{ synonyms.getCountryCode(bucket.region) }})
+                  ({{ utils.getCountryCode(bucket.region) }})
                 </span>
               </span>
 
@@ -135,13 +135,11 @@
 <script setup lang="ts">
 import { watch, nextTick } from 'vue';
 import { $ref, $computed, $$ } from 'vue/macros';
-import { resourceModule, aggregationModule, generalModule } from "@/store/modules";
+import { resourceModule, aggregationModule, generalModule, searchModule } from "@/store/modules";
 import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import utils from '@/utils/utils';
 import ListAccordion from '@/component/List/Accordion.vue';
 import FilterAggregationOptions from './Aggregation/Options.vue';
-import HelpTooltip from '@/component/Help/Tooltip.vue';
-import synonyms from "@/utils/synonyms";
 
 let height = $ref(0);
 const bucketListId: string = 'bucketList-' + utils.getUniqueId();
@@ -172,7 +170,7 @@ let getMore = $ref(0);
 const hasMoreDocs: number = $computed(() => {
   const options = aggregationModule.getOptions[id];
   let count;
-  if (options?.search || getMore) {
+  if (options?.search || (getMore && options?.data?.buckets)) {
     count = options?.data?.sum_other_doc_count;
   } else {
     count = item?.sum_other_doc_count;
@@ -186,25 +184,31 @@ const initShow: boolean = $computed(() => {
 });
 
 const filteredAndSortedBuckets: Array<any> = $computed(() => {
-  let list = item?.buckets;
+  let list = item?.buckets || [];
   const options = aggregationModule.getOptions[id];
+  if (options && ((options.search || getMore) && options.data?.buckets)) {
+    list = options.data.buckets;
+  }
+
+  // check missing from params (if clicks get 20 more, or have from search won't show from result set)
+  const params = searchModule.getParams[id];
+  if (params) {
+    params.split('|').forEach((val: string) => {
+      const lcVal = val.trim().toLowerCase();
+      if (!list.some((b: any) => (b.key || '').trim().toLowerCase() === lcVal)) {
+        list = list.concat([{ key: val, doc_count: 0 }]);
+      }
+    });
+  }
+
+  // sort
   if (options) {
-    let { search, clearSearch, sortBy, sortOrder, data } = options;
-    if (clearSearch) {
-      aggregationModule.updateOptions({ id, value: { ...options, clearSearch: false, search: '' }});
-    }
-
-    // replace list with search result
-    if ((search || getMore) && data?.buckets) {
-      list = data.buckets;
-    }
-
-    // sort
+    let { sortBy, sortOrder } = options;
     list = utils.sortListByValue(list, sortBy, sortOrder);
-    const active = list.filter((it: any) => resultAggIsActive(id, it.key));
-    if (active.length) {
-      list = active.concat(list.filter((it: any) => !resultAggIsActive(id, it.key)));
-    }
+  }
+  const active = list.filter((it: any) => resultAggIsActive(id, it.key));
+  if (active.length) {
+    list = active.concat(list.filter((it: any) => !resultAggIsActive(id, it.key)));
   }
   return list;
 });

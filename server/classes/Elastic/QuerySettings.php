@@ -7,7 +7,6 @@ use Elastic\Timeline;
 use AAT\AATDescendants;
 
 class QuerySettings {
-
   private const AGGS_BUCKET_SIZE = 20;
 
   public static function getSearchSort() {
@@ -37,9 +36,6 @@ class QuerySettings {
    * Valid searchable fields with metadata for constructing Elastic querys.
    * NOTICE: These fields are the only fields allowed to be searchable by user
    * input in combo with or without q-param.
-   *
-   * @param $searchString
-   * @return array
    */
   public static function getValidSearchableFields($searchString = ''): array {
     return [
@@ -151,31 +147,11 @@ class QuerySettings {
   /**
    * Match incoming get params to valid filters.
    * If found, filters are pushed to filter array
-   *
-   * @param $inParam equivalent to $_GET content
-   * @return $filters Array with valid filters to throw at Elastic
    */
   public static function getFilters($inParams) {
     $filters = [];
     // loop all inParams, check if it's a valid filter
     foreach ($inParams as $param => $paramValue) {
-
-      /*
-        Den här funktionen har passerat sin 'bra-tid' efter alla förändringar och önskade
-        kombinationer av querys och resultat. Därför bör man göra om detta för att göra saken enklare
-        att felsöka, förändra, läsa och tolka kod. Det kommer bli fler rader kod och kanske en del
-        upprepningar, men det är det värt!
-
-        Vad man bör göra är följande:
-        För vare inkommande parameter (som är någon form av filter), gör ett anrop till separat funktion
-        som returnerar en komplett formaterad query istället för att 'dynamiskt' bygga dessa med hjälp av
-        'inställningar' i funktionen getValidFilters. Den här designen håller inte längre och för varje gång
-        man behöver göra en förändring/förbättring på grund av önskad och beställd funktion så blir koden mer
-        och mer komplex och svår att tyda. Det är mycket bättre att ha fler rader lättläst och tydlig kod!
-        Ett exemepl på komplecxiteten är när vi nu vill göra en OR sökning på filtret 'culturalPeriods' som
-        används i POC:en för Period filter (på Staging).
-      */
-
       // filters may be multiple separated by pipe character (|)
       $paramsArr = explode('|', $paramValue);
 
@@ -360,11 +336,6 @@ class QuerySettings {
             'terms' => [
               'field' => 'temporal.periodName.raw',
               'size' => self::AGGS_BUCKET_SIZE
-            ],
-            'aggs' =>[
-              'top_reverse_nested'=>[
-                'reverse_nested'=> new \stdClass()
-              ]
             ]
           ]
         ]
@@ -375,7 +346,7 @@ class QuerySettings {
           'size' => self::AGGS_BUCKET_SIZE
         ]
       ],
-      'geogrid_centroid' => [
+      'geogridCentroid' => [
         'nested' => [
           'path' => 'spatial'
         ],
@@ -489,6 +460,9 @@ class QuerySettings {
            This fallback can be triggered, as an example, by navigating to /search?q=&derivedSubject=settlements (sites of small communities).
            The result of this is that (without this fallback) the term "/settlements (sites of small communities)" with URI/ID: "http://vocab.getty.edu/aat/300444153"
            DOES exist in Ariadne-index resource(s) but the URI/ID "300444153" DOES NOT exist in AAT-descendants-index. Resulting in ZERO results.
+
+           Ticket in D4Sciense issue tracker:
+           https://support.d4science.org/issues/23856#change-142281
 
            Okay, so in this case, we simply look for exact term match in Ariadne-index, discriminating all descendant terms!
            When/if AAT-index and AAT-descendants-index are updated you can choose to remove this fallback or keep it as is

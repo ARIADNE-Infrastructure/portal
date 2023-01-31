@@ -25,28 +25,28 @@
     <div v-if="resource.accrualPeriodicity" :class="itemClass">
       <b :class="bClass">Accrual Periodicity:</b>
       <b-link :to="utils.paramsToString('/search', {q: resource.accrualPeriodicity})">
-        {{resource.accrualPeriodicity}}
+        <span>{{resource.accrualPeriodicity}}</span>
       </b-link>
     </div>
 
     <div v-if="resource.contactPoint" :class="itemClass">
       <b :class="bClass">Contact point:</b>
-      {{ resource.contactPoint }}
+      <span>{{ resource.contactPoint }}</span>
     </div>
 
     <div v-if="resource.packageId" :class="itemClass">
       <b :class="bClass">Package ID:</b>
-      {{ resource.packageId }}
+      <span>{{ resource.packageId }}</span>
     </div>
 
     <div v-if="resource.providerId" :class="itemClass">
       <b :class="bClass">Provider ID:</b>
-      {{ resource.providerId }}
+      <span>{{ resource.providerId }}</span>
     </div>
 
     <div v-if="resource.size" :class="itemClass">
       <b :class="bClass">Size:</b>
-      {{ resource.size }}
+      <span>{{ resource.size }}</span>
     </div>
   </div>
 </template>

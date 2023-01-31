@@ -9,7 +9,7 @@
 
         <div v-if="item.title" :class="itemClass">
           <b :class="bClass">Title:</b>
-          {{ item.title }}
+          <span>{{ item.title }}</span>
         </div>
 
         <div v-if="item.description" :class="itemClass">
@@ -31,12 +31,12 @@
 
         <div v-if="item.issued" :class="itemClass">
           <b :class="bClass">Issued:</b>
-          {{ utils.formatDate(item.issued) }}
+          <span>{{ utils.formatDate(item.issued) }}</span>
         </div>
 
         <div v-if="item.modified" :class="itemClass">
           <b :class="bClass">Last updated:</b>
-          {{ utils.formatDate(item.modified) }}
+          <span>{{ utils.formatDate(item.modified) }}</span>
         </div>
       </div>
     </template>

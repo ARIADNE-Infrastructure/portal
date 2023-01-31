@@ -2,7 +2,6 @@
 
 namespace Elastic;
 
-use InvalidArgumentException;
 use Elastic\Query;
 
 // https://github.com/mjaschen/phpgeo
@@ -189,7 +188,7 @@ class GeoUtils {
           try {
             // Get geo shape center
             $geoShapeCenter = new Coordinate($geoShape->getCentroid()->getY(),$geoShape->getCentroid()->getX());
-          } catch( InvalidArgumentException $e ) {
+          } catch (\InvalidArgumentException $e) {
             break;
           }
 

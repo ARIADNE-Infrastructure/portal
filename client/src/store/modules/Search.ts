@@ -5,6 +5,7 @@ import utils from '@/utils/utils';
 import router from '@/router';
 import { LoadingStatus, GeneralModule } from './General';
 import { sortOptions, perPageOptions, helpTexts } from './Search/static';
+import { aggregationModule } from "../modules";
 
 export interface helpText {
   id: string,
@@ -14,9 +15,7 @@ export interface helpText {
 
 @Module
 export class SearchModule extends VuexModule {
-
   private generalModule: GeneralModule;
-
   private params: any = {};
   private result: any = {};
   private autocomplete: any = {};
@@ -24,15 +23,13 @@ export class SearchModule extends VuexModule {
   private perPageOptions: any[] = perPageOptions;
   private helpTexts: helpText[] = helpTexts;
   private totalRecordsCount: any = '';
-  private reqCount: number = 0;
+  private reqMap: any = { hits: 0, aggs: 0, map: 0 };
   private reqWaiting: any = {};
-
-  // aggregations
+  private filterUpdate: any = null;
   private aggsResult: any = {};
   private aggsLoading: boolean = false;
   private timelineLoading: boolean = false;
-
-  // minimap
+  private mapLoading: boolean = false;
   private miniMapSearchResult: any = {};
 
   constructor(generalModule: GeneralModule, options: RegisterOptions) {
@@ -60,6 +57,8 @@ export class SearchModule extends VuexModule {
   // sets mini map search
   @Action
   async setMiniMapSearch(mapParams: any) {
+    const reqId = ++this.reqMap.map;
+    this.updateMapLoading(true);
     let res;
     try {
       if (mapParams.ariadneSubject?.includes('Dating')) {
@@ -69,16 +68,18 @@ export class SearchModule extends VuexModule {
       res = await axios.get(utils.paramsToString(url, mapParams));
     }
     catch (ex) {}
-    this.updateMiniMapSearchResult(res?.data || {});
+    if (reqId === this.reqMap.map) {
+      this.updateMiniMapSearchResult(res?.data || {});
+      this.updateMapLoading(false);
+    }
   }
 
   @Action
   async setSearch(payload: any) {
-
     let currentPath = router.currentRoute.value.path;
     currentPath = currentPath.endsWith('/') ? currentPath.slice(0, -1) : currentPath;
 
-    let path = payload?.path ?? currentPath;
+    let path = payload.path ?? currentPath;
 
     let params: any = utils.getCopy(this.params);
     let currentParams = utils.getCopy(params);
@@ -97,7 +98,7 @@ export class SearchModule extends VuexModule {
     }
 
     for (let key in payload) {
-      if (payload[key] && key !== 'clear' && key !== 'path') {
+      if (payload[key] && key !== 'clear' && key !== 'path' && key !== 'replaceRoute') {
         params[key] = payload[key];
       } else {
         delete params[key];
@@ -111,8 +112,25 @@ export class SearchModule extends VuexModule {
     }
     params.q = params.q.toLowerCase();
 
-    if (utils.objectEquals(params, currentParams) && path === currentPath && !payload?.forceReload) {
+    if (utils.objectEquals(params, currentParams) && path === currentPath && !payload.forceReload) {
       return;
+    }
+
+    let filterUpdate: any = null;
+    if ((params.q || null) !== (currentParams.q || null)) {
+      filterUpdate = { q: '' };
+    } else {
+      for (let key in aggregationModule.getDescriptions) {
+        if ((params[key] || null) !== (currentParams[key] || null)) {
+          if (!filterUpdate) {
+            filterUpdate = {};
+          }
+          filterUpdate[key] = params[key];
+        }
+      }
+    }
+    if (filterUpdate || this.filterUpdate) {
+      this.updateFilterUpdate(filterUpdate);
     }
 
     if (updateUrl) {
@@ -120,15 +138,19 @@ export class SearchModule extends VuexModule {
       const stringParams = utils.objectConvertNumbersToStrings(params);
 
       if (!utils.objectEquals(router.currentRoute.value.query, stringParams) || path !== currentPath) {
-        router.push(utils.paramsToString(path, params));
+        if (currentPath === '/browse/where' && !payload.path) {
+          router.replace(utils.paramsToString(path, params));
+        } else {
+          router.push(utils.paramsToString(path, params));
+        }
       }
     }
 
     const time = Date.now();
 
     let data: any;
-    // default to locked loading status
-    this.generalModule.updateLoadingStatus(payload?.loadingStatus ?? LoadingStatus.Locked);
+    const reqId = ++this.reqMap.hits;
+    this.generalModule.updateLoadingStatus(payload.loadingStatus ?? LoadingStatus.Locked);
     this.updateParams(params);
 
     try {
@@ -140,6 +162,10 @@ export class SearchModule extends VuexModule {
       const res = await axios.get(utils.paramsToString(url, sendParams));
       data = res?.data;
     } catch (ex) {}
+
+    if (reqId !== this.reqMap.hits) {
+      return;
+    }
 
     if (data?.hits) {
       data.hits.forEach((hit: any) => {
@@ -172,6 +198,13 @@ export class SearchModule extends VuexModule {
         time: Math.round(((Date.now() - time) / 1000) * 100) / 100,
         aggs: data.aggregations
       });
+      if (currentPath === '/browse/where') {
+        this.updateAggsResult({
+          total: data.total,
+          hits: data.hits,
+          aggs: data.aggregations,
+        });
+      }
     } else if (data.error && data.error.msg == 'Scrolling exceeded maximum') {
       this.updateResult({ error: 'Scrolling exceeded maximum. Please use filters and/or search to narrow down your search.' });
     } else {
@@ -191,8 +224,7 @@ export class SearchModule extends VuexModule {
     const currentPath = router.currentRoute.value.path;
     let sendParams = { ...routerQuery };
 
-    this.incrReqCount();
-    const reqId = this.reqCount;
+    const reqId = ++this.reqMap.aggs;
     this.updateAggsLoading(true);
 
     try {
@@ -205,7 +237,7 @@ export class SearchModule extends VuexModule {
         sendParams.ariadneSubject = sendParams.ariadneSubject.replace('Dating', 'Date')
       }
       axios.get(utils.paramsToString(url, sendParams)).then(res => {
-        if (reqId === this.reqCount) {
+        if (reqId === this.reqMap.aggs) {
           let data = res?.data;
           if (utils.objectIsNotEmpty(data?.aggregations)) {
             if (data.aggregations.temporal?.temporal) {
@@ -237,13 +269,13 @@ export class SearchModule extends VuexModule {
           this.updateAggsLoading(false);
         }
       }).catch(ex => {
-        if (reqId === this.reqCount) {
+        if (reqId === this.reqMap.aggs) {
           this.updateAggsResult({ error: 'Internal error. Search failed..' });
           this.updateAggsLoading(false);
         }
       });
     } catch (ex) {
-      if (reqId === this.reqCount) {
+      if (reqId === this.reqMap.aggs) {
         this.updateAggsResult({ error: 'Internal error. Search failed..' });
         this.updateAggsLoading(false);
       }
@@ -266,7 +298,7 @@ export class SearchModule extends VuexModule {
       const url = process.env.apiUrl + '/getSearchAggregationData';
       const res = await axios.get(utils.paramsToString(url, { ...params, ...{ timeline: 'true', onlyTimeline: 'true' }}));
 
-      if (reqId === this.reqCount && res?.data?.aggregations?.range_buckets) {
+      if (reqId === this.reqMap.aggs && res?.data?.aggregations?.range_buckets) {
         if (this.aggsLoading) {
           this.reqWaiting[reqId] = res.data.aggregations.range_buckets;
         } else {
@@ -281,7 +313,7 @@ export class SearchModule extends VuexModule {
       }
     } catch (ex) {}
 
-    if (reqId === this.reqCount) {
+    if (reqId === this.reqMap.aggs) {
       this.updateTimelineLoading(false);
     }
   }
@@ -295,11 +327,6 @@ export class SearchModule extends VuexModule {
   @Action
   actionResetResultState() {
     this.resetResultState();
-  }
-
-  @Mutation
-  incrReqCount() {
-    this.reqCount++;
   }
 
   @Mutation
@@ -337,6 +364,12 @@ export class SearchModule extends VuexModule {
   @Mutation
   updateAggsResult(result: any) {
     this.aggsResult = result;
+    if (this.filterUpdate) {
+      for (let key in this.filterUpdate) {
+        aggregationModule.clearFilterOptions(key);
+      }
+      this.filterUpdate = null;
+    }
   }
 
   @Mutation
@@ -345,8 +378,18 @@ export class SearchModule extends VuexModule {
   }
 
   @Mutation
+  updateFilterUpdate(payload: any) {
+    this.filterUpdate = payload;
+  }
+
+  @Mutation
   updateTimelineLoading(loading: boolean) {
     this.timelineLoading = loading;
+  }
+
+  @Mutation
+  updateMapLoading(loading: boolean) {
+    this.mapLoading = loading;
   }
 
   @Mutation
@@ -376,6 +419,10 @@ export class SearchModule extends VuexModule {
 
   get getIsTimelineLoading(): boolean {
     return this.timelineLoading;
+  }
+
+  get getIsMapLoading(): boolean {
+    return this.mapLoading;
   }
 
   get getAutoComplete(): any {

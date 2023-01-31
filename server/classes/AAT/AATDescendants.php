@@ -3,9 +3,7 @@
 namespace AAT;
 
 use Application\AppSettings;
-use Elasticsearch\ClientBuilder;
 use Elastic\Query;
-
 
 
 class AATDescendants {
@@ -208,7 +206,7 @@ class AATDescendants {
       die('No data file exists');
     }
 
-    $client = ClientBuilder::create()->setHosts([$this->elasticEnv->host])->build();
+    $client = Query::instance()->getClient();
     try {
       $client->indices()->delete(['index' => $this->elasticEnv->aatTermDescendantsIndex]);
     } catch (\Exception $ex) {

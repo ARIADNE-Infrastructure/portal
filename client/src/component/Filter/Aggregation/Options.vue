@@ -8,7 +8,7 @@
       type="text"
       :placeholder="getFilterPlaceholder(title)"
       class="flex-1 w-full py-xs px-sm text-mmd outline-none border-base xl:border-r-0 border-gray focus:border-blue disabled:bg-white"
-      v-model="localSearch"
+      v-model="options.search"
       :disabled="isLoading"
       @input="debouncedSearch($event)"
     >
@@ -82,7 +82,6 @@ const props = defineProps<{
   getMore?: number
 }>();
 
-let localSearch: string = $ref('');
 let filterSize: number = 0;
 
 const params = $computed(() => searchModule.getParams);
@@ -106,10 +105,9 @@ const setSearch = (): void => {
     const payload = {
       id: props.id,
       value: {
-        search: localSearch,
-        sortBy: options.sortBy,
-        clearSearch: false,
-        sortOrder: options.sortOrder,
+        search: options?.search,
+        sortBy: options?.sortBy,
+        sortOrder: options?.sortOrder,
         data: {},
         size: filterSize,
       },
@@ -132,7 +130,6 @@ const setSort = (sortBy: string): void => {
     id: props.id,
     value: {
       search: options.search,
-      clearSearch: false,
       sortBy: '',
       sortOrder: '',
       data: options.data,
@@ -159,30 +156,17 @@ const watches = [
   }),
 
   watch($$(options), () => {
-    if (options) {
-      localSearch = options.search;
-
-    } else {
-    // set default options if none already exists
-      const payload = {
+    if (!options) {
+      aggregationModule.setOptions({
         id: props.id,
         value: {
           search: '',
-          clearSearch: false,
           sortBy: props.sortKeyOption || 'doc_count',
           sortOrder: props.sortOrder || 'desc',
           data: {},
           size: filterSize,
         }
-      }
-
-      aggregationModule.setOptions(payload);
-    }
-  }, { immediate: true }),
-
-  watch($$(params), () => {
-    if (localSearch) {
-      setSearch();
+      });
     }
   }, { immediate: true })
 ];

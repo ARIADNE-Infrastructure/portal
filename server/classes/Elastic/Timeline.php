@@ -2,9 +2,6 @@
 
 namespace Elastic;
 
-use Log;
-use Exception;
-
 class Timeline {
   /**
    * Creates an elasticsearch aggregation query. Each of the intervals derived
@@ -14,31 +11,60 @@ class Timeline {
    * same but the number of years a bucket spans varies from interval to interval.
    */
   public static function prepareRangeBucketsAggregation($range) {
-    if ($range == null || !(sizeOf($range) > 1)) {
+    if (empty($range) || count($range) < 2) {
       $c_year = date("Y");
       $initialRange = [-1000000, -100000, -10000, -1000, 0, 1000, 1250, 1500, 1750];
       array_push($initialRange, $c_year);
       $range = $initialRange;
     } else {
-      for ($j = 0, $len = count($range); $j < $len; $j++) {
-        $range[$j] = intval($range[$j]);
+      for ($k = 0, $len = count($range); $k < $len; $k++) {
+        $range[$k] = intval($range[$k]);
       }
     }
 
-    $nrIntervals = sizeof($range) - 1;
+    $nrIntervals = count($range) - 1;
     $nrDefaultBuckets = 50;
     $nrBucketsPerInterval = $nrDefaultBuckets;
     if ($nrIntervals > 1) {
       $nrBucketsPerInterval = intval(floor($nrDefaultBuckets / $nrIntervals));
     }
 
-    $ranges = array();
+    $ranges = [];
     for ($i = 0; $i < $nrIntervals; $i++) {
       // add intervals to last range to ensure that nrDefaultBuckets are returned
       if ($i == $nrIntervals - 1) {
         $nrBucketsPerInterval += $nrDefaultBuckets % $nrIntervals;
       }
-      self::buildAndAddAggRangePartial($ranges, $range[$i], $range[$i + 1], $nrBucketsPerInterval);
+      $startYear = $range[$i];
+      $endYear = $range[$i + 1];
+      $diff = $endYear - $startYear;
+      $delta = $diff / $nrBucketsPerInterval;
+      $currentStartYear = $startYear;
+      for ($j = 0; $j < $nrBucketsPerInterval; $j++) {
+        $rangeStartYear = intval(round($currentStartYear));
+        $rangeEndYear = intval(round($currentStartYear + $delta));
+        $ranges[$rangeStartYear . ':' . $rangeEndYear] = [
+          'bool' => [
+            'must' => [
+              [
+                'range' => [
+                  'temporal.until' => [
+                    'gte' => '' . $rangeStartYear
+                  ]
+                ]
+              ],
+              [
+                'range' => [
+                  'temporal.from' => [
+                    'lte' => '' . $rangeEndYear
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ];
+        $currentStartYear = $currentStartYear + $delta;
+      }
     }
 
     return [
@@ -53,41 +79,6 @@ class Timeline {
         ]
       ]
     ];
-  }
-
-  /**
-   * Builds partial range query
-   */
-  private static function buildAndAddAggRangePartial (&$ranges, $startYear, $endYear, $nrBuckets) {
-    $diff = $endYear - $startYear;
-    $delta = $diff / $nrBuckets;
-    $currentStartYear = $startYear;
-
-    for ($i = 0; $i < $nrBuckets; $i++) {
-      $rangeStartYear= intval(round($currentStartYear));
-      $rangeEndYear= intval(round($currentStartYear + $delta));
-      $ranges[$rangeStartYear . ':' . $rangeEndYear] = [
-        'bool' => [
-          'must' => [
-            [
-              'range' => [
-                'temporal.until' => [
-                  'gte' => '' . $rangeStartYear
-                ]
-              ]
-            ],
-            [
-              'range' => [
-                'temporal.from' => [
-                  'lte' => '' . $rangeEndYear
-                ]
-              ]
-            ]
-          ]
-        ]
-      ];
-      $currentStartYear = $currentStartYear + $delta;
-    }
   }
 
   /**

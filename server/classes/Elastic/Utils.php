@@ -50,7 +50,7 @@ class Utils {
         self::recordToXml($val, $label);
 
       } else {
-        $xml->addChild($key, htmlspecialchars($val));
+        $xml->addChild($key, htmlspecialchars($val ?? ''));
       }
     }
   }

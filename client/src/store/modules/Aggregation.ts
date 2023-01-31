@@ -5,7 +5,6 @@ import utils from '@/utils/utils';
 import { SearchModule } from './Search';
 import { PeriodsModule } from "./Periods";
 import { titles, descriptions, resultTitles, types } from './Aggregation/static';
-import synonyms from "@/utils/synonyms";
 
 export interface iKeyVal {
   key: string,
@@ -48,6 +47,9 @@ export class AggregationModule extends VuexModule {
 
       try {
         const res = await axios.get(utils.paramsToString(url, params));
+        if (payload.value.search && !this.options[payload.id]?.search) {
+          return;
+        }
         let data = res?.data?.filtered_agg;
         if (utils.objectIsNotEmpty(data)) {
           data.buckets?.forEach(b => {
@@ -65,10 +67,7 @@ export class AggregationModule extends VuexModule {
           }
         }
       } catch (ex) {}
-    } else {
-      this.updateOptions(payload);
     }
-
   }
 
   @Action
@@ -111,7 +110,7 @@ export class AggregationModule extends VuexModule {
         if (add) {
           const label = this.periodsModule.getCachedPeriods?.find((b: any) => b?.key === origValue);
           if (label) {
-            const langCode = label.region ? synonyms.getCountryCode(label.region) : '';
+            const langCode = label.region ? utils.getCountryCode(label.region) : '';
             labels.push(origValue + ':' + label.filterLabel + (langCode ? ' (' + langCode + ')' : ''));
           }
         }
@@ -125,6 +124,35 @@ export class AggregationModule extends VuexModule {
     }
 
     this.searchModule.setSearch(data);
+  }
+
+  @Action
+  public clearFilterOptions(keep?: string) {
+    for (let key in this.descriptions) {
+      if (this.options[key]) {
+        let data = {};
+        let search = '';
+        if (keep && keep === key && this.options[key].search?.trim() && this.searchModule.getAggsResult.aggs?.[key]) {
+          search = this.options[key].search.trim();
+          data = this.searchModule.getAggsResult.aggs[key];
+        }
+        const payload = {
+          id: key,
+          value: {
+            data,
+            search,
+            size: 0,
+            sortBy: this.options[key].sortBy || 'doc_count',
+            sortOrder: this.options[key].sortOrder || 'desc'
+          }
+        };
+        if (search) {
+          this.setSearch(payload);
+        } else {
+          this.updateOptions(payload);
+        }
+      }
+    }
   }
 
   @Mutation
@@ -166,6 +194,10 @@ export class AggregationModule extends VuexModule {
     return (key: string) => {
       return this.descriptions[key] || '';
     }
+  }
+
+  get getDescriptions() {
+    return this.descriptions;
   }
 
   get getSorted() {

@@ -11,6 +11,7 @@ export class PeriodsModule extends VuexModule {
   private periods: any = null;
   private cachedPeriods: any = null;
   private hasUpdated: boolean = false;
+  private loaded: boolean = false;
 
   constructor(searchModule: SearchModule, options: RegisterOptions) {
     super(options);
@@ -99,13 +100,15 @@ export class PeriodsModule extends VuexModule {
   }
 
   @Mutation
+  setLoaded() {
+    this.loaded = true;
+  }
+
+  @Mutation
   updatePeriods(result: any) {
     this.periods = result;
     if (aggregationModule.getOptions?.culturalPeriods) {
-      if (aggregationModule.getOptions.culturalPeriods.search) {
-        aggregationModule.getOptions.culturalPeriods.search = '';
-        aggregationModule.getOptions.culturalPeriods.clearSearch = true;
-      }
+      aggregationModule.getOptions.culturalPeriods.search = '';
       if (aggregationModule.getOptions.culturalPeriods.data?.buckets) {
         aggregationModule.getOptions.culturalPeriods.data = this.periods;
       }
@@ -132,6 +135,10 @@ export class PeriodsModule extends VuexModule {
 
   get getPeriods(): any {
     return this.periods;
+  }
+
+  get getLoaded(): boolean {
+    return this.loaded;
   }
 
   get getCachedPeriods(): any {

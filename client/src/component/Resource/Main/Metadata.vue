@@ -31,7 +31,7 @@
     </div>
 
     <div v-if="resource.language" :class="itemClass">
-      <b :class="bClass">Language:</b> {{ synonyms.getLanguage(resource.language) }}
+      <b :class="bClass">Language:</b> {{ utils.getLanguage(resource.language) }}
     </div>
 
     <resource-filtered-items
@@ -52,7 +52,7 @@
 
     <div v-if="resource.extent && resource.extent.length" :class="itemClass">
       <b :class="bClass">Extent:</b>
-      {{ resource.extent.join(', ') }}
+      <span>{{ resource.extent.join(', ') }}</span>
     </div>
 
     <resource-filtered-items
@@ -120,9 +120,9 @@
                 <div class="absolute" style="width:20px;height:30px;left:-10px;top:0"></div>
                 <div class="mb-xs">
                   <b>Period:</b>&nbsp;
-                  <b-link :to="utils.paramsToString('/search/', { culturalPeriods: getPeriodo(item).key, culturalLabels: getPeriodo(item).key + ':' + getPeriodo(item).filterLabel + (getPeriodo(item).region ? (' (' + synonyms.getCountryCode(getPeriodo(item).region) + ')') : '') })" className="text-white hover:underline">
+                  <b-link :to="utils.paramsToString('/search/', { culturalPeriods: getPeriodo(item).key, culturalLabels: getPeriodo(item).key + ':' + getPeriodo(item).filterLabel + (getPeriodo(item).region ? (' (' + utils.getCountryCode(getPeriodo(item).region) + ')') : '') })" className="text-white hover:underline">
                     <i class="fas fa-search"></i>
-                    {{ getPeriodo(item).filterLabel }} ({{ getPeriodo(item).region ? synonyms.getCountryCode(getPeriodo(item).region) : '' }})
+                    {{ getPeriodo(item).filterLabel }} ({{ getPeriodo(item).region ? utils.getCountryCode(getPeriodo(item).region) : '' }})
                   </b-link>
                 </div>
                 <div class="mb-xs" v-if="getPeriodo(item).region">
@@ -202,17 +202,17 @@
 
     <div v-if="resource.wasCreated" :class="itemClass">
       <b :class="bClass">Created:</b>
-      {{ utils.formatDate(resource.wasCreated) }}
+      <span>{{ utils.formatDate(resource.wasCreated) }}</span>
     </div>
 
     <div v-if="resource.issued" :class="itemClass">
       <b :class="bClass">Issued:</b>
-      {{ utils.formatDate(resource.issued) }}
+      <span>{{ utils.formatDate(resource.issued) }}</span>
     </div>
 
     <div v-if="resource.modified" :class="itemClass">
       <b :class="bClass">Last updated:</b>
-      {{ utils.formatDate(resource.modified) }}
+      <span>{{ utils.formatDate(resource.modified) }}</span>
     </div>
 
     <resource-filtered-items
@@ -249,7 +249,6 @@
 import { $computed } from 'vue/macros';
 import { resourceModule } from "@/store/modules";
 import utils from '@/utils/utils';
-import synonyms from '@/utils/synonyms';
 import BLink from '@/component/Base/Link.vue';
 import HelpTooltip from '@/component/Help/Tooltip.vue';
 import ResourceFilteredItems from '../FilteredItems.vue';

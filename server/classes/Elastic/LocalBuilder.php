@@ -4,7 +4,6 @@ namespace Elastic;
 
 use Elasticsearch\ClientBuilder;
 use Application\AppSettings;
-use Elastic\Query;
 
 /**
  * Builds a local copy of remote index
@@ -27,8 +26,7 @@ class LocalBuilder {
 
     $this->elasticEnv = AppSettings::getSettingsEnv();
     $this->localClient = ClientBuilder::create()->setHosts([$this->elasticEnv->host])->build();
-    Query::instance()->setClient($this->elasticEnv->remoteHost);
-    $this->remoteClient = Query::instance()->getClient();
+    $this->remoteClient = ClientBuilder::create()->setHosts([$this->elasticEnv->remoteHost])->build();
 
     ini_set('max_execution_time', '10000');
     ini_set('memory_limit', '1024M');

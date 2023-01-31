@@ -60,15 +60,12 @@ const getFilterTitle = (filter: iKeyVal): string => {
   if (filter.key === 'q') {
     return 'Search';
   }
-  if (filter.key === 'bbox') {
-    return 'Map filter';
-  }
   return aggregationModule.getTitle(filter.key);
 };
 
 const getFilterValue = (filter: iKeyVal): string => {
   if (filter.key === 'bbox') {
-    return 'from boundingbox'
+    return filter.val.split(',').map(v => Math.round(parseFloat(v.trim()))).join(',');
   }
   if (filter.key === 'isPartOf') {
     return params.isPartOfLabel || filter.val

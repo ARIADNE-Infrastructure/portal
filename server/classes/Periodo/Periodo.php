@@ -3,7 +3,6 @@
 namespace Periodo;
 
 use Application\AppSettings;
-use Elasticsearch\ClientBuilder;
 use Elastic\Query;
 
 class Periodo {
@@ -16,7 +15,7 @@ class Periodo {
   /**
    * constructor
    */
-  public function __construct($isAutoUpdate) {
+  public function __construct ($isAutoUpdate) {
     ini_set('max_execution_time', '10000');
     ini_set('memory_limit', '1024M');
 
@@ -28,15 +27,15 @@ class Periodo {
 
     $elasticEnv = AppSettings::getSettingsEnv();
     $this->index = $elasticEnv->periodIndex;
-    $this->client = ClientBuilder::create()->setHosts([$elasticEnv->periodHost])->build();
+    $this->client = Query::instance()->getClient();
 
     if ($isAutoUpdate) { // a bit risky to delete & create indexes on auto update - so just reset all timetamps
-      $this->resetTimeStamps($elasticEnv->periodIndex);
+      $this->resetTimeStamps();
     } else {
       if (!empty($_GET['getRemote'])) { // use this flag to update periods cache
-        $this->updatePeriodsFromRemote($elasticEnv->periodIndex);
+        $this->updatePeriodsFromRemote();
       }
-      $this->createIndex($elasticEnv->periodIndex);
+      $this->createIndex();
     }
 
     // Import all periods
@@ -46,7 +45,7 @@ class Periodo {
       echo '<br>Completed: ' . date("H:i:s");
       echo '<br>Time: ' . round(time() - $time, 2) . 's';
       echo '<br>Added: '. $this->recordCount;
-      echo '<br>Index: ' . $elasticEnv->periodHost . '/' . $elasticEnv->periodIndex;
+      echo '<br>Index: ' . $elasticEnv->host . '/' . $elasticEnv->periodIndex;
       echo '<br>Source: ' . AppSettings::getSettings()->environment->periodsRemotePath;
       echo '<br>Cached: ' . (empty($_GET['getRemote']) ? 'yes' : 'no');
     }
@@ -55,7 +54,7 @@ class Periodo {
   /**
    * Main function
    */
-  private function action() {
+  private function action () {
     $currentPeriodsQuery = [
       'size' => 0,
       'aggs' => [
@@ -105,17 +104,17 @@ class Periodo {
   /**
    * Create index in elastic.
    */
-  private function createIndex($index) {
+  private function createIndex () {
     $mapping = json_decode(file_get_contents(__DIR__ . '/periodo-mapping.json'), true);
     try {
-      $this->client->indices()->delete(['index' => $index]);
+      $this->client->indices()->delete(['index' => $this->index]);
     } catch (\Exception $e) {
       AppSettings::debugLog($e->getMessage());
       echo '<br>Error: ' . $e->getMessage();
     }
     try {
       $this->client->indices()->create([
-        'index' => $index,
+        'index' => $this->index,
         'body' => $mapping,
       ]);
     } catch (\Exception $ex) {
@@ -128,10 +127,10 @@ class Periodo {
    * Resets all timestamps on auto update (instead of creating a new index)
    * This is done so auto update doesn't accidently run multiple times
    */
-  private function resetTimeStamps($index) {
+  private function resetTimeStamps () {
     try {
       $this->client->updateByQuery([
-        'index' => $index,
+        'index' => $this->index,
         'body' => [
           'script' => [
             'source' => 'ctx._source.timestamp = 0',
@@ -147,7 +146,7 @@ class Periodo {
   }
 
   // gets data from remote & saves to disk, also optimizes the file size (excludes all not used)
-  private function updatePeriodsFromRemote ($index) {
+  private function updatePeriodsFromRemote () {
     $rawData = json_decode(file_get_contents(AppSettings::getSettings()->environment->periodsRemotePath), true);
     if (empty($rawData)) {
       AppSettings::debugLog('updatePeriodsFromRemote - Error getting data from remote.');
@@ -207,42 +206,3 @@ class Periodo {
     return $labels;
   }
 }
-
-
-/* private function getGeopoint( $url ) {
-  // Get geopoints for spatial data
-  $pos = strrpos($url, '/');
-  $id = $pos === false ? $url : substr($url, $pos + 1);
-  $url = "https://www.wikidata.org/wiki/Special:EntityData/".$id;
-  // Alternative - Query claims directlly with:
-  //$url = 'https://www.wikidata.org/w/api.php?action=wbgetentities&props=claims&ids='.$id.'&format=json';
-
-  $headers = array(
-    "Accept: application/json",
-  );
-
-  $curl = curl_init($url);
-  curl_setopt($curl, CURLOPT_URL, $url);
-  curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-  curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
-  curl_setopt($curl, CURLOPT_TIMEOUT, 10);
-  curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 10);
-  curl_setopt($curl, CURLOPT_FOLLOWLOCATION, TRUE);
-
-  //for debug only!
-  curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
-  curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-
-  $resp = curl_exec($curl);
-  curl_close($curl);
-
-  $geopoint = [];
-  if($resp) {
-    $json = json_decode($resp, true);
-    $geodata = $json['entities'][$id]['claims']['P625'][0]['mainsnak']['datavalue']['value'];
-    if(isset($geodata)) {
-      $geopoint = ['lat' => $geodata['latitude'], 'lon' => $geodata['longitude']];
-    }
-  }
-  return $geopoint;
-} */

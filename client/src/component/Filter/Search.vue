@@ -217,10 +217,6 @@ const onInputInput = () => {
   updateComponents++
 }
 
-watch($$(totalRecordsCount), () => {
-
-});
-
 const unwatch = watch(route, () => {
   if (props.useCurrentSearch) {
     newSearch = searchModule.getParams.q || '';

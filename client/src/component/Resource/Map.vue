@@ -12,7 +12,7 @@
               class="fa fa-draw-polygon text-red text-2xl mr-sm"
             />
             <img v-else
-              :src="mapUtils.markerType.point.current"
+              :src="markerTypes.point.current"
               width="15"
               class="inline mr-sm"
               alt="current marker"
@@ -22,7 +22,7 @@
 
             <template v-if="hasNearbyResources">
               <img
-                :src="mapUtils.markerType.point.marker"
+                :src="markerTypes.point.marker"
                 width="15"
                 class="inline ml-lg mr-sm"
                 alt="similar marker"
@@ -76,13 +76,11 @@
 <script setup lang="ts">
 import { nextTick, onMounted } from 'vue';
 import { $ref, $computed } from 'vue/macros';
-import { resourceModule, searchModule } from "@/store/modules";
+import { resourceModule, searchModule, generalModule } from "@/store/modules";
 import * as L from 'leaflet';
 import 'leaflet.heat';
-import 'leaflet/dist/leaflet.css';
 import BLink from '../Base/Link.vue';
 import utils from '@/utils/utils';
-import mapUtils from '@/utils/map';
 
 // WKT reader/helper for map
 import 'wicket/wicket-leaflet';
@@ -100,6 +98,7 @@ let mapSize: string = $ref('small');
 const nearbyMarkersGroup = L.featureGroup();
 const resourceMarkersGroup = L.featureGroup();
 const mapZoomPadding = { padding: [20,20] };
+const markerTypes = utils.getMarkerTypes(generalModule);
 
 const resource = $computed(() => resourceModule.getResource);
 const hasNearbyResources: boolean = $computed(() => !!resource?.nearby?.length);
@@ -176,7 +175,7 @@ const setMap = async () => {
     // Handle geopoint data
     if (spatial?.geopoint) {
       // Create and set marker to current map
-      marker = getMarker(resource.id, spatial, mapUtils.markerType.point.current, resourceModule.getMainTitle(resource) );
+      marker = getMarker(resource.id, spatial, markerTypes.point.current, resourceModule.getMainTitle(resource) );
       marker.addTo(resourceMarkersGroup);
     }
 
@@ -245,7 +244,7 @@ const getMarker = (resourceId: any, spatial: any, markerType: any, markerLabel: 
   if (spatial.geopoint) {
     // spatial is geopoint
     latLng = L.latLng(spatial.geopoint.lat, spatial.geopoint.lon );
-    markerType == null ? markerType = mapUtils.markerType.point.marker : markerType = markerType;
+    markerType == null ? markerType = markerTypes.point.marker : markerType = markerType;
   } else {
     // spatial is geoshape
     let geoShape = spatial?.polygon || spatial?.boundingbox;
@@ -255,7 +254,7 @@ const getMarker = (resourceId: any, spatial: any, markerType: any, markerLabel: 
       wkt.read(geoShape);
       const feature = wkt.toObject({ color: 'red' });
       latLng = L.latLng(feature.getBounds().getCenter().lat, feature.getBounds().getCenter().lng );
-      markerType == null ? markerType = mapUtils.markerType.point.shape : markerType = markerType;
+      markerType == null ? markerType = markerTypes.point.shape : markerType = markerType;
     }
   }
 
@@ -266,7 +265,7 @@ const getMarker = (resourceId: any, spatial: any, markerType: any, markerLabel: 
       marker.bindTooltip(markerLabel);
     }
     // Link all makrkers that are not current resource
-    if (markerType != mapUtils.markerType.point.current) {
+    if (markerType != markerTypes.point.current) {
       marker.on('click', () => {
         resourceModule.navigateToResource(resourceId);
       });
@@ -294,7 +293,7 @@ const getMarkerStyle = (markerType: any) => {
       iconUrl: markerType,
       iconSize: [25, 41],
       iconAnchor: [12, 40],
-      shadowUrl: mapUtils.markerType.shadow.marker,
+      shadowUrl: markerTypes.shadow.marker,
       shadowSize: [41, 41],
       shadowAnchor: [12, 40]
     }),

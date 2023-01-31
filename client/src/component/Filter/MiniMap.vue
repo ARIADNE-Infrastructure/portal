@@ -27,11 +27,14 @@
       class="relative"
       style="height: 250px;"
     >
-      <div
-        v-if="!mapHasHits"
-        class="absolute top-0 left-0 h-full w-full bg-gray-70 z-10 text-darkGray text-xl flex items-center justify-center"
+      <div v-if="!mapHasHits"
+        class="absolute top-0 left-0 h-full w-full bg-lightGray z-20 text-darkGray text-xl flex items-center justify-center"
       >
-        No locations found
+        {{ isLoading ? 'Loading..' : 'No locations found' }}
+      </div>
+      <div v-else
+        class="absolute top-0 left-0 w-full h-full transition-opacity duration-300 cursor-default flex justify-center items-center" :class="isOnlyLoadingMap ? 'z-20 opacity-100' : 'z-neg10 opacity-0'">
+        <i class="fas fa-spinner fa-spin mr-sm text-2x text-darkGray"></i>
       </div>
 
       <!-- map -->
@@ -55,7 +58,7 @@
             <ul class="py-md px-base flex">
               <li class="flex items-center h-2x">
                 <img
-                  :src="mapUtils.markerType.point.marker"
+                  :src="markerTypes.point.marker"
                   width="15"
                   class="inline mr-sm"
                   alt="similar marker"
@@ -64,7 +67,7 @@
               </li>
               <li class="ml-lg flex items-center h-2x">
                 <img
-                  :src="mapUtils.markerType.point.shape"
+                  :src="markerTypes.point.shape"
                   width="15"
                   class="inline mr-sm"
                   alt="current marker"
@@ -73,7 +76,7 @@
               </li>
               <li class="ml-lg flex items-center h-2x">
                 <img
-                  :src="mapUtils.markerType.combo.marker"
+                  :src="markerTypes.combo.marker"
                   width="20"
                   class="inline mr-sm"
                   alt="current marker"
@@ -94,29 +97,15 @@ import { $ref, $computed } from 'vue/macros';
 import { useRoute, onBeforeRouteLeave } from 'vue-router'
 import { searchModule, generalModule } from "@/store/modules";
 import router from '@/router';
+import utils from '@/utils/utils';
 
 import * as L from "leaflet";
 import Geohash from "latlon-geohash";
-import utils from '@/utils/utils';
-import mapUtils from "@/utils/map";
-
-// Leaflet stuff
 import "leaflet.heat";
 import "leaflet.markercluster";
-import "leaflet/dist/leaflet.css";
-
-import "leaflet.markercluster/dist/MarkerCluster.css";
-import "leaflet.markercluster/dist/MarkerCluster.Default.css";
-
-// WKT reader/helper for map
 import "leaflet-draw";
-import "leaflet-draw/dist/leaflet.draw.css";
-
-// WKT reader/helper for map
 import 'wicket/wicket-leaflet';
 import Wkt from 'wicket';
-
-import HelpTooltip from "@/component/Help/Tooltip.vue";
 
 defineProps<{
   title?: string,
@@ -132,6 +121,7 @@ let heatMap: L.HeatLayer | null = null;
 let drawLayer: any = null;
 let mapObj: any = null;
 let isUnmounted: boolean = false;
+const markerTypes = utils.getMarkerTypes(generalModule);
 //const zoomControl = L.control.zoom();
 
 let showMarkerInfo = $ref(false);
@@ -139,6 +129,8 @@ let mapHasHits = $ref(false);
 
 const globalParams = $computed(() => searchModule.getParams);
 const miniMapSearchResult = $computed(() => searchModule.getMiniMapSearchResult);
+const isLoading = $computed(() => generalModule.getIsLoading || searchModule.getIsAggsLoading || searchModule.getIsMapLoading);
+const isOnlyLoadingMap = $computed(() => searchModule.getIsMapLoading && !generalModule.getIsLoading && !searchModule.getIsAggsLoading);
 
 const transitionEnter = (el: HTMLElement) => {
   el.style.height = `${ el.scrollHeight}px`;
@@ -162,23 +154,10 @@ const setMiniMapFromState = async () => {
   if (resourceHitsCount <= markerThreshold) {
     setClusterMarkers(miniMapSearchResult?.hits);
     showMarkerInfo = true;
-    // Add zoom control only when in marker view
-    //zoomControl.addTo(mapObj);
-  }
-  else {
-
-    // let spatialData = miniMapSearchResult.aggregations?.geogrid?.grids.buckets;
-    // if (!spatialData || utils.objectIsEmpty(spatialData)) {
-    //   spatialData = miniMapSearchResult.aggregations?.geogrid_centroid?.grids.buckets;
-    // }
-    // setHeatMap(spatialData);
-
+  } else {
     // CENTROID HEATS - Run instead of above when centroids are loaded to public portal
-    setHeatMap(miniMapSearchResult.aggregations?.geogrid_centroid?.grids.buckets);
-
+    setHeatMap(miniMapSearchResult.aggregations?.geogridCentroid?.grids.buckets);
     showMarkerInfo = false;
-    // Remove zoom control when on heatmap view
-    //this.zoomControl.remove();
   }
 }
 
@@ -193,10 +172,10 @@ const setClusterMarkers = (markerResources: any) => {
     }
 
     resource.data.spatial.forEach((spatial: any) => {
-      let markerType: any = mapUtils.markerType.point;
+      let markerType: any = markerTypes.point;
 
       if (spatial.spatialPrecision || spatial.coordinatePrecision) {
-        markerType = mapUtils.markerType.approx;
+        markerType = markerTypes.approx;
       }
 
       if (spatial?.geopoint) {
@@ -206,7 +185,7 @@ const setClusterMarkers = (markerResources: any) => {
 
         let marker = L.marker(
           new L.LatLng(spatial.geopoint.lat, spatial.geopoint.lon),
-          { icon: mapUtils.getMarkerIconType(markerType.marker) }
+          { icon: getMarkerIconType(markerType.marker) }
         );
 
         marker.bindTooltip(resource.data.title.text, { keepInView: true, noWrap: false, offset: [0, 0] } as L.TooltipOptions);
@@ -231,7 +210,7 @@ const setClusterMarkers = (markerResources: any) => {
 
         let polygonMarker = L.marker(
           new L.LatLng(polygonCenter.lat, polygonCenter.lng),
-          { icon: mapUtils.getMarkerIconType(markerType.shape) }
+          { icon: getMarkerIconType(markerType.shape) }
         );
 
         polygonMarker.bindTooltip(resource.data.title.text, { keepInView: true, noWrap: true, offset: [0, 0] } as L.TooltipOptions);
@@ -289,7 +268,6 @@ const setHeatMap = (heatPoints: any) => {
       "0.75": "#D5A03A", // Yellow
       "1": "#BB3921", // Red
     },
-    //gradient: mapUtils.getGradient(1),
     minOpacity: 0.8,
   }).addTo(mapObj);
 
@@ -301,6 +279,17 @@ const setHeatMap = (heatPoints: any) => {
   points.length ? mapHasHits=true: mapHasHits=false;
   mapPoints = [];
   points = [];
+}
+
+const getMarkerIconType = (type: any): L.Icon => {
+  return L.icon({
+    iconUrl: type,
+    iconSize: [25, 41],
+    iconAnchor: [12, 40],
+    shadowUrl: markerTypes.shadow.marker,
+    shadowSize: [41, 41],
+    shadowAnchor: [12, 40],
+  });
 }
 
 /**

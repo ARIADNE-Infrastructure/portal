@@ -1,5 +1,8 @@
 <template>
-  <div v-if="regions">
+  <div v-if="!loaded">
+    Loading..
+  </div>
+  <div v-else-if="regions">
     <filter-aggregation
       key="countries"
       id="temporalRegion"
@@ -26,6 +29,9 @@
       :maxHeight="1000"
     />
   </div>
+  <div v-else>
+    Failed to get regions &amp; periods.
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -38,12 +44,14 @@ import FilterAggregation from '@/component/Filter/Aggregation.vue';
 const params = $computed(() => searchModule.getParams);
 const regions = $computed(() => periodsModule.getRegions);
 const periods = $computed(() => periodsModule.getPeriods);
+const loaded = $computed(() => periodsModule.getLoaded);
 let lastTemporal: any;
 
 onMounted(async () => {
   await periodsModule.setRegions();
   lastTemporal = params.temporalRegion;
-  periodsModule.setPeriods(params);
+  await periodsModule.setPeriods(params);
+  periodsModule.setLoaded();
 });
 
 const unwatch = watch($$(params), () => {

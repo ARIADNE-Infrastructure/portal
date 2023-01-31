@@ -21,7 +21,7 @@
     />
 
     <filter-clear
-      :ignoreParams="['page', 'sort', 'order', 'mapq', 'bbox', 'size', 'loadingStatus', 'forceReload']"
+      :ignoreParams="['page', 'sort', 'order', 'mapq', 'size', 'loadingStatus', 'forceReload']"
       class="mb-lg"
     />
 
@@ -59,12 +59,10 @@
 <script setup lang="ts">
 import { watch } from 'vue';
 import { $computed } from 'vue/macros';
-import { PropType } from '@vue/runtime-core';
 import { useRoute, onBeforeRouteLeave } from 'vue-router'
 import { searchModule, aggregationModule } from "@/store/modules";
 import utils from '@/utils/utils';
 import router from '@/router';
-
 import FilterSearch from '@/component/Filter/Search.vue';
 import FilterYearsAndPeriods from '@/component/Filter/YearsAndPeriods.vue';
 import FilterClear from '@/component/Filter/Clear.vue';
@@ -86,7 +84,7 @@ const getShow = (component: string): boolean => {
 }
 
 watch(route, () => {
-  if (!isUnmounted) {
+  if (!isUnmounted && router.currentRoute.value.path !== '/browse/where') {
     searchModule.setAggregationSearch(router.currentRoute.value.query);
   }
 }, { immediate: true })

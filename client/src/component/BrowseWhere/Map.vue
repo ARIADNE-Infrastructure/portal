@@ -18,31 +18,18 @@
 <script setup lang="ts">
 import { watch, onMounted, onUnmounted } from 'vue';
 import { $ref, $computed, $$ } from 'vue/macros';
+import { onBeforeRouteLeave } from 'vue-router';
 import { searchModule, generalModule } from "@/store/modules";
 import { LoadingStatus } from "@/store/modules/General";
+import utils from '@/utils/utils';
 
 import * as L from "leaflet";
 import Geohash from "latlon-geohash";
-import mapUtils from "@/utils/map";
-import utils from '@/utils/utils';
-
-// Leaflet stuff
 import "leaflet.heat";
 import "leaflet.markercluster";
-import "leaflet/dist/leaflet.css";
-
-import "leaflet.markercluster/dist/MarkerCluster.css";
-import "leaflet.markercluster/dist/MarkerCluster.Default.css";
-
-// WKT reader/helper for map
 import "leaflet-draw";
-import "leaflet-draw/dist/leaflet.draw.css";
-
-// WKT reader/helper for map
 import 'wicket/wicket-leaflet';
 import Wkt from 'wicket';
-
-import HelpTooltip from "@/component/Help/Tooltip.vue";
 
 // typing for available tile layers
 interface tileLayer {
@@ -53,14 +40,15 @@ let mapObj: any = null;
 let isUnmounted: boolean = false;
 let hasMapData: boolean = $ref(false);
 const emit = defineEmits(['markerViewUpdate']);
+const markerTypes = utils.getMarkerTypes(generalModule);
 
 // Render cluster markers when this limit is reached
 const markerThreshold: number = 500;
 let clusterMarkers: L.MarkerClusterGroup | null = null;
 let heatMap: L.HeatLayer | null = null;
 let drawLayer: any = null;
-let currentViewport: any = null;
 let currentMapBounds: any = null;
+let first: boolean = true;
 
 // available tile layers
 const theTileLayer: tileLayer = {
@@ -136,6 +124,13 @@ const setMap = async () => {
   let resourceHitsCount = currentResultState?.total?.value;
   let inMarkerView: boolean = false;
 
+  if (first) {
+    first = false;
+    if (params?.bbox && !currentMapBounds) {
+      centerMap();
+    }
+  }
+
   if (resourceHitsCount <= markerThreshold) {
     inMarkerView = !inMarkerView;
     setupClusterMarkers();
@@ -149,7 +144,6 @@ const setMap = async () => {
   // Undefined mapZoom means that user has landed on map directly without filters
   if (!mapObj.getZoom()) {
     centerMap();
-    // this.$router.push({ path: '/browse/where', query: { mapq: 'true', bbox: this.map.getBounds().toBBoxString() }});
   }
 
   setupDrawCreated();
@@ -157,26 +151,6 @@ const setMap = async () => {
 
   currentZoom = mapObj?.getZoom() ?? 0;
 }
-
-/**
- * Set markers
- */
-const setMarker = (heatpoint: any): void => {
-  let decoded = Geohash.decode(heatpoint["key"]);
-
-  // L.marker([decoded.lat, decoded.lon]).addTo(this.map)
-  //   .bindPopup(decoded.lat + ' ' + decoded.lon + ' : ' + heatpoint['doc_count'] );
-
-  const icon = new L.Icon.Default();
-  icon.options.shadowSize = [0, 0];
-
-  new L.Marker([decoded.lat, decoded.lon], { icon: icon })
-    .addTo(mapObj)
-    .bindPopup(
-      decoded.lat + " " + decoded.lon + " : " + heatpoint["doc_count"]
-    );
-}
-
 
 /**
  * Creates clusters and markers and add to map as new layer.
@@ -194,16 +168,16 @@ const setupClusterMarkers = async () => {
 
     resource.data.spatial.forEach((spatial: any) => {
 
-      let markerType: any = mapUtils.markerType.point;
+      let markerType: any = markerTypes.point;
       if(spatial.spatialPrecision || spatial.coordinatePrecision ) {
-        markerType = mapUtils.markerType.approx;
+        markerType = markerTypes.approx;
       }
 
       if (spatial?.geopoint) {
 
         let marker = L.marker(
           new L.LatLng(spatial.geopoint.lat, spatial.geopoint.lon),
-          { icon: mapUtils.getMarkerIconType(markerType.marker) }
+          { icon: getMarkerIconType(markerType.marker) }
         );
 
         marker.bindTooltip(resourceTitle);
@@ -229,7 +203,7 @@ const setupClusterMarkers = async () => {
         let polygonCenter = feature.getBounds().getCenter();
         let polygonMarker = L.marker(
           new L.LatLng(polygonCenter.lat, polygonCenter.lng),
-          { icon: mapUtils.getMarkerIconType(markerType.shape) }
+          { icon: getMarkerIconType(markerType.shape) }
         );
 
         polygonMarker.bindTooltip(resourceTitle);
@@ -316,7 +290,7 @@ const setupHeatMap = async () => {
 
   //const currentHeatPoints = currentResultState.aggs?.geogrid?.grids.buckets;
   // CENTROID HEATS - Run instead of above when centroids are loaded to public portal
-  const currentHeatPoints = currentResultState.aggs?.geogrid_centroid?.grids.buckets;
+  const currentHeatPoints = currentResultState.aggs?.geogridCentroid?.grids.buckets;
 
   let max = Math.max.apply(
     null,
@@ -343,7 +317,6 @@ const setupHeatMap = async () => {
       "0.75": "#D5A03A", // Yellow
       "1": "#BB3921", // Red
     },
-    //gradient: mapUtils.getGradient(1),
     minOpacity: 0.8,
   }).addTo(mapObj);
 
@@ -378,21 +351,19 @@ const setupDrawCreated = () => {
  * Each time the map is moved, fetch new data to re-render map layers with new boundingbox
  */
 const setupOnMove = () => {
-  mapObj.once("zoomend", () => {
-    return;
-  });
-  mapObj.once("moveend", () => {
+  mapObj.once('moveend', () => {
     // Fetch search result with current boundingbox and set to store.
-    if (getCurrentBoundingBox()) {
-      let currentBBox = getCurrentBoundingBox();
+    const currentBBox = getCurrentBoundingBox();
+    if (currentBBox) {
       searchModule.setSearch({
         bbox: currentBBox,
         clear: false,
+        replaceRoute: true,
         loadingStatus: LoadingStatus.Background,
       });
     }
   });
-}
+};
 
 /**
  * Sets up map skeleton
@@ -452,7 +423,6 @@ const setupMapBody = async () => {
 
     currentTileLayer = layers[newLayerName];
   });
-
 }
 
 
@@ -460,22 +430,17 @@ const setupMapBody = async () => {
  * Center map with correpsonding existings data
  */
 const centerMap = () => {
-  if (Object.keys(currentMapBounds).length) {
+  if (currentMapBounds && Object.keys(currentMapBounds).length) {
     mapObj.fitBounds(currentMapBounds);
-  } else if( params?.bbox ) {
-    const bounds = params?.bbox.split(',');
-    mapObj.fitBounds(
-      [
-        [bounds[0],bounds[1]],
-        [bounds[2],bounds[3]]
-      ],
-      { padding: L.point(10, 10) }
-    );
+  } else if (params?.bbox) {
+    const bounds = params.bbox.split(',');
+    mapObj.fitBounds([
+      [bounds[0],bounds[1]],
+      [bounds[2],bounds[3]]
+    ], { padding: L.point(10, 10) });
   } else {
     mapObj.fitWorld();
   }
-
-  return;
 }
 
 /**
@@ -490,16 +455,16 @@ const getCurrentBoundingBox = () => {
   // This might seem strange but wrap() doesn't work as intended.
   // Wrapping lat/lng still gives strange results.
 
-  if(northWest.lat > 90 ) {
+  if (northWest.lat > 90) {
     northWest.lat = 90;
   }
-  if(northWest.lng < -180 ) {
+  if (northWest.lng < -180) {
     northWest.lng = -180;
   }
-  if(southEast.lat < -90 ) {
+  if (southEast.lat < -90) {
     southEast.lat = -90;
   }
-  if(southEast.lng > 180 ) {
+  if (southEast.lng > 180) {
     southEast.lng = 180;
   }
 
@@ -511,9 +476,18 @@ const getCurrentBoundingBox = () => {
   ];
 
   return latLng.toString();
-
 }
 
+const getMarkerIconType = (type: any): L.Icon => {
+  return L.icon({
+    iconUrl: type,
+    iconSize: [25, 41],
+    iconAnchor: [12, 40],
+    shadowUrl: markerTypes.shadow.marker,
+    shadowSize: [41, 41],
+    shadowAnchor: [12, 40],
+  });
+}
 
 /**
  * Clear heat and marker layers
@@ -536,36 +510,8 @@ const resetMap = () => {
     mapObj.removeLayer(clusterMarkers);
     clusterMarkers = null;
   }
-
 }
 
-/**
- * Mainly for debuging
- */
-const showResultViewport = () => {
-  let currentViewport = currentResultState?.aggs?.viewport?.thisBounds;
-  let thisViewPort = null;
-
-  if (currentViewport?.bounds) {
-    thisViewPort = L.rectangle(
-      [
-        [
-          currentViewport.bounds.bottom_right.lat,
-          currentViewport.bounds.bottom_right.lon,
-        ],
-        [
-          currentViewport.bounds.top_left.lat,
-          currentViewport.bounds.top_left.lon,
-        ]
-      ],
-      {
-        fillColor: "grey",
-        opacity: 0.1,
-      }
-    );
-    mapObj.addLayer(thisViewPort);
-  }
-}
-
-watch($$(currentResultState), setMap);
+const unwatch = watch($$(currentResultState), setMap);
+onBeforeRouteLeave(unwatch);
 </script>
