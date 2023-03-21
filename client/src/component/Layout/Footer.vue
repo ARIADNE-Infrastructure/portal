@@ -20,8 +20,8 @@
             <i class="fas fa-envelope mr-xs"></i> Contact
           </b-link>
           <span class="pl-xs pr-sm">|</span>
-          <b-link to="/guide" class="hover:underline">
-            <i class="fas fa-info-circle text-md mr-xs"></i> ARIADNE portal guide
+          <b-link :href="`${assets}/about/using-the-ariadne-portal.pdf`" target="_blank" class="hover:underline">
+            <i class="fas fa-file-pdf text-md mr-xs"></i> ARIADNE portal guide
           </b-link>
           <span class="pl-xs pr-sm">|</span>
           <b-link to="/about" class="hover:underline">

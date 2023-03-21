@@ -320,8 +320,12 @@ export class SearchModule extends VuexModule {
 
   @Action
   async setTotalRecordsCount() {
-    const res = await axios.get(process.env.apiUrl + '/getTotalRecordsCount');
-    this.updateTotalRecordsCount( res.data );
+    let count = '0';
+    try {
+      const res = await axios.get(process.env.apiUrl + '/getTotalRecordsCount');
+      count = res.data || '0';
+    } catch (ex) {}
+    this.updateTotalRecordsCount(count);
   }
 
   @Action
