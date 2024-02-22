@@ -25,8 +25,8 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, watch, $$ } from 'vue';
-import { $ref, $computed } from 'vue/macros';
+import { onMounted, watch } from 'vue';
+import { $ref, $computed, $$ } from 'vue/macros';
 import { useRoute, onBeforeRouteLeave } from 'vue-router'
 import { generalModule, searchModule } from "@/store/modules";
 import WordCloud from 'wordcloud';

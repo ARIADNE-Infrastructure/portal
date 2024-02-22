@@ -1,24 +1,20 @@
 // store/modules/MyStoreModule.ts
-import { VuexModule, Module, Mutation, Action, RegisterOptions } from "vuex-class-modules";
 import { SearchModule } from './Search';
 import { aggregationModule } from "../modules";
 import axios from 'axios';
 
-@Module
-export class PeriodsModule extends VuexModule {
-  private searchModule: SearchModule;
-  private periodRegions: any = null;
-  private periods: any = null;
-  private cachedPeriods: any = null;
-  private hasUpdated: boolean = false;
-  private loaded: boolean = false;
+export class PeriodsModule {
+  searchModule: SearchModule;
+  periodRegions: any = null;
+  periods: any = null;
+  cachedPeriods: any = null;
+  hasUpdated: boolean = false;
+  loaded: boolean = false;
 
-  constructor(searchModule: SearchModule, options: RegisterOptions) {
-    super(options);
+  constructor(searchModule: SearchModule) {
     this.searchModule = searchModule;
   }
 
-  @Action
   async setRegions() {
     try {
       const url = process.env.apiUrl + '/getPeriodRegions';
@@ -37,7 +33,6 @@ export class PeriodsModule extends VuexModule {
     } catch (ex) {}
   }
 
-  @Action
   async setPeriods(payload: any) {
     try {
       const url = process.env.apiUrl + '/getPeriodsForCountry?temporalRegion=' + (payload.temporalRegion || '');
@@ -62,7 +57,6 @@ export class PeriodsModule extends VuexModule {
     } catch (ex) {}
   }
 
-  @Action
   async getMissingBuckets(payload: any) {
     if (Array.isArray(payload.buckets)) {
       const params = this.searchModule.getParams[payload.key];
@@ -89,22 +83,18 @@ export class PeriodsModule extends VuexModule {
     return payload.buckets;
   }
 
-  @Mutation
   updateHasUpdated(value: boolean) {
     this.hasUpdated = value;
   }
 
-  @Mutation
   updateRegions(result: any) {
     this.periodRegions = result;
   }
 
-  @Mutation
   setLoaded() {
     this.loaded = true;
   }
 
-  @Mutation
   updatePeriods(result: any) {
     this.periods = result;
     if (aggregationModule.getOptions?.culturalPeriods) {
@@ -116,7 +106,6 @@ export class PeriodsModule extends VuexModule {
     }
   }
 
-  @Mutation
   updateCachedPeriods(data: any) {
     if (!this.cachedPeriods) {
       this.cachedPeriods = data.slice();

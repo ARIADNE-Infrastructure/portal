@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "types": ["@vue-macros/reactivity-transform/macros-global"],
     "outDir": "./built/",
     "sourceMap": true,
     "strict": true,

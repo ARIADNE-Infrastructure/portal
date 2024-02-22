@@ -1,4 +1,4 @@
-FROM php:8.1-apache
+FROM php:8.3-apache
 
 LABEL maintainer="SND <team-it@snd.gu.se>"
 
@@ -45,7 +45,7 @@ COPY  ./server/classes/ /var/www/classes
 # PHP Composer stuff
 COPY ./server/composer.json /var/www/
 COPY ./server/composer.lock /var/www/
-RUN composer install -d /var/www/ --no-scripts;
+RUN composer install -d /var/www/ --no-scripts --ignore-platform-reqs
 
 # Convenient stuff
 RUN echo 'alias ll="ls -la"' >> ~/.bashrc

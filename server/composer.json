@@ -2,10 +2,10 @@
   "name": "snd/ariadne-portal",
   "description": "Ariadne-portal",
   "require": {
-    "elasticsearch/elasticsearch": "^7.9",
-    "phpmailer/phpmailer": "^6.5",
-    "funiq/geophp": "dev-master",
-    "mjaschen/phpgeo": "^3.2"
+    "elasticsearch/elasticsearch": "^7.17.2",
+    "phpmailer/phpmailer": "^6.9.1",
+    "funiq/geophp": "^2.0.3",
+    "mjaschen/phpgeo": "^3.2.1"
   },
   "minimum-stability": "dev",
   "prefer-stable": true

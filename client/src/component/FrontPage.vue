@@ -2,15 +2,15 @@
 <template>
   <div class="pt-3x max-w-screen-lg mx-auto">
     <div class="px-2x pb-4x pt-4x lg:pt-8x 2xl:pt-11x relative z-10">
-      <div class="flex items-center justify-center">
+      <div class="flex items-center justify-center relative">
         <img :src="`${ assets }/frontpage/big-logo.png`"
           alt="ariadne logo"
           class="mb-xl"
         />
-        <span class="text-green hidden md:block"
-          style="font-size: 36px; text-shadow: 1px 1px 2px black; font-family: 'PT Sans';">
-          plus
-        </span>
+        <div
+          class="text-green font-bold italic whitespace-nowrap logo-text">
+          Research Infrastructure
+        </div>
       </div>
 
       <filter-search

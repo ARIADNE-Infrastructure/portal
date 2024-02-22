@@ -1,5 +1,4 @@
 // store/modules/MyStoreModule.ts
-import { VuexModule, Module, Mutation, Action, RegisterOptions } from "vuex-class-modules";
 import axios from 'axios';
 import utils from '@/utils/utils';
 import router from '@/router';
@@ -13,31 +12,28 @@ export interface helpText {
   text: string,
 }
 
-@Module
-export class SearchModule extends VuexModule {
-  private generalModule: GeneralModule;
-  private params: any = {};
-  private result: any = {};
-  private autocomplete: any = {};
-  private sortOptions: any[] = sortOptions;
-  private perPageOptions: any[] = perPageOptions;
-  private helpTexts: helpText[] = helpTexts;
-  private totalRecordsCount: any = '';
-  private reqMap: any = { hits: 0, aggs: 0, map: 0 };
-  private reqWaiting: any = {};
-  private filterUpdate: any = null;
-  private aggsResult: any = {};
-  private aggsLoading: boolean = false;
-  private timelineLoading: boolean = false;
-  private mapLoading: boolean = false;
-  private miniMapSearchResult: any = {};
+export class SearchModule {
+  generalModule: GeneralModule;
+  params: any = {};
+  result: any = {};
+  autocomplete: any = {};
+  sortOptions: any[] = sortOptions;
+  perPageOptions: any[] = perPageOptions;
+  helpTexts: helpText[] = helpTexts;
+  totalRecordsCount: any = '';
+  reqMap: any = { hits: 0, aggs: 0, map: 0 };
+  reqWaiting: any = {};
+  filterUpdate: any = null;
+  aggsResult: any = {};
+  aggsLoading: boolean = false;
+  timelineLoading: boolean = false;
+  mapLoading: boolean = false;
+  miniMapSearchResult: any = {};
 
-  constructor(generalModule: GeneralModule, options: RegisterOptions) {
-    super(options);
+  constructor(generalModule: GeneralModule) {
     this.generalModule = generalModule;
   }
 
-  @Action
   async setAutocomplete(payload: any) {
     let { type, q } = payload;
     let data: any = '';
@@ -55,7 +51,6 @@ export class SearchModule extends VuexModule {
   }
 
   // sets mini map search
-  @Action
   async setMiniMapSearch(mapParams: any) {
     const reqId = ++this.reqMap.map;
     this.updateMapLoading(true);
@@ -74,7 +69,6 @@ export class SearchModule extends VuexModule {
     }
   }
 
-  @Action
   async setSearch(payload: any) {
     let currentPath = router.currentRoute.value.path;
     currentPath = currentPath.endsWith('/') ? currentPath.slice(0, -1) : currentPath;
@@ -219,7 +213,6 @@ export class SearchModule extends VuexModule {
    * Aggregations are fetched and queried separately backend
    * Aggs are used for filters on frontend
    */
-   @Action
   setAggregationSearch(routerQuery: any) {
     const currentPath = router.currentRoute.value.path;
     let sendParams = { ...routerQuery };
@@ -287,7 +280,6 @@ export class SearchModule extends VuexModule {
   }
 
   // this is sometimes very slow - so do separately or search page
-  @Action
   async setTimelineSearch(payload: any) {
     const params = payload.sendParams;
     const reqId = payload.reqId;
@@ -318,7 +310,6 @@ export class SearchModule extends VuexModule {
     }
   }
 
-  @Action
   async setTotalRecordsCount() {
     let count = '0';
     try {
@@ -328,44 +319,36 @@ export class SearchModule extends VuexModule {
     this.updateTotalRecordsCount(count);
   }
 
-  @Action
   actionResetResultState() {
     this.resetResultState();
   }
 
-  @Mutation
   clearReqWaiting() {
     this.reqWaiting = {};
   }
 
-  @Mutation
   updateTotalRecordsCount(count: any) {
     this.totalRecordsCount = count;
   }
 
-  @Mutation
   updateMiniMapSearchResult(resultMap: any) {
     this.miniMapSearchResult = resultMap;
   }
 
-  @Mutation
   updateParams(params: any) {
     this.params = params;
   }
 
-  @Mutation
   updateResult(result: any) {
     this.result = result;
   }
 
-  @Mutation
   resetResultState() {
     this.result = {};
     this.aggsResult = {};
     this.params = {};
   }
 
-  @Mutation
   updateAggsResult(result: any) {
     this.aggsResult = result;
     if (this.filterUpdate) {
@@ -376,27 +359,22 @@ export class SearchModule extends VuexModule {
     }
   }
 
-  @Mutation
   updateAggsLoading(loading: boolean) {
     this.aggsLoading = loading;
   }
 
-  @Mutation
   updateFilterUpdate(payload: any) {
     this.filterUpdate = payload;
   }
 
-  @Mutation
   updateTimelineLoading(loading: boolean) {
     this.timelineLoading = loading;
   }
 
-  @Mutation
   updateMapLoading(loading: boolean) {
     this.mapLoading = loading;
   }
 
-  @Mutation
   updateAutocomplete(res: any) {
     this.autocomplete[res.type + res.q] = res.data;
   }

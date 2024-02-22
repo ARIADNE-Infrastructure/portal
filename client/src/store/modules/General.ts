@@ -1,33 +1,28 @@
 // store/modules/MyStoreModule.ts
-import { VuexModule, Module, Mutation, Action } from "vuex-class-modules";
 import { frontPageLinks, mainNavigation, frontPageImagesTotal, frontPageImageTexts } from './General/static';
 import axios from 'axios';
 
 export enum LoadingStatus { None, Locked, Background };
 
-@Module
-export class GeneralModule extends VuexModule {
-  private meta: any = {};
-  private loadingStatus: LoadingStatus = LoadingStatus.None;
+export class GeneralModule {
+  meta: any = {};
+  loadingStatus: LoadingStatus = LoadingStatus.None;
+  assetsDir: any = process.env.ARIADNE_ASSET_PATH;
+  mainNavigation: any[] = mainNavigation;
+  services: any[] = [];
+  frontPageLinks: any[] = frontPageLinks;
+  frontPageImagesTotal: number = frontPageImagesTotal;
+  frontPageImageTexts: any = frontPageImageTexts;
+  publishers: any[] = [];
+  window: any = {};
+  waiting: Function[] = [];
+  loaded: boolean = false;
+  formPw: string = '';
 
-  private assetsDir: any = process.env.ARIADNE_ASSET_PATH;
-  private mainNavigation: any[] = mainNavigation;
-  private services: any[] = [];
-  private frontPageLinks: any[] = frontPageLinks;
-  private frontPageImagesTotal: number = frontPageImagesTotal;
-  private frontPageImageTexts: any = frontPageImageTexts;
-  private publishers: any[] = [];
-  private window: any = {};
-  private waiting: Function[] = [];
-  private loaded: boolean = false;
-  private formPw: string = '';
-
-  @Action
   setWindow() {
     this.updateWindow();
   }
 
-  @Action
   setMeta(meta: any) {
     let metaEl;
 
@@ -46,7 +41,6 @@ export class GeneralModule extends VuexModule {
     metaEl.content = this.meta.description;
   }
 
-  @Action
   async setServicesAndPublishers() {
     try {
       const url = process.env.apiUrl + '/getAllServicesAndPublishers';
@@ -55,7 +49,6 @@ export class GeneralModule extends VuexModule {
     } catch (ex) {}
   }
 
-  @Action
   callAfterLoadedServices(callback: Function) {
     if (this.loaded) {
       callback();
@@ -64,7 +57,6 @@ export class GeneralModule extends VuexModule {
     }
   }
 
-  @Mutation
   updateServicesAndPublishers(data: any) {
     this.publishers = Array.isArray(data?.publishers) ? data.publishers.sort((a: any, b: any) => a.id - b.id) : [];
     this.services = Array.isArray(data?.services) ? data.services.sort((a: any, b: any) => a.id - b.id) : [];
@@ -73,23 +65,19 @@ export class GeneralModule extends VuexModule {
     this.waiting = [];
   }
 
-  @Mutation
   updateWindow() {
     // needs to create a new object for reactivity
     this.window = { ...window };
   }
 
-  @Mutation
   updateLoadingStatus(loadingStatus: LoadingStatus) {
     this.loadingStatus = loadingStatus;
   }
 
-  @Mutation
   updateMeta(meta: any) {
     this.meta = meta;
   }
 
-  @Mutation
   updateFormPw(formPw: string) {
     this.formPw = formPw;
   }

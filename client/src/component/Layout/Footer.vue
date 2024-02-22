@@ -5,14 +5,14 @@
       <div class="text-white md:pl-base">
         <p class="inline sm:block mb-sm">
           &copy; {{ new Date().getFullYear() }} the ARIADNEplus partners. All rights reserved, visit
-          <b-link href="https://ariadne-infrastructure.eu/legal/" target="_blank" class="underline">
+          <b-link href="https://www.ariadne-research-infrastructure.eu/legal/" target="_blank" class="underline">
             this page
           </b-link>
           for further details.
         </p>
 
         <p class="inline sm:block mb-sm">
-          ARIADNEplus is funded by the European Commission Horizon2020 programme under under Grant Agreement n. 823914.
+          ARIADNEplus was funded by the European Commission Horizon2020 programme under under Grant Agreement n. 823914.
         </p>
 
         <div class="inline xxs:block">

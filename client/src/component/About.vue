@@ -28,10 +28,10 @@
       About the ARIADNE research infrastructure please see our project website:
       <b-link
         target="_blank"
-        href="https://www.ariadne-infrastructure.eu"
+        href="https://www.ariadne-research-infrastructure.eu"
         class="word-break"
         :useDefaultStyle="true"
-      >https://www.ariadne-infrastructure.eu</b-link>.
+      >https://www.ariadne-research-infrastructure.eu</b-link>.
     </p>
   </div>
 </template>

@@ -30,6 +30,30 @@ input::placeholder, textarea::placeholder {
 .whitespace-no-wrap{
   white-space: nowrap;
 }
+.logo-text{
+  font-size: 28px;
+  font-family: 'PT Sans';
+  text-shadow: black 1px 1px 2px, 0.2px 0.2px 0 rgba(255,255,255,0.8), -0.2px 0.2px 0 rgba(255,255,255,0.8), -0.2px -0.2px 0 rgba(255,255,255,0.8), 0.2px -0.2px 0 rgba(255,255,255,0.8);
+  position: absolute;
+  bottom: 10px;
+  right: 0;
+  left: 76%;
+  transform: translateX(-76%);
+}
+@media (max-width: 767px){
+  .logo-text{
+    left: 5%;
+    transform: none;
+    width: 100%;
+    text-align: center;
+    bottom: 0;
+  }
+}
+@media (max-width: 440px){
+  .logo-text{
+    font-size: 24px;
+  }
+}
 
 /* leaflet overrides */
 

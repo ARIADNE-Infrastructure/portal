@@ -1,28 +1,23 @@
-// store/modules/MyStoreModule.ts
-import { VuexModule, Module, Mutation, Action, RegisterOptions } from "vuex-class-modules";
 import axios from 'axios';
 import { LoadingStatus, GeneralModule } from './General';
 
-@Module
-export class ContactModule extends VuexModule {
-  private captchaPublicKey = '6Ld9wPQZAAAAABdFgzuc2NDjhb9kz1pjHx8dkQAu';
-  private generalModule: GeneralModule;
-  private errorMsg = '';
-  private successMsg = '';
-  private mail = {
+export class ContactModule {
+  captchaPublicKey = '6Ld9wPQZAAAAABdFgzuc2NDjhb9kz1pjHx8dkQAu';
+  generalModule: GeneralModule;
+  errorMsg = '';
+  successMsg = '';
+  mail = {
     name: '',
     email: '',
     subject: '',
     message: ''
   };
 
-  constructor (generalModule: GeneralModule, options: RegisterOptions) {
-    super(options);
+  constructor (generalModule: GeneralModule) {
     this.generalModule = generalModule;
   }
 
-  @Action
-  public async sendMail (captchaResponse: string) {
+  async sendMail (captchaResponse: string) {
     this.generalModule.updateLoadingStatus(LoadingStatus.Locked);
 
     try {
@@ -56,48 +51,43 @@ export class ContactModule extends VuexModule {
     this.generalModule.updateLoadingStatus(LoadingStatus.None);
   }
 
-  @Mutation
-  public clearMail () {
+  clearMail () {
     this.mail.name = '';
     this.mail.email = '';
     this.mail.subject = '';
     this.mail.message = '';
   }
 
-  @Mutation
-  public clearMessages () {
+  clearMessages () {
     this.errorMsg = '';
     this.successMsg = '';
   }
 
-  @Mutation
-  public setErrorMsg (msg: string) {
+  setErrorMsg (msg: string) {
     this.errorMsg = msg;
   }
 
-  @Mutation
-  public setSuccessMsg (msg: string) {
+  setSuccessMsg (msg: string) {
     this.successMsg = msg;
   }
 
-  @Mutation
-  public setSubject (subject: string) {
+  setSubject (subject: string) {
     this.mail.subject = subject;
   }
 
-  public get getMail () {
+  get getMail () {
     return this.mail;
   }
 
-  public get getErrorMsg () {
+  get getErrorMsg () {
     return this.errorMsg;
   }
 
-  public get getSuccessMsg () {
+  get getSuccessMsg () {
     return this.successMsg;
   }
 
-  public get getCaptchaPublicKey () {
+  get getCaptchaPublicKey () {
     return this.captchaPublicKey;
   }
 }

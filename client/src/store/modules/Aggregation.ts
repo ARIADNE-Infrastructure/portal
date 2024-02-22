@@ -1,5 +1,3 @@
-// store/modules/MyStoreModule.ts
-import { VuexModule, Module, Mutation, Action, RegisterOptions } from "vuex-class-modules";
 import axios from 'axios';
 import utils from '@/utils/utils';
 import { SearchModule } from './Search';
@@ -11,25 +9,20 @@ export interface iKeyVal {
   val: string,
 }
 
-@Module
-export class AggregationModule extends VuexModule {
-  private searchModule: SearchModule;
-  private periodsModule: PeriodsModule;
+export class AggregationModule {
+  searchModule: SearchModule;
+  periodsModule: PeriodsModule;
+  options: any = {};
+  titles: any = titles;
+  descriptions: any = descriptions;
+  resultTitles: any = resultTitles;
+  types: any[] = types;
 
-
-  constructor(searchModule: SearchModule, periodsModule: PeriodsModule, options: RegisterOptions) {
-    super(options);
+  constructor(searchModule: SearchModule, periodsModule: PeriodsModule) {
     this.searchModule = searchModule;
     this.periodsModule = periodsModule;
   }
 
-  private options: any = {};
-  private titles: any = titles;
-  private descriptions: any = descriptions;
-  private resultTitles: any = resultTitles;
-  private types: any[] = types;
-
-  @Action
   async setSearch(payload: any) {
     if (payload.value.search || payload.value.size) {
       const searchParams = this.searchModule.getParams;
@@ -70,17 +63,14 @@ export class AggregationModule extends VuexModule {
     }
   }
 
-  @Action
   setOptionsToDefault() {
     this.clearOptions();
   }
 
-  @Action
   setOptions(payload: any) {
     this.updateOptions(payload);
   }
 
-  @Action
   setActive(payload: any) {
     const params: any = this.searchModule.getParams;
     let { key, value, add } = payload;
@@ -126,8 +116,7 @@ export class AggregationModule extends VuexModule {
     this.searchModule.setSearch(data);
   }
 
-  @Action
-  public clearFilterOptions(keep?: string) {
+  clearFilterOptions(keep?: string) {
     for (let key in this.descriptions) {
       if (this.options[key]) {
         let data = {};
@@ -155,14 +144,12 @@ export class AggregationModule extends VuexModule {
     }
   }
 
-  @Mutation
-  public updateOptions(payload: any) {
+  updateOptions(payload: any) {
     const { id, value } = payload;
     this.options[id] = value
   }
 
-  @Mutation
-  public clearOptions() {
+  clearOptions() {
     this.options = {};
   }
 

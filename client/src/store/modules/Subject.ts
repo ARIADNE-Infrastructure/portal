@@ -1,20 +1,14 @@
-// store/modules/MyStoreModule.ts
-import { VuexModule, Module, Mutation, Action, RegisterOptions } from "vuex-class-modules";
 import axios from 'axios';
 import { LoadingStatus, GeneralModule } from './General';
 
-@Module
-export class SubjectModule extends VuexModule {
+export class SubjectModule {
+  subject: any = null;
+  generalModule: GeneralModule;
 
-  constructor (generalModule: GeneralModule, options: RegisterOptions) {
-    super(options);
+  constructor (generalModule: GeneralModule) {
     this.generalModule = generalModule;
   }
 
-  private subject: any = null;
-  private generalModule: GeneralModule;
-
-  @Action
   async setSubject (id: string) {
     let data: any = null;
 
@@ -34,8 +28,7 @@ export class SubjectModule extends VuexModule {
     this.generalModule.updateLoadingStatus(LoadingStatus.None);
   }
 
-  @Mutation
-  public updateSubject(subject: any) {
+  updateSubject(subject: any) {
     this.subject = subject;
   }
 

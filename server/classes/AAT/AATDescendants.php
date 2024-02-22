@@ -72,7 +72,7 @@ class AATDescendants {
   /**
    * Recursive function to drill and find given term descendants (children).
    */
-  function getAllDescendants ($currentId, $parentUri) {
+  private function getAllDescendants ($currentId, $parentUri) {
     foreach ($this->recordList as $recId=>$record) {
       foreach ($record['_source']['broader'] as $id=>$broader) {
         if ($broader['uri'] === $parentUri) {

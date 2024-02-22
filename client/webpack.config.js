@@ -107,8 +107,9 @@ module.exports = env => {
         patterns: [
             { from: 'static', to: 'static' },
         ]
-      })
+      }),
 
+      require('@vue-macros/reactivity-transform/webpack')()
     ],
     resolve: {
       extensions: ['.ts', '.js', '.vue', '.json'],

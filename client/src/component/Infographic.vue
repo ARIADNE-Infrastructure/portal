@@ -27,7 +27,6 @@
               <ul>
                 <li>Vue.js <span class="text-white-50 text-mmd">(Single page app)</span></li>
                 <li>Typescript <span class="text-white-50 text-mmd">(Static type checking)</span></li>
-                <li>Vuex <span class="text-white-50 text-mmd">(Global state handling)</span></li>
                 <li>Tailwind <span class="text-white-50 text-mmd">(Utility-driven styling)</span></li>
                 <li>Font Awesome <span class="text-white-50 text-mmd">(Scalable icons)</span></li>
               </ul>

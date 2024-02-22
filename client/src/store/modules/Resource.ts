@@ -1,42 +1,33 @@
 // store/modules/MyStoreModule.ts
-import { VuexModule, Module, Mutation, Action, RegisterOptions } from "vuex-class-modules";
 import axios from 'axios';
 import { LoadingStatus, GeneralModule } from './General';
 import { fields, types, typesTemporary, thematicals, ctsCertified, validFromPaths } from './Resource/static';
 import utils from "@/utils/utils";
 import router from '@/router';
 
-@Module
-export class ResourceModule extends VuexModule {
-  private generalModule: GeneralModule;
+export class ResourceModule {
+  generalModule: GeneralModule;
+  resource: any = null;
+  fields: any[] = fields;
+  types: any = types;
+  typesTemporary: any = typesTemporary;
+  ctsCertified: string[] = ctsCertified;
+  thematicals: any = thematicals;
+  fromPath: any = validFromPaths[0];
+  resourceParams: any = { thematical: '' };
 
-  constructor(generalModule: GeneralModule, options: RegisterOptions) {
-    super(options);
+  constructor(generalModule: GeneralModule) {
     this.generalModule = generalModule;
   }
 
-  private resource: any = null;
-  private fields: any[] = fields;
-  private types: any = types;
-  private typesTemporary: any = typesTemporary;
-  private ctsCertified: string[] = ctsCertified;
-  private thematicals: any = thematicals;
-  private fromPath: any = validFromPaths[0];
-  private resourceParams: any = {
-    thematical: ''
-  };
-
-  @Action
   navigateToResource(id: string) {
     router.push('/resource/'+id);
   }
 
-  @Action
   setResourceParamsThematical(value: string) {
     this.updateResourceParamsThematical(value);
   }
 
-  @Action
   async setResource(id: string) {
     let data: any = null;
 
@@ -72,17 +63,14 @@ export class ResourceModule extends VuexModule {
 
   }
 
-  @Mutation
   updateResourceParamsThematical(value: string) {
     this.resourceParams.thematical = value;
   }
 
-  @Mutation
   updateResource(resource: any) {
     this.resource = resource;
   }
 
-  @Mutation
   maybeUpdateFromPath(payload: any) {
     if (!payload?.to?.startsWith('/resource')) {
       return;

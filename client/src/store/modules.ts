@@ -1,4 +1,4 @@
-import store from './';
+import { reactive } from 'vue';
 import { AggregationModule } from './modules/Aggregation';
 import { GeneralModule } from './modules/General';
 import { ResourceModule } from './modules/Resource';
@@ -8,13 +8,11 @@ import { ContactModule } from './modules/Contact';
 import { BreadCrumbModule } from './modules/BreadCrumb';
 import { PeriodsModule } from './modules/Periods';
 
-export const generalModule = new GeneralModule({ store, name: "generalModule" });
-export const resourceModule = new ResourceModule(generalModule, { store, name: "resourceModule" });
-export const searchModule = new SearchModule(generalModule, { store, name: "searchModule" });
-export const periodsModule = new PeriodsModule(searchModule, { store, name: "periodsModule" });
-export const aggregationModule = new AggregationModule(searchModule, periodsModule, { store, name: "aggregationModule" });
-
-export const subjectModule = new SubjectModule(generalModule, { store, name: "subjectModule" });
-export const contactModule = new ContactModule(generalModule, { store, name: "contactModule" });
-export const breadCrumbModule = new BreadCrumbModule({ store, name: "breadCrumbModule" });
-
+export const generalModule = reactive(new GeneralModule());
+export const resourceModule = reactive(new ResourceModule(generalModule));
+export const searchModule = reactive(new SearchModule(generalModule));
+export const periodsModule = reactive(new PeriodsModule(searchModule));
+export const aggregationModule = reactive(new AggregationModule(searchModule, periodsModule));
+export const subjectModule = reactive(new SubjectModule(generalModule));
+export const contactModule = reactive(new ContactModule(generalModule));
+export const breadCrumbModule = reactive(new BreadCrumbModule());

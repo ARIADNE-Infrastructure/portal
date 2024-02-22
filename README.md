@@ -27,14 +27,13 @@ docker-compose up
 
 - Typescript
 - Vue
-- Vuex
 - Tailwindcss
 
 ``` bash
 # install all packages (client dir)
 npm i
 
-# run the dev server (client dir)
+# run the dev server (localhost port 8080, client dir)
 npm run dev
 
 # run the dev server over wifi (client dir)
