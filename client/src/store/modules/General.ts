@@ -27,7 +27,7 @@ export class GeneralModule {
     let metaEl;
 
     this.updateMeta({
-      title: (meta.title || this.meta.title) + ' - Ariadne portal',
+      title: (meta.title || this.meta.title) + ' - Archsearch',
       description: typeof meta.description === 'string' ? meta.description : (this.meta.description || '')
     });
 

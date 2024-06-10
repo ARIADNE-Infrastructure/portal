@@ -7,10 +7,6 @@
           alt="ariadne logo"
           class="mb-xl"
         />
-        <div
-          class="text-green font-bold italic whitespace-nowrap logo-text">
-          Research Infrastructure
-        </div>
       </div>
 
       <filter-search

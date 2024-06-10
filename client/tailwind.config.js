@@ -61,7 +61,8 @@ module.exports = {
   },
   theme: {
     fontFamily: {
-      'base': '"Roboto", Helvetica, sans-serif',
+      'base': '"Poppins", sans-serif',
+      'serif': '"Source Serif Pro", serif'
     },
 
     fontSize: {
@@ -82,10 +83,10 @@ module.exports = {
 
     colors: getColorsWithOpacity({
       // primary
-      yellow: '#D5A03A',
-      red:    '#BB3921',
-      green:  '#75A99D',
-      blue:   '#135C77',
+      yellow: '#e4a024',
+      red:    '#cc0000',
+      green:  '#326537',
+      blue:   '#6956a4',
 
       // general
       darkGray:    '#333',

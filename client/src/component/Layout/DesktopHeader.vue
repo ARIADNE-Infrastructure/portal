@@ -1,43 +1,30 @@
 <template>
   <header
-    class="hidden md:block fixed top-0 z-30 top-0 w-full h-4x bg-lightGray shadow-bottomDark"
+    class="hidden md:block fixed top-0 z-30 top-0 w-full bg-white shadow-bottomDark"
   >
-    <div class="flex relative items-center max-w-screen-xl mx-auto h-4x">
+    <div class="flex relative items-center max-w-screen-xl mx-auto" style="height:81px;">
       <!-- logo -->
       <b-link
         to="/"
-        class="ml-base flex transition-opacity duration-300 hover:opacity-80"
-        style="margin-bottom: -28px">
-        <img
-          :src="`${ assets }/logo.png`"
-          class="backface-hidden"
-          alt="Ariadne logo"
-        />
-        <p class="text-red text-2x" style="font-family: 'PT Sans'; white-space: nowrap; margin-top: -7px">
-          ARIADNE PORTAL
-        </p>
+        class="ml-base flex transition-opacity duration-300 hover:opacity-80">
+        <img src="https://archaeologydataservice.ac.uk/app/themes/ads_theme/public/images/logo.svg" alt="Archaeology Data Service " style="height:81px;"/>
       </b-link>
 
-      <div class="w-1/2 border-b-3 border-yellow ml-5x absolute bottom-0"></div>
 
       <!--  menu -->
       <ul class="flex flex-1 h-full justify-end ml-2x xl:mr-base">
         <li
           v-for="item in generalModule.getMainNavigation"
           :key="item.path"
-          class="h-full flex-1 bg-lightGray relative group"
+          class="h-full flex-1 bg-white relative group"
           style="max-width: 200px"
         >
           <b-link
             :to="item.path"
             :class="`${ item.groupHover || '' } ${ item.hover } ${ item.border }` + (isActive(item.path) ? ` ${ item.bg } ${ item.border }` : '')"
-            class="block relative transition-all duration-300 text-mmd text-midGray2 border-b-3 flex items-center justify-center h-full"
+            class="block relative transition-all duration-300 text-mmd text-red flex items-center justify-center h-full"
           >
-            <span class="leading-1">
-              <i
-                :class="`fa-${ item.icon }`"
-                class="fas mr-sm"
-              />
+            <span class="leading-1" style="font-weight:900;font-size:21px;">
               {{ item.name }}
             </span>
           </b-link>
