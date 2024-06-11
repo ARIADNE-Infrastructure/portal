@@ -9,7 +9,7 @@
     </div>
 
     <header
-      class="fixed top-0 w-full bg-lightGray z-30"
+      class="fixed top-0 w-full bg-white z-30"
       :class="{ 'border-b-base border-gray shadow-bottomDark': !show }"
     >
       <div class="flex items-center h-4x">
@@ -19,7 +19,7 @@
           class="block p-base cursor-pointer"
         >
           <img
-            :src="`${ assets }/logo.png`"
+            src="https://archaeologydataservice.ac.uk/app/themes/ads_theme/public/images/logo.svg" style="height:45px"
             class="transition-opacity duration-300 hover:opacity-80 backface-hidden"
             alt="logo"
           >

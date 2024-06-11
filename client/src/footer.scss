@@ -1,0 +1,136 @@
+/* Site footer */
+
+.m-site-footer {
+
+    background: #f0f0f0;
+  }
+
+  .m-site-footer .main-footer {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-gap: 2rem;
+    align-items: flex-end;
+    padding: 1.2rem 0 2rem;
+    @media (max-width: 767px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .m-site-footer .logos {
+    grid-column: 1 / 3;
+  }
+
+  .m-site-footer .logos ul {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    @media (max-width: 767px) {
+      flex-wrap: wrap;
+    }
+  }
+
+  .m-site-footer .logos ul li {
+    padding-right: 1.5rem;
+    @media (max-width: 1150px) {
+      padding-right: 0.9rem;
+    }
+    @media (max-width: 767px) {
+      width: 33.333333%;
+    }
+  }
+
+  .m-site-footer .logos li:first-child {
+    border-right: 1px solid #d8d8d8;
+    display: inline-block;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    margin-right: 1.5rem;
+    @media (max-width: 1150px) {
+      margin-right: 0.9rem;
+    }
+    @media (max-width: 767px) {
+      border-right: 0;
+      border-bottom: 1px solid #d8d8d8;
+      display: inline-block;
+      width: 100%;
+      margin-bottom: 1rem;
+      padding-right: 0;
+    }
+  }
+
+  .m-site-footer .logos img {
+    width: 100px;
+    mix-blend-mode: multiply;
+  }
+
+  .m-site-footer .re3data img {
+    width: 198px;
+  }
+
+  .m-site-footer .logos a {
+    transition: all 0.2s;
+  }
+
+  .m-site-footer .logos a:hover img {
+    opacity: 0.8;
+  }
+
+  .m-site-footer .social h3 {
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    font-weight: 500;
+    @media (max-width: 1150px) {
+      font-size: 1rem;
+    }
+    color: #5f5f5f;
+  }
+
+  .m-site-footer .social ul {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    display: flex;
+  }
+
+  .m-site-footer .social a {
+    font-size: 3.1rem;
+    margin-right: 1.2rem;
+    color: #333;
+    display: block;
+    transition: all .2s;
+  }
+
+  .m-site-footer .social a:hover {
+    transform: scale(1.05);
+    color: $red;
+  }
+
+  .m-site-footer .footer-navigation {
+    color: #f0f0f0;
+    padding: 2em;
+
+    background: rgba(0, 0, 0, 0.9);
+  }
+
+  .m-site-footer .footer-navigation a:hover {
+    color: white;
+  }
+
+  .m-site-footer .footer-navigation ul {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    display: flex;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .m-site-footer .footer-navigation li {
+    margin-right: 1rem;
+  }
+
+  .m-site-footer .legal {
+    opacity: 0.5;
+  }
