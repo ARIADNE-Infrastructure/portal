@@ -90,6 +90,15 @@ class Query {
     // Push filters
     $filters = QuerySettings::getFilters($_GET);
 
+    // get terms from settings
+    if(isset($this->settings->terms)) {
+      foreach ($this->settings->terms as $key => $value) {
+        $filters[] = [
+          'term' => [$key => $value]
+        ];
+      }
+    }
+
     // Push filters to main query
     foreach ($filters as $filter) {
       $query['query']['bool']['filter'][] = $filter;

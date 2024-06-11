@@ -69,6 +69,7 @@
 
         <div class="legal">
           &copy; Archaeology Data Service <span id="footer-year"></span>
+          <p>The Archsearch portal reuses e-infrastructure constructed within the EU-funded ARIADNE and ARIADNEplus project.</p>
         </div>
       </div>
 

@@ -9,3 +9,4 @@ server/html/*
 !server/html/.htaccess
 server/classes/AAT/data/*
 server/classes/settings.json
+!server/theme/settings.json
