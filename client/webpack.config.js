@@ -154,7 +154,7 @@ module.exports = env => {
     console.log('ARIADNE Portal - Building with public STAGING config...');
 
     process.env.NODE_ENV = 'staging';
-    ariadneApiPath = 'https://ariadne-portal-staging.d4science.org/api';
+    ariadneApiPath = 'http://ads20demo0/archsearchv-api/api';
 
     // SND - DEMO environment only
     //config.output.publicPath = '/ariadneplus/html/';
