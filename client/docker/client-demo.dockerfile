@@ -13,7 +13,7 @@
 #
 # Setup client environment.
 #
-FROM node:15-alpine AS ariadne-build
+FROM node:22.3-alpine AS ariadne-build
 LABEL maintainer="SND <team-it@snd.gu.se>"
 WORKDIR /app
 COPY package*.json ./
