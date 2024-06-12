@@ -43,8 +43,8 @@ COPY  ./server/html/ /var/www/html
 COPY  ./server/classes/ /var/www/classes
 
 # Copy logs - todo: there must be a better way to get this working?
-COPY  ./server/logs/ /var/www/logs
-RUN touch /var/www/logs/app.log && chown -R www-data:www-data /var/www/logs
+#COPY  ./server/logs/ /var/www/logs
+#RUN touch /var/www/logs/app.log && chown -R www-data:www-data /var/www/logs
 
 # PHP Composer stuff
 COPY ./server/composer.json /var/www/
