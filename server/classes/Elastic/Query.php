@@ -569,14 +569,17 @@ class Query {
    * Handle sorting.
    */
   private function getSort () {
-    if (isset($_GET['sort']) && in_array($_GET['sort'], QuerySettings::getSearchSort())) {
-      $order = 'asc';
-      if (isset($_GET['order']) && $_GET['order'] === 'desc') {
-        $order = 'desc';
+    if (!empty($_GET['sort'])) {
+      $sort = QuerySettings::getSearchSort()[$_GET['sort']] ?? null;
+      if ($sort) {
+        $ret = [
+          $sort['key'] => ['order' => ($_GET['order'] ?? '') === 'desc' ? 'desc' : 'asc']
+        ];
+        if ($sort['nested']) {
+          $ret[$sort['key']]['nested']['path'] = $sort['nested'];
+        }
+        return $ret;
       }
-      return [
-        $_GET['sort'] => ['order' => $order]
-      ];
     }
     return [
       '_score' => ['order' => 'desc']

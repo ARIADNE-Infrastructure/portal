@@ -14,11 +14,13 @@
     <section class="lg:w-2/3 lg:pl-lg block">
       <result-info class="py-base pt-none" />
 
-      <div class="md:flex mt-sm items-center justify-between pt-none">
-        <result-paginator />
-        <div class="flex mt-lg md:mt-none">
-          <result-sort-order class="mr-md" />
-          <result-per-page />
+      <div class="md:flex md:flex-wrap items-center justify-between pt-none">
+        <div class="mt-sm mr-sm">
+          <result-paginator />
+        </div>
+        <div class="flex flex-wrap">
+          <result-sort-order class="mr-md mt-lg md:mt-sm" />
+          <result-per-page class="mt-lg md:mt-sm" />
         </div>
       </div>
 

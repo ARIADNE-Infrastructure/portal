@@ -86,22 +86,26 @@
           <b-link
             :to="'/resource/' + encodeURIComponent(similar.id)"
           >
-            <help-tooltip
-              :title="getResourceTypeName(similar)"
-              class="mr-sm"
-              top="0"
-              left="2rem"
-            >
-              <!-- style in img is for safari bug -->
-              <img
-                :src="getResourceIconTemporary(similar)"
-                style="width:20px;height:20px"
-                class="inline mb-xs"
-                alt="icon"
-                width="20"
-                height="20">
-            </help-tooltip>
-            <span>{{ similar.title.text || 'No title' }}</span>
+            <div class="flex items-center mb-md">
+              <div class="shrink-0">
+                <help-tooltip
+                  :title="getResourceTypeName(similar)"
+                  class="mr-sm"
+                  top="0"
+                  left="2rem"
+                >
+                  <!-- style in img is for safari bug -->
+                  <img
+                    :src="getResourceIconTemporary(similar)"
+                    style="width:20px;height:20px"
+                    alt="icon"
+                    width="20"
+                    height="20">
+                </help-tooltip>
+              </div>
+
+              <span class="leading-sm">{{ similar.title.text || 'No title' }}</span>
+            </div>
           </b-link>
         </div>
       </div>

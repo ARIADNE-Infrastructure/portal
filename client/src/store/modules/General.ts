@@ -24,7 +24,7 @@ export class GeneralModule {
   }
 
   setMeta(meta: any) {
-    let metaEl;
+    let metaEl = document.head.querySelector('meta[name="description"]');
 
     this.updateMeta({
       title: (meta.title || this.meta.title) + ' - Ariadne portal',

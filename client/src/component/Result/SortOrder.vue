@@ -8,6 +8,7 @@
     <b-select
       :value="order"
       :options="options"
+      :minWidth="185"
       color="blue"
       @input="setOrder"
     />

@@ -27,7 +27,7 @@
 
       <!-- popup -->
       <div
-        class="fixed top-0 left-0 w-full h-full bg-black-80 justify-center items-center cursor-pointer"
+        class="fixed top-0 left-0 w-full h-full bg-black-80 justify-center items-center cursor-pointer z-20"
         :class="activeUrl ? 'flex' : 'hidden'"
         @click="activeUrl = ''"
       >
@@ -42,11 +42,12 @@ import 'vue3-carousel/dist/carousel.css';
 import { $computed, $ref } from 'vue/macros';
 import { Carousel, Slide, Pagination, Navigation } from 'vue3-carousel';
 import { resourceModule } from "@/store/modules";
+import utils from '@/utils/utils';
 
 const resource = $computed(() => resourceModule.getResource);
 const digitalImages: Array<string> = $computed(() => resourceModule.getDigitalImages(resource));
 
-const amountToShow: number = 3;
+const amountToShow: number = utils.isMobile() ? 2 : 3;
 let validDigitalImages: Array<string> = $ref([]);
 let isValidating: boolean = $ref(true);
 let activeUrl: string = $ref('');

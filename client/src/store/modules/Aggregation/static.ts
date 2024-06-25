@@ -1,5 +1,5 @@
 export const titles = {
-  ariadneSubject: 'Resource type',
+  ariadneSubject: 'Resource Type',
   spatial: 'Place',
   nativeSubject: 'Original subject',
   derivedSubject: 'Getty AAT Subjects',
@@ -33,7 +33,7 @@ export const titles = {
   providerId: 'Provider ID',
   publisher: 'Publisher',
   rdfAbout: 'RDF About',
-  resourceType: 'Resurce Type',
+  resourceType: 'Type',
   rights: 'Rights',
   scientificResponsible: 'Scientific Responsible',
   technicalResponsible: 'Technical Responsible',
@@ -47,17 +47,17 @@ export const descriptions = {
   temporal: 'Numerical date or date range, period name(s',
   publisher: 'Data provider',
   contributor: 'Organisation or individual contributing the resource',
-  aatSubjects: 'Subject type classified according to the Getty Art and Architecture thesaurus'
+  aatSubjects: 'Subject type classified according to the Getty Art and Architecture thesaurus',
 }
 
 // temporary separate titles for results
 export const resultTitles = {
-  ariadneSubject: 'Resource type',
+  ariadneSubject: 'Resource Type',
   spatial: 'Place',
-  nativeSubject: 'Original subject',
+  nativeSubject: 'Original Subject',
   derivedSubject: 'Getty AAT Subjects',
   temporal: 'Dating',
-  aatSubjects: 'Getty AAT Subjects'
+  aatSubjects: 'Getty AAT Subjects',
 };
 
 export const types = [
@@ -101,6 +101,6 @@ export const types = [
   {
     id: 'aatSubjects',
     prop: 'label'
-  }
+  },
 ];
 

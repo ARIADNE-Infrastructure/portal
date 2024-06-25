@@ -148,9 +148,12 @@ const setupMap = () => {
     scrollWheelZoom: false
   });
 
-  L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
-  }).addTo(mapObj);
+  const allTileLayers = utils.getTileLayers(L, false, false);
+
+  allTileLayers.OSM.addTo(mapObj);
+
+  L.control.layers(allTileLayers, undefined, { position: 'bottomright' }).addTo(mapObj);
+
   mapObj.addControl(L.control.zoom({ position: 'bottomright' }));
 }
 

@@ -11,9 +11,12 @@ class QuerySettings {
 
   public static function getSearchSort() {
     return [
-      'issued',
-      'title',
-      '_score'
+      '_score' => ['key' => '_score', 'nested' => null],
+      'issued' => ['key' => 'issued', 'nested' => null],
+      'datingfrom' => ['key' => 'temporal.from', 'nested' => 'temporal'],
+      'datingto' => ['key' => 'temporal.until', 'nested' => 'temporal'],
+      'publisher' => ['key' => 'publisher.name.raw', 'nested' => null],
+      'resource' => ['key' => 'ariadneSubject.prefLabel.raw', 'nested' => null],
     ];
   }
 
@@ -211,8 +214,7 @@ class QuerySettings {
    * Get filter query metadata
    */
   public static function getValidFilter($filterName, $filterValue) {
-
-    $validFilters =  [
+    $validFilters = [
       'bbox' => [
         'fieldPath' => 'temporal',
         'isNested' => false,
@@ -288,20 +290,13 @@ class QuerySettings {
         'innerQuery' => $filterName !== 'range' ?: Timeline::buildRangeIntersectingInnerQuery($filterValue)
       ],
     ];
-
-    //return $validFilters;
-    if(array_key_exists($filterName, $validFilters)) {
-      return $validFilters[$filterName];
-    }
-    return;
-
+    return $validFilters[$filterName] ?? null;
   }
 
   /**
    * Aggregations
    */
   public static function getSearchAggregations() {
-
     return [
       'ariadneSubject' => [
         'terms' => [

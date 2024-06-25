@@ -25,6 +25,7 @@ if (process.argv.some(arg => arg === '0.0.0.0')) { // localhost over wifi
 }
 
 let ariadneApiPath;
+let ariadnePublicPath;
 let ariadneAssetPath = '/static/assets';
 
 module.exports = env => {
@@ -125,7 +126,7 @@ module.exports = env => {
   }
 
 
-  console.log( 'ENV: ', env );
+  console.log('ENV: ', env);
   /**
    * Development config
    */
@@ -236,16 +237,11 @@ module.exports = env => {
   ariadneAssetPath = env.ariadneAssetPath ? env.ariadneAssetPath : ariadneAssetPath;
   ariadnePublicPath = config.output.publicPath;
 
-  console.log( 'Building with public path: ' );
-  console.log(ariadnePublicPath);
+  console.log('Building with public path: ' + ariadnePublicPath);
+  console.log('Building with asset path: ' + ariadneAssetPath);
+  console.log('Building with API path: ' + ariadneApiPath);
 
-  console.log( 'Building with asset path: ' );
-  console.log(ariadneAssetPath);
-
-  console.log( 'Building with API path:: ' );
-  console.log(ariadneApiPath);
-
-  const argvStr = process.argv.includes('--no-purge') ? '--no-purge' : ''
+  const argvStr = process.argv.includes('--no-purge') ? '--no-purge' : '';
 
   config.plugins.push(new InjectPlugin(() => `
     window.process = {

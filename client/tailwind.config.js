@@ -234,6 +234,7 @@ module.exports = {
     lineHeight: {
       '0': '0',
       '1': '1',
+      'sm': '1.3',
     },
   }
 }

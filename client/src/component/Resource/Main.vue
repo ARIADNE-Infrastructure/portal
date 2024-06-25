@@ -43,7 +43,6 @@
 <script setup lang="ts">
 import { $computed } from 'vue/macros';
 import { resourceModule } from "@/store/modules";
-import utils from '@/utils/utils';
 import ResourceMainMetadata from './Main/Metadata.vue';
 import ResourceMainResponsible from './Main/Responsible.vue';
 import ResourceMainLicence from './Main/Licence.vue';
