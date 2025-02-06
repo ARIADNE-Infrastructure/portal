@@ -1,0 +1,11 @@
+name: "Deploy to staging"
+
+on:
+  # Triggers the workflow on push to the "staging" branch
+  push:
+    branches: [ "staging" ]
+    
+jobs:
+  deploy:
+    uses: uoy-ads/ads-devops/.github/workflows/deploy-to-staging.yml@main
+    secrets: inherit
