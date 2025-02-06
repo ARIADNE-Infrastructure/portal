@@ -1,0 +1,33 @@
+version: '3'
+
+services:
+
+  ariadne-client:
+    build:
+      context: client
+      dockerfile: docker/client-staging.dockerfile
+    restart: always
+    container_name: archsearchv
+    environment:
+      VIRTUAL_HOST: ads20staging0
+      VIRTUAL_PATH: /archsearchv/
+
+
+  ariadne-server:
+    build:
+      context: .
+      dockerfile: server/docker/server.dockerfile
+    working_dir: /var/www/html
+    volumes:
+      - ./server/:/var/www/
+    restart: always
+    container_name: archsearchv-api
+    environment:
+      VIRTUAL_HOST: ads20staging0
+      VIRTUAL_PATH: /archsearchv-api/
+      VIRTUAL_DEST: /
+
+networks:
+  default:
+    external:
+      name: nginx-proxy
