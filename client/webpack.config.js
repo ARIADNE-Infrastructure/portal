@@ -154,14 +154,14 @@ module.exports = env => {
     console.log('ARIADNE Portal - Building with public STAGING config...');
 
     process.env.NODE_ENV = 'staging';
-    ariadneApiPath = 'http://ads20demo0/archsearchv-api/api';
+    ariadneApiPath = 'http://ads20staging0/archsearchv-api/api';
 
     // SND - DEMO environment only
     //config.output.publicPath = '/ariadneplus/html/';
     //ariadneApiPath = 'https://demo.snd.gu.se/ariadneplus/html/api';
     //ariadneAssetPath = '/ariadneplus/html/static/assets';
 
-    // ads20demo0
+    // ads20staging0
     config.output.publicPath = '/archsearchv/';
     ariadneAssetPath = '/archsearchv/static/assets';
 

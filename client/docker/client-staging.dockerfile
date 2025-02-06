@@ -33,7 +33,7 @@ RUN mkdir /usr/share/nginx/html/archsearchv
 COPY --from=ariadne-build /app/dist /usr/share/nginx/html/archsearchv
 
 # Copy nginx configuration
-COPY --from=ariadne-build /app/docker/nginx-demo.conf /etc/nginx/nginx.conf
+COPY --from=ariadne-build /app/docker/nginx-staging.conf /etc/nginx/nginx.conf
 
 # Restart and reload new configuration
 # RUN nginx -s reload
