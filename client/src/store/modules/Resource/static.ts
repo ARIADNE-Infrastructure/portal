@@ -64,6 +64,7 @@ export const typesTemporary = {
   'Rock Art': 'rockart',
   'Scientific analysis': 'scientificanalysis',
   'Site/monument': 'sitemonument',
+  'E-Publication': 'epublication',
   'Thematic Survey (http://purl.org/heritagedata/schemes/agl_et/concepts/147326)': 'thematicsurvey', // naming to be fixed..
 };
 

@@ -332,9 +332,9 @@ const showResultInMapView = () => {
   router.push({ path: '/browse/where', query: router.currentRoute.value.query });
 }
 
-// sets up map body
-const setupMiniMapBody = () => {
-  mapObj = L.map("mapWrapper", {
+// sets up map body - prepares mapObj with an L.map()
+onMounted(() => {
+  mapObj = L.map('mapWrapper', {
     zoomControl: true,
     worldCopyJump: true,
     scrollWheelZoom: false,
@@ -346,52 +346,12 @@ const setupMiniMapBody = () => {
 
   mapObj.setMaxBounds(L.latLngBounds([-90,-180], [90,180]));
 
-  const osmTiles = L.tileLayer(
-    "https://{s}.tile.osm.org/{z}/{x}/{y}.png",
-    { attribution: '&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors' }
-  ).addTo(mapObj);
+  const allTileLayers = utils.getTileLayers(L, true, false);
 
-  const googleSatTiles = L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{
-    maxZoom: 20,
-    subdomains:['mt0','mt1','mt2','mt3']
-  });
+  allTileLayers.OSM.addTo(mapObj);
 
-  const openTopoTiles = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-    maxZoom: 17,
-    attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
-  });
-
-  const googleTerrainTiles = L.tileLayer('http://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}',{
-    maxZoom: 20,
-    subdomains:['mt0','mt1','mt2','mt3']
-  });
-
-  const googleStreetsTiles = L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{
-    maxZoom: 20,
-    subdomains:['mt0','mt1','mt2','mt3']
-  });
-
-  const googleHybridTiles = L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',{
-    maxZoom: 20,
-    subdomains:['mt0','mt1','mt2','mt3']
-  });
-
-  L.control.layers (
-    {
-      'OSM': osmTiles,
-      'Open topo.': openTopoTiles,
-      'Google sat.': googleSatTiles,
-      'Google terr.': googleTerrainTiles,
-      'Google street': googleStreetsTiles,
-      'Google hybr.': googleHybridTiles
-    },
-    undefined,
-    {position: 'topleft'}
-  ).addTo(mapObj);
-}
-
-// prepares mapObj with an L.map()
-onMounted(setupMiniMapBody);
+  L.control.layers(allTileLayers, undefined, { position: 'topleft' }).addTo(mapObj);
+});
 
 /**
  * When route changes, update minimap.

@@ -272,6 +272,36 @@ export default {
     };
   },
 
+  // returns current leaflet available tile layers
+  getTileLayers (L: any, maxZoom: boolean, allOps: boolean) {
+    const googleAttr = 'Map data &copy; ' + (new Date().getFullYear()) + ' Google';
+
+    return {
+      'OSM': L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png', Object.assign({
+        attribution: '&copy; <a href="https://osm.org/copyright" target="_blank">OpenStreetMap</a> contributors',
+      }, maxZoom ? { maxZoom: 20 } : {}, allOps ? { maxNativeZoom: 19, noWrap: true } : {})),
+      'Open topo.': L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', Object.assign({
+        attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org" target="_blank">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org" target="_blank">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank">CC-BY-SA</a>)',
+      }, maxZoom ? { maxZoom: 20 } : {}, allOps ? { maxNativeZoom: 17 } : {})),
+      'Google sat.': L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', Object.assign({
+        attribution: googleAttr,
+        subdomains:['mt0','mt1','mt2','mt3'],
+      }, maxZoom ? { maxZoom: 20 } : {}, allOps ? { maxNativeZoom: 20 } : {})),
+      'Google terr.': L.tileLayer('http://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', Object.assign({
+        attribution: googleAttr,
+        subdomains:['mt0','mt1','mt2','mt3'],
+      }, maxZoom ? { maxZoom: 20 } : {}, allOps ? { maxNativeZoom: 20 } : {})),
+      'Google street': L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', Object.assign({
+        attribution: googleAttr,
+        subdomains:['mt0','mt1','mt2','mt3']
+      }, maxZoom ? { maxZoom: 20 } : {}, allOps ? { maxNativeZoom: 20 } : {})),
+      'Google hybr.': L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', Object.assign({
+        attribution: googleAttr,
+        subdomains:['mt0','mt1','mt2','mt3']
+      }, maxZoom ? { maxZoom: 20 } : {}, allOps ? { maxNativeZoom: 20 } : {})),
+    };
+  },
+
   // Languages are given as ISO6391-1. Present them as whole names on screen.
   getLanguage(lang: string) {
     if (lang) {

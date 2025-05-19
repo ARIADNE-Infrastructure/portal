@@ -199,7 +199,7 @@ export class SearchModule {
           aggs: data.aggregations,
         });
       }
-    } else if (data.error && data.error.msg == 'Scrolling exceeded maximum') {
+    } else if (data?.error && data?.error.msg == 'Scrolling exceeded maximum') {
       this.updateResult({ error: 'Scrolling exceeded maximum. Please use filters and/or search to narrow down your search.' });
     } else {
       this.updateResult({ error: 'Internal error. Search failed..' });

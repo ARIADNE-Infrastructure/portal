@@ -4,7 +4,6 @@
 
 - https://portal.ariadne-infrastructure.eu/
 - https://ariadne-portal-staging.d4science.org/
-- https://demo.snd.gu.se/ariadne/
 
 ### Server
 ---

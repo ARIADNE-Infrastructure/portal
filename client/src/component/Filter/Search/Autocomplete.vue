@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="autocomplete && updateComponents !== -1"
-    class="left-0 w-full bg-white top-full z-30 text-left"
+    class="left-0 w-full bg-white top-full z-20 text-left"
     :class="{ absolute }"
   >
     <template v-if="Array.isArray(autocomplete.hits)">

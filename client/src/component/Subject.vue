@@ -12,7 +12,7 @@
       <div class="lg:flex">
         <div class="lg:w-2/3 lg:mr-xl">
           <h1 class="text-2xl mb-md">
-            {{ utils.sentenceCase(subject.prefLabel || 'No title') }}
+            {{ utils.sentenceCase(subject.prefLabel || 'No title') }}
           </h1>
           <div class="whitespace-pre-line mb-xl" v-if="subject.scopeNote">{{ utils.cleanText(subject.scopeNote, true) }}</div>
 
@@ -159,15 +159,18 @@ const initSubject = async (id: string) => {
   await subjectModule.setSubject(id);
 
   nextTick(() => {
-    if (subject) {
+    if (!subject) {
+      router.replace('/404');
+
+    } else if (!(new URLSearchParams(location.search).has('derivedSubject'))) {
+      location.href = utils.paramsToString(`/subject/${ id }`, { derivedSubject: subject.prefLabel });
+
+    } else {
       generalModule.setMeta({
         title: subject.prefLabel || '',
         description: (subject.scopeNote || '').slice(0, 155)
       });
       searchModule.setSearch({ fromRoute: true });
-
-    } else {
-      router.replace('/404');
     }
   });
 }

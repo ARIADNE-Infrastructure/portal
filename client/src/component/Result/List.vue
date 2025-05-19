@@ -99,7 +99,9 @@
                   <span v-html="agg.data"></span>
                 </div>
               </div>
-
+              <p v-if="res.data.issued" class="text-mmd">
+                <b>Issued</b>: {{ res.data.issued }}
+              </p>
             </div>
           </div>
         </b-link>
@@ -162,8 +164,8 @@ const getAggregations = (data: any): Array<any> => {
     let d = data[agg.id];
 
     if (d) {
-      if (agg.id === 'ariadneSubject') {
-        d = [d[0]];
+      if (agg.id === 'resourceType') {
+        d = [d];
       }
       if (Array.isArray(d) && d.length) {
         if (!agg.prop || d.some((p: any) => p[agg.prop])) {
@@ -244,8 +246,8 @@ const joinMatching = (data: any, agg: any): string => {
 const getMarked = (text: string): string => {
   let q = [];
   let valid = [
-    'q', 'isPartOf', 'temporal', 'range', 'ariadneSubject', 'derivedSubject', 'nativeSubject',
-    'keyword', 'publisher', 'contributor', 'geogrid', 'isPartOfLabel', 'culturalLabels'
+    'q', 'isPartOf', 'placeName', 'temporal', 'range', 'ariadneSubject', 'resourceType', 'derivedSubject', 'nativeSubject',
+    'keyword', 'publisher', 'contributor', 'owner', 'responsible', 'creator', 'geogrid', 'isPartOfLabel', 'culturalLabels'
   ];
 
   for (let key in params) {

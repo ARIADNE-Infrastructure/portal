@@ -51,52 +51,10 @@ let currentMapBounds: any = null;
 let first: boolean = true;
 
 // available tile layers
-const theTileLayer: tileLayer = {
-  'OSM': L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors',
-    maxNativeZoom: 19,
-    maxZoom: 20,
-    noWrap: true,
-  }),
-
-  'Open topo.': L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-    attribution: 'Map data: &copy;'
-      + ' <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-      + ' contributors, <a href="http://viewfinderpanoramas.org">SRTM</a>'
-      + ' | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
-      + ' (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
-
-    maxNativeZoom: 17,
-    maxZoom: 20,
-  }),
-
-  'Google sat.': L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-    maxNativeZoom: 20,
-    maxZoom: 20,
-    subdomains:['mt0','mt1','mt2','mt3'],
-  }),
-
-  'Google terr.': L.tileLayer('http://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
-    maxNativeZoom: 20,
-    maxZoom: 20,
-    subdomains:['mt0','mt1','mt2','mt3'],
-  }),
-
-  'Google street': L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-    maxNativeZoom: 20,
-    maxZoom: 20,
-    subdomains:['mt0','mt1','mt2','mt3']
-  }),
-
-  'Google hybr.': L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
-    maxNativeZoom: 20,
-    maxZoom: 20,
-    subdomains:['mt0','mt1','mt2','mt3']
-  }),
-};
+const allTileLayers: tileLayer = utils.getTileLayers(L, true, true);
 
 // current tile layer
-let currentTileLayer: L.TileLayer = theTileLayer.OSM;
+let currentTileLayer: L.TileLayer = allTileLayers.OSM;
 
 // current map zoom
 let currentZoom: number = 0;
@@ -292,15 +250,12 @@ const setupHeatMap = async () => {
   // CENTROID HEATS - Run instead of above when centroids are loaded to public portal
   const currentHeatPoints = currentResultState.aggs?.geogridCentroid?.grids.buckets;
 
-  let max = Math.max.apply(
-    null,
-    currentHeatPoints.map((hp: any) => hp.doc_count || 0)
-  );
+  let max = currentHeatPoints ? Math.max.apply(null, currentHeatPoints.map((hp: any) => hp.doc_count || 0)) : 0;
 
   let mapPoints: any[] = [];
   let boundsPoints: any[] = [];
 
-  currentHeatPoints.forEach((hp: any) => {
+  currentHeatPoints?.forEach((hp: any) => {
     let decoded = Geohash.decode(hp["key"]);
     mapPoints.push([decoded.lat, decoded.lon, hp["doc_count"]]);
     boundsPoints.push([decoded.lat, decoded.lon]);
@@ -414,12 +369,12 @@ const setupMapBody = async () => {
   currentTileLayer.addTo(mapObj);
 
   // Add add tile layers to layer picker
-  L.control.layers(theTileLayer, undefined, {position: 'bottomright'}).addTo(mapObj);
+  L.control.layers(allTileLayers, undefined, { position: 'bottomright' }).addTo(mapObj);
 
   // update current tile layer variable on change
   mapObj.on('baselayerchange', (newLayer: L.LayersControlEvent) => {
     const newLayerName: string = newLayer.name;
-    const layers: any = theTileLayer;
+    const layers: any = allTileLayers;
 
     currentTileLayer = layers[newLayerName];
   });

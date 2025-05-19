@@ -42,13 +42,6 @@ const perPage = $computed(() => parseInt(searchModule.getPerPage));
 const activeFilters = $computed(() => aggregationModule.activeFilters);
 const searchQuery: string = $computed(() => activeFilters.find((f: any) => f.key === 'q')?.val || '');
 
-const resultRange: string = $computed(() => {
-  const start = currentPage < 2 ? 1 : (currentPage - 1) * perPage + 1;
-  const end = (currentPage - 1) * perPage + result.hits.length;
-
-  return `(${ start }-${ end })`;
-});
-
 const currentPage: number = $computed(() => {
   let p = parseInt(params.page);
   return p && p > 1 ? p : 1;
@@ -64,22 +57,29 @@ const getFilterTitle = (filter: iKeyVal): string => {
 };
 
 const getFilterValue = (filter: iKeyVal): string => {
+  const filterVal = filter.val || '';
   if (filter.key === 'bbox') {
-    return filter.val.split(',').map(v => Math.round(parseFloat(v.trim()))).join(',');
+    return filterVal.split(',').map(v => Math.round(parseFloat(v.trim()))).join(',');
   }
   if (filter.key === 'isPartOf') {
-    return params.isPartOfLabel || filter.val
+    return params.isPartOfLabel || filterVal
   }
   if (filter.key === 'temporalRegion') {
-    return utils.sentenceCase(filter.val || '');
+    return utils.sentenceCase(filterVal);
   }
   if (filter.key === 'culturalPeriods' && params.culturalLabels) {
-    const label = params.culturalLabels.split('|').find((l: string) => filter.val === l.split(':')[0]);
+    const label = params.culturalLabels.split('|').find((l: string) => filterVal === l.split(':')[0]);
     if (label) {
       return utils.sentenceCase(label.split(':')[1] || '');
     }
   }
-  return filter.val;
+  if (filter.key === 'range') {
+    return filterVal.replace(',', ', ');
+  }
+  if (filterVal.length) {
+    return utils.ucFirst(filterVal);
+  }
+  return filterVal;
 };
 
 const removeFilter = (filter: iKeyVal) => {

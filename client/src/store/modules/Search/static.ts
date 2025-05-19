@@ -2,11 +2,14 @@ import { helpText } from '../Search';
 
 export const sortOptions = [
   { val: '_score-desc', text: 'Relevance', group: 'default' },
-  { val: '_score-asc', text: 'Relevance', group: 'default' },
-  { val: 'issued-desc', text: 'Issued Date', group: 'default' },
-  { val: 'issued-asc',  text: 'Issued Date', group: 'default' },
-  // { val: 'title-desc', text: 'Title - DESC' },
-  // { val: 'title-asc',  text: 'Title - ASC' },
+  { val: 'issued-desc', text: 'Issued Date (most recent)', group: 'issued' },
+  { val: 'issued-asc', text: 'Issued Date (least recent)', group: 'issued' },
+  { val: 'datingto-desc', text: 'Dating (most recent)', group: 'dating' },
+  { val: 'datingfrom-asc', text: 'Dating (least recent)', group: 'dating' },
+  { val: 'publisher-asc', text: 'Publisher (A-Z)', group: 'publisher' },
+  { val: 'publisher-desc', text: 'Publisher (Z-A)', group: 'publisher' },
+  { val: 'resource-asc', text: 'Resource type (A-Z)', group: 'resource' },
+  { val: 'resource-desc', text: 'Resource type (Z-A)', group: 'resource' },
 ];
 
 export const perPageOptions = Array.from(new Array(50 / 5)).map((val, i) => {
