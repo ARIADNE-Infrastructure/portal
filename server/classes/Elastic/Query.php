@@ -60,25 +60,22 @@ class Query {
     $query['from'] = $this->getFrom();
     $query['sort'] = $this->getSort();
 
-    $searchInField = null;
+    $operator = !empty($_GET['operator']) && $_GET['operator'] === 'or' ? 'or' : 'and';
     $filters = [];
     $innerQuery = [];
-
-    if(isset($_GET['fields'])) {
-      $searchInField = trim($_GET['fields']);
-    }
 
     if (isset($_GET['q'])) {
       $_GET['q'] = trim($_GET['q']);
     }
 
     // Handle incoming user input query string
-    if (!empty($_GET['q']) ) {
-      $validFields = QuerySettings::getValidSearchableFields(Utils::escapeLuceneValue($_GET['q'], false));
-      if($searchInField && array_key_exists($searchInField, $validFields) ) {
+    if (!empty($_GET['q'])) {
+      $validFields = QuerySettings::getValidSearchableFields(Utils::escapeLuceneValue($_GET['q'], false), $operator);
+      $searchInField = !empty($_GET['fields']) ? trim($_GET['fields']) : null;
+      if ($searchInField && !empty($validFields[$searchInField])) {
         $innerQuery['bool']['must'] = $validFields[$searchInField]['query'];
       } else {
-        $innerQuery['bool']['must'][] = QuerySettings::getMultiMatchQuery(Utils::escapeLuceneValue($_GET['q']));
+        $innerQuery['bool']['must'][] = QuerySettings::getMultiMatchQuery(Utils::escapeLuceneValue($_GET['q']), $operator);
       }
     } else {
       $innerQuery['bool']['should'] = array('match_all'=> new \stdClass());
@@ -92,7 +89,11 @@ class Query {
 
     // Push filters to main query
     foreach ($filters as $filter) {
-      $query['query']['bool']['filter'][] = $filter;
+      if ($operator === 'or') {
+        $query['query']['bool']['filter']['bool']['should'][] = $filter;
+      } else {
+        $query['query']['bool']['filter'][] = $filter;
+      }
     }
 
     return $query;
@@ -121,7 +122,7 @@ class Query {
     ];
 
     // Filter result. Get only resources with spatial data
-    $mainQuery['query']['bool']['filter'][] = [
+    $geoFilter = [
       'nested' => [
         'path' => 'spatial',
         'query' => [
@@ -136,6 +137,12 @@ class Query {
         ]
       ]
     ];
+
+    if (!empty($_GET['operator']) && $_GET['operator'] === 'or') {
+      $mainQuery['query']['bool']['must'][] = $geoFilter;
+    } else {
+      $mainQuery['query']['bool']['filter'][] = $geoFilter;
+    }
 
     /* Do roundtrip to ES to see if result is more than 500. If result count is more
        than 500 the map doesn't need records data because it's rendering heatmap with
@@ -176,6 +183,11 @@ class Query {
       $query = $this->getMapQuery($query);
     } else {
       unset($query['aggregations']['geogridCentroid']);
+    }
+
+    // unset filters if it's "or" search
+    if (!empty($_GET['operator']) && $_GET['operator'] === 'or' && isset($query['query']['bool']['filter'])) {
+      unset($query['query']['bool']['filter']);
     }
 
     // timeline specific query
@@ -258,6 +270,8 @@ class Query {
           //'is_about' => 'label',
           'ariadneSubject' => 'prefLabel',
           //'contributor' => 'name',
+          'country' => 'name',
+          'dataType' => 'label',
           //'creator' => 'name',
           'derivedSubject' => 'prefLabel',
           'description' => 'text',
@@ -274,14 +288,14 @@ class Query {
           ];
         }
       }
-      if ($isAllFields || $fields == 'title') {
+      if ($isAllFields || $fields === 'title') {
         $innerQuery['bool']['should'][] = [
           'match_bool_prefix' => [
             'title.text' => Utils::escapeLuceneValue($q),
           ],
         ];
       }
-      if ($isAllFields || $fields == 'location') {
+      if ($isAllFields || $fields === 'location') {
         $innerQuery['bool']['should'][] = [
           'nested' => [
             'path' => 'spatial',
@@ -293,7 +307,7 @@ class Query {
           ],
         ];
       }
-      if ($isAllFields || $fields == 'time') {
+      if ($isAllFields || $fields === 'time') {
         $innerQuery['bool']['should'][] = [
           'nested' => [
             'path' => 'temporal',
@@ -332,8 +346,8 @@ class Query {
         ];
 
         // get all fields where search string ($q) was found
-        foreach ( $value['highlight'] as $hKey=>$hValue ) {
-          if( str_contains($hKey, '.') ) {
+        foreach ($value['highlight'] as $hKey=>$hValue) {
+          if (str_contains($hKey, '.')) {
             // delete all after .
             $hKey = strstr($hKey,'.',true);
           }
@@ -418,6 +432,14 @@ class Query {
     switch (strtolower($filterName)) {
       case 'contributor':
         $query = AutocompleteFilterQuery::contributor($q, $currentQuery, $size);
+        break;
+
+      case 'country':
+        $query = AutocompleteFilterQuery::country($q, $currentQuery, $size);
+        break;
+
+      case 'datatype':
+        $query = AutocompleteFilterQuery::dataType($q, $currentQuery, $size);
         break;
 
       case 'nativesubject':

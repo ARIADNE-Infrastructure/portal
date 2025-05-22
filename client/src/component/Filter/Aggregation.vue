@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="utils.objectIsNotEmpty(item.buckets) && !Object.values(item.buckets).every(b => b.key && utils.isInvalid(b.key))"
+    v-if="utils.objectIsNotEmpty(item?.buckets) && !Object.values(item.buckets).every(b => b.key && utils.isInvalid(b.key))"
   >
     <list-accordion
       :title="resultAggTitle"
@@ -35,7 +35,7 @@
               class="flex justify-between items-center px-md py-sm text-md text-white bg-blue hover:bg-blue-90 group transition-all duration-300 cursor-pointer border-t-base"
               @click="setActive(id, bucket.key, false)"
             >
-              <span class="flex-grow break-word pr-lg">
+              <span class="flex-grow break-word pr-lg items-center" style="display:flex">
                 <i v-if="id === 'publisher' && findPublisher(bucket.key)"
                   class="fas fa-info-circle text-white pr-sm py-sm transition-color duration-300 hover:text-green"
                   @click.prevent.stop="() => router.push(utils.paramsToString('/publisher/', { publisher: bucket.key }))">
@@ -49,7 +49,14 @@
                   {{ fields.find(f => f.val === bucket.key).text }}
                 </span>
 
-                <span v-else>
+                <span v-else class="flex items-center">
+                  <img v-if="id === 'ariadneSubject'"
+                    :src="getResourceIcon(bucket.key)"
+                    class="mr-sm invert"
+                    alt="icon"
+                    width="25"
+                    height="25"
+                  />
                   {{ getFilterText(sortKey ? bucket[sortKey] : bucket.key) }}
                 </span>
               </span>
@@ -78,6 +85,13 @@
                   @click.prevent.stop="() => router.push(utils.paramsToString('/subject/' + bucket.key, { derivedSubject: bucket.key }))">
                 </i>
               </span>
+              <img v-else-if="id === 'ariadneSubject'"
+                :src="getResourceIcon(bucket.key)"
+                class="mr-sm"
+                alt="icon"
+                width="25"
+                height="25"
+              />
 
               <span class="flex-grow break-word pr-lg">
                 {{ getFilterText(sortKey ? bucket[sortKey] : bucket.key) }}
@@ -228,7 +242,7 @@ const findPublisher = (key: string): any => generalModule.findPublisher(key);
 
 const noBucketMatch = (id: string): boolean => {
   const options = aggregationModule.getOptions[id];
-  return options?.data?.buckets?.length === 0;
+  return options?.data?.buckets?.length === 0 && options?.search;
 };
 
 const setActive = (key: string, value: any, add: boolean) => {
@@ -244,6 +258,10 @@ const setBucketListHeight = () => {
 const toggleTooltip = (e: any, show: boolean) => {
   const rect = e.target.getBoundingClientRect();
   e.target.nextElementSibling.style.cssText = `width:300px; top: ${rect.top}px; left: ${rect.left + 25}px; display:${show ? 'block' : 'none'}`;
+};
+
+const getResourceIcon = (name: string): string => {
+  return resourceModule.getIconByTypeName(name);
 };
 
 watch($$(filteredAndSortedBuckets), setBucketListHeight, { deep: true });

@@ -154,12 +154,13 @@ class GeoUtils {
     // Cleanup
     $nearBy = [];
     foreach($filteredResources as $resource) {
-      $nearBy[] = [
-        'title' => $resource['_source']['title'],
-        'spatial' => $resource['_source']['spatial'],
-        'id' => $resource['_id'],
-
-      ];
+      if (!empty($resource['_id'])) {
+        $nearBy[] = [
+          'title' => $resource['_source']['title'] ?? '',
+          'spatial' => $resource['_source']['spatial'] ?? '',
+          'id' => $resource['_id'],
+        ];
+      }
     }
 
     return $nearBy;

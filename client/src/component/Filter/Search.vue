@@ -71,6 +71,7 @@
           v-if="showFields === 'select'"
           class="w-full sm:w-10x"
           :class="{ 'sm:w-full hg:w-10x': breakHg }"
+          :maxWidth="110"
           :color="color"
           :options="fields"
           v-model:value="fieldValue"

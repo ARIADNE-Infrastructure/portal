@@ -28,7 +28,7 @@
               class="leading-0"
             >
               <img
-                :src="getResourceIconTemporary(res)"
+                :src="getResourceIcon(res)"
                 alt="icon"
                 width="35"
                 height="35"
@@ -145,13 +145,8 @@ const getResourceTypeName = (item: any): string => {
 }
 
 const getResourceIcon = (item: any): string => {
-  const typeId = item.data?.ariadneSubject?.prefLabel;
-  return resourceModule.getIconByTypeId(typeId);
-}
-
-const getResourceIconTemporary = (item: any): string => {
   const type = item.data?.ariadneSubject?.[0]?.prefLabel;
-  return resourceModule.getIconByTypeNameTemporary(type);
+  return resourceModule.getIconByTypeName(type);
 }
 
 const getIsCtsCertified = (item: any): boolean => {
@@ -163,7 +158,7 @@ const getAggregations = (data: any): Array<any> => {
     let d = data[agg.id];
 
     if (d) {
-      if (agg.id === 'resourceType') {
+      if (agg.id === 'resourceType' && !Array.isArray(d)) {
         d = [d];
       }
       if (Array.isArray(d) && d.length) {
@@ -210,6 +205,7 @@ const hasValidPrimaryImage = (data: any): boolean => {
 const joinMatching = (data: any, agg: any): string => {
   let q = (params.q || '').trim().toLowerCase(),
       a = (params[agg.param || agg.id] || '').trim().toLowerCase(),
+      newDataFirst: any[] = [],
       newData: any[] = [],
       max = 5;
 
@@ -225,14 +221,19 @@ const joinMatching = (data: any, agg: any): string => {
 
     if (!utils.isInvalid(d) && !newData.includes(d)) {
       if ((q && d.includes(q)) || (a && (Array.isArray(a) ? a.some(p => d.includes(p)) : d.includes(a)))) {
-        newData.unshift(d);
+        newDataFirst.push(d);
       } else {
         newData.push(d);
       }
     }
   });
 
-  return newData.slice(0, max).map((s: string) => {
+  if (agg.sorted) {
+    newDataFirst = utils.getSorted(newDataFirst, '') ?? [];
+    newData = utils.getSorted(newData, '') ?? [];
+  }
+
+  return newDataFirst.concat(newData).slice(0, max).map((s: string) => {
     if (agg.unformatted) {
       return data.find((d: any) => d.toLowerCase() === s);
     }
@@ -243,7 +244,7 @@ const joinMatching = (data: any, agg: any): string => {
 const getMarked = (text: string): string => {
   let q = [];
   let valid = [
-    'q', 'isPartOf', 'placeName', 'temporal', 'range', 'ariadneSubject', 'resourceType', 'derivedSubject', 'nativeSubject',
+    'q', 'isPartOf', 'placeName', 'temporal', 'range', 'ariadneSubject', 'resourceType', 'derivedSubject', 'nativeSubject', 'country', 'dataType',
     'keyword', 'publisher', 'contributor', 'owner', 'responsible', 'creator', 'geogrid', 'isPartOfLabel', 'culturalLabels'
   ];
 

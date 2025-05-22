@@ -111,7 +111,7 @@ export default {
   },
 
   ucFirst (str: string): string {
-    return str[0].toUpperCase() + str.slice(1);
+    return str?.length ? (str[0].toUpperCase() + str.slice(1)) : '';
   },
 
   validUrl (url: any) {
@@ -150,6 +150,16 @@ export default {
       return text;
     }
     return '';
+  },
+
+  getSorted (arr: any, prop: string) {
+    if (Array.isArray(arr)) {
+      if (!prop) {
+        return arr.slice().sort((a: any, b: any) => a?.toLowerCase() < b?.toLowerCase() ? -1 : (a?.toLowerCase() > b?.toLowerCase() ? 1 : 0));
+      }
+      return arr.slice().sort((a: any, b: any) => a[prop]?.toLowerCase() < b[prop]?.toLowerCase() ? -1 : (a[prop]?.toLowerCase() > b[prop]?.toLowerCase() ? 1 : 0));
+    }
+    return null;
   },
 
   cleanText (text: string, allowNewline: boolean): string {

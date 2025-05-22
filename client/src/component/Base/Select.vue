@@ -13,6 +13,7 @@
       <input
         class="flex-grow truncate outline-none cursor-default p-sm pr-none text-md"
         :class="{ 'placeholder-black': !open }"
+        :style="{ maxWidth: maxWidthStyle }"
         :placeholder="selectedText"
         ref="searchRef"
         v-model="search"
@@ -79,6 +80,7 @@ const props = withDefaults(defineProps<{
   options: Array<any>,
   value?: string,
   minWidth?: number,
+  maxWidth?: number,
 }>(), {
   value: '',
 });
@@ -94,6 +96,7 @@ const altGroupFirstItemClass: string = $computed(() => `border-t-base border-${p
 const selected: any = $computed(() => props.options.find((item: any) => item.val === props.value));
 const selectedText: string = $computed(() => selected ? selected.text : '');
 const minWidthStyle: string = $computed(() => props.minWidth ? props.minWidth + 'px' : '');
+const maxWidthStyle: string = $computed(() => props.maxWidth ? props.maxWidth + 'px' : '');
 
 const filteredOptions: Array<any> = $computed(() => {
   const s = search.toLowerCase();

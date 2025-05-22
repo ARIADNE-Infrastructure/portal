@@ -110,14 +110,11 @@ export class ResourceModule {
     }
   }
 
-  get getIconByTypeNameTemporary() {
+  get getIconByTypeName() {
     return (name: string) => {
-      // name = (name || '').replace(/\s/g, '');
-
       const defaultIcon = 'sitemonument';
       const list: any = this.typesTemporary;
       const resourceIcon = list.hasOwnProperty(name) ? list[name] : null;
-
       let icon = resourceIcon ?? defaultIcon;
 
       return `${ this.generalModule.getAssetsDir }/resource/${ icon }.png`;

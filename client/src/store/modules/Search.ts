@@ -3,7 +3,7 @@ import axios from 'axios';
 import utils from '@/utils/utils';
 import router from '@/router';
 import { LoadingStatus, GeneralModule } from './General';
-import { sortOptions, perPageOptions, helpTexts } from './Search/static';
+import { sortOptions, operatorOptions, perPageOptions, helpTexts, orderHelpTexts } from './Search/static';
 import { aggregationModule } from "../modules";
 
 export interface helpText {
@@ -18,10 +18,12 @@ export class SearchModule {
   result: any = {};
   autocomplete: any = {};
   sortOptions: any[] = sortOptions;
+  operatorOptions: any[] = operatorOptions;
   perPageOptions: any[] = perPageOptions;
   helpTexts: helpText[] = helpTexts;
+  orderHelpTexts: helpText[] = orderHelpTexts;
   totalRecordsCount: any = '';
-  reqMap: any = { hits: 0, aggs: 0, map: 0 };
+  reqMap: any = { hits: 0, aggs: 0, map: 0, auto: 0 };
   reqWaiting: any = {};
   filterUpdate: any = null;
   aggsResult: any = {};
@@ -29,6 +31,7 @@ export class SearchModule {
   timelineLoading: boolean = false;
   mapLoading: boolean = false;
   miniMapSearchResult: any = {};
+  miniMapNoCenter: boolean = false;
 
   constructor(generalModule: GeneralModule) {
     this.generalModule = generalModule;
@@ -379,6 +382,14 @@ export class SearchModule {
     this.autocomplete[res.type + res.q] = res.data;
   }
 
+  updateMiniMapNoCenter (value: boolean) {
+    this.miniMapNoCenter = value;
+  }
+
+  get getMiniMapNoCenter(): boolean {
+    return this.miniMapNoCenter;
+  }
+
   get getTotalRecordsCount(): any {
     return new Intl.NumberFormat('en',{style: 'decimal'}).format(this.totalRecordsCount);
   }
@@ -444,8 +455,20 @@ export class SearchModule {
     return this.params?.size || '20';
   }
 
+  get getOperatorOptions(): any[] {
+    return this.operatorOptions;
+  }
+
+  get getOperator(): string {
+    return this.params?.operator === 'and' ? '' : (this.params?.operator || '');
+  }
+
   get getHelpTexts(): helpText[] {
     return this.helpTexts;
+  }
+
+  get getOrderHelpTexts(): helpText[] {
+    return this.orderHelpTexts;
   }
 
   /**

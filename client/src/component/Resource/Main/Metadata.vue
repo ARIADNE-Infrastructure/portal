@@ -30,8 +30,10 @@
       </b-link>
     </div>
 
-    <div v-if="resource.language" :class="itemClass">
-      <b :class="bClass">Language:</b> {{ utils.getLanguage(resource.language) }}
+    <div v-if="resource.language && utils.getLanguage(resource.language)" :class="itemClass">
+        <b :class="bClass">Language:</b>
+        <i class="fas fa-globe mr-xs"></i>
+        {{ utils.getLanguage(resource.language) }}
     </div>
 
     <resource-filtered-items
@@ -44,25 +46,73 @@
     <resource-filtered-items
       :items="resource.ariadneSubject"
       :class="itemClass"
-      title="Resource type"
-      prop="prefLabel"
-      query="ariadneSubject"
+      title="Resource Type"
+    >
+      <template v-slot="{ item }">
+        <b-link :to="utils.paramsToString('/search/', { ariadneSubject: item.prefLabel })">
+          <span class="relative">
+            <img
+              :src="getResourceIcon(item)"
+              style="position:absolute;top:-3px;left:0"
+              class="mr-sm"
+              alt="icon"
+              width="20"
+              height="20"
+            />
+            <span class="ml-2x">
+              {{ utils.sentenceCase(item.prefLabel) }}
+            </span>
+          </span>
+        </b-link>
+      </template>
+    </resource-filtered-items>
+
+    <resource-filtered-items
+      :items="getSortedPlaces()"
+      :class="itemClass"
+      filter="placeName,country,location"
+      filterUnique="placeName"
+      title="Place"
+    >
+      <template v-slot="{ item }">
+        <span v-if="item.placeName">
+          <i class="fas fa-map-marker-alt mr-sm mb-xs"></i>
+          <b-link
+            :to="utils.paramsToString('/search', { [item.isCountry ? 'country' : 'placeName']: item.placeName })"
+          >
+            {{ item.isCountry ? utils.ucFirst(item.placeName) : utils.sentenceCase(item.placeName) }}
+          </b-link>
+        </span>
+      </template>
+    </resource-filtered-items>
+
+    <resource-filtered-items
+      :items="resource.publisher"
+      :class="itemClass"
+      slotType="organisation"
+      filter="name"
+      title="Publisher"
+      query="publisher"
+    />
+
+    <resource-filtered-items
+      :items="utils.getSorted(resource.nativeSubject, 'prefLabel')"
+      :class="itemClass"
+      filter="prefLabel"
+      title="Original Subject"
+      query="nativeSubject"
+      icon="fas fa-tag mr-sm mb-xs"
       slotType="prop"
     />
 
-    <div v-if="resource.extent && resource.extent.length" :class="itemClass">
-      <b :class="bClass">Extent:</b>
-      <span>{{ resource.extent.join(', ') }}</span>
-    </div>
-
     <resource-filtered-items
-      :items="resource.derivedSubject"
+      :items="utils.getSorted(resource.derivedSubject, 'prefLabel')"
       :class="itemClass"
       filter="prefLabel"
       prop="prefLabel"
       query="derivedSubject"
       slotType="link"
-      title="Subject - AAT"
+      title="Getty AAT Subject"
     >
       <template v-slot:helpIcon>
         <help-tooltip
@@ -84,24 +134,16 @@
           :to="utils.paramsToString('/subject/' + utils.last(item.id.split('/')), { derivedSubject: item.prefLabel })">
           <i class="fas fa-info-circle mr-xs"></i>
         </b-link>
-        {{ item.prefLabel }} <span v-if="item.lang">({{ item.lang }})</span>
+        {{ utils.ucFirst(item.prefLabel) }} <!--<span v-if="item.lang">({{ item.lang }})</span>-->
       </template>
     </resource-filtered-items>
-
-    <resource-filtered-items
-      :items="resource.nativeSubject"
-      :class="itemClass"
-      filter="prefLabel"
-      title="Subject - Original"
-      query="nativeSubject"
-      slotType="prop"
-    />
 
     <resource-filtered-items
       :items="resource.keyword"
       :class="itemClass"
       title="Keyword"
       query="keyword"
+      icon="fas fa-tag mr-sm mb-xs"
       slotType="plain"
     />
 
@@ -144,7 +186,7 @@
             </div>
           </span>
         </span>
-
+        <i v-else class="far fa-clock mr-sm mb-xs"></i>
         <b-link
           v-if="item.periodName"
           :to="utils.paramsToString('/search', { temporal: item.periodName })"
@@ -157,31 +199,17 @@
       </template>
     </resource-filtered-items>
 
-    <resource-filtered-items
-      :items="resource.spatial"
-      :class="itemClass"
-      filter="placeName,country,location"
-      filterUnique="placeName"
-      title="Place"
-    >
-      <template v-slot="{ item }">
-        <span v-if="item.placeName">
-          <b-link
-            :to="utils.paramsToString('/search', {placeName: item.placeName})"
-          >
-            {{ utils.sentenceCase(item.placeName) }}
-          </b-link>
-        </span>
-      </template>
-    </resource-filtered-items>
+    <div v-if="resource.extent && resource.extent.length" :class="itemClass">
+      <b :class="bClass">Extent:</b>
+      <span>{{ resource.extent.join(', ') }}</span>
+    </div>
 
     <div v-if="resource.resourceType" :class="itemClass">
-      <b :class="bClass">Type:</b>
-
+      <b :class="bClass">Category:</b>
+      <i class="fas mr-sm" :class="/collection/i.test(resource.resourceType) ? 'fa-copy' : 'fa-database'"></i>
       <b-link :to="utils.paramsToString('/search', { resourceType: resource.resourceType })">
         {{ utils.sentenceCase(resource.resourceType) }}
       </b-link>
-
       <b-link
         v-if="resource.has_type"
         :href="resource.has_type.uri"
@@ -192,12 +220,13 @@
     </div>
 
     <resource-filtered-items
-      :items="resource.publisher"
+      :items="resource.dataType"
       :class="itemClass"
-      slotType="organisation"
-      filter="name"
-      title="Publisher"
-      query="publisher"
+      title="Data Type"
+      filter="label"
+      query="dataType"
+      icon="fas fa-server mr-sm mb-xs"
+      slotType="prop"
     />
 
     <div v-if="resource.wasCreated" :class="itemClass">
@@ -268,8 +297,17 @@ const getPeriodo = (item: any) => {
   return null;
 }
 
+const getSortedPlaces = () => {
+  const places = (resource.spatial || []).concat((resource.country || []).map((item: any) => ({ placeName: item.name, isCountry: true })));
+  return utils.getSorted(places, 'placeName');
+}
+
 const toggleTooltip = (e: any, show: boolean) => {
   const rect = e.target.getBoundingClientRect();
   e.target.firstElementChild.nextElementSibling.style.cssText = `width:300px; top: ${rect.top - 5}px; left: ${rect.left + 20}px; display:${show ? 'block' : 'none'};`;
 };
+
+const getResourceIcon = (item: any): string => {
+  return resourceModule.getIconByTypeName(item.prefLabel);
+}
 </script>

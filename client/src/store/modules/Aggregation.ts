@@ -26,7 +26,7 @@ export class AggregationModule {
   async setSearch(payload: any) {
     if (payload.value.search || payload.value.size) {
       const searchParams = this.searchModule.getParams;
-      const params = { ...{ filterQuery: payload.value.search, filterName: payload.id }, ...searchParams };
+      const params = { ...{ filterQuery: payload.value.search?.toLowerCase().replace(/\-/g, ' '), filterName: payload.id }, ...searchParams };
       if (payload.value.size) {
         params.filterSize = payload.value.size;
       }
@@ -39,6 +39,7 @@ export class AggregationModule {
       const url = process.env.apiUrl + '/autocompleteFilter';
 
       try {
+        const reqId = ++this.searchModule.reqMap.auto;
         const res = await axios.get(utils.paramsToString(url, params));
         if (payload.value.search && !this.options[payload.id]?.search) {
           return;
@@ -54,7 +55,9 @@ export class AggregationModule {
             data.buckets = await this.periodsModule.getMissingBuckets({ key: params.filterName, buckets: data.buckets });
           }
           const value = { ...payload.value, ...{ data } };
-          this.updateOptions({ id: payload.id, value });
+          if (reqId === this.searchModule.reqMap.auto) {
+            this.updateOptions({ id: payload.id, value, fromSearch: true });
+          }
           if (params.filterName === 'culturalPeriods' && Array.isArray(data.buckets)) {
             this.periodsModule.updateCachedPeriods(data.buckets)
           }
@@ -145,7 +148,10 @@ export class AggregationModule {
   }
 
   updateOptions(payload: any) {
-    const { id, value } = payload;
+    const { id, value, fromSearch } = payload;
+    if (fromSearch) {
+      value.search = this.options[id]?.search || value.search;
+    }
     this.options[id] = value
   }
 
@@ -193,7 +199,9 @@ export class AggregationModule {
       'derivedSubject',
       'publisher',
       'contributor',
-      'nativeSubject'
+      'nativeSubject',
+      'country',
+      'dataType',
     ];
 
     const result = this.searchModule.getAggsResult?.aggs;

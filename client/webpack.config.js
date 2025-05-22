@@ -142,6 +142,9 @@ module.exports = env => {
 
     config.devServer = {
       static: [path.join(__dirname, 'dist'), path.join(__dirname, 'static')],
+      client: {
+        overlay: false
+      },
       historyApiFallback: true,
       host: 'localhost',
       port: 8081 // SND - If you need to run on port 80 you must run as root - (sudo npm run dev)

@@ -16,24 +16,23 @@
         >
           <!-- aat subjects -->
           <template v-if="autocompleteType === 'subjects'">
+            <i class="fas fa-info-circle text-blue pr-sm transition-color duration-300 hover:text-green"></i>
             <strong
               class="pt-xs pb-xs pr-xs inline-block"
               v-html="getAutoCompleteLabel(hit.label, newSearch)"
             />
             <!-- variants -->
-            <template v-if="hit.variants.length">
+            <template v-if="getFilteredVariants(hit.variants)?.length">
               <div
-                v-for="(variant, key) in hit.variants"
+                v-for="(variant, key) in getFilteredVariants(hit.variants)"
                 :key="key"
                 class="pt-xs pb-xs pr-sm inline-block"
               >
                 <span class="text-midGray pr-xs">/</span>
                 <span v-html="utils.getMarked(utils.sentenceCase(variant.label), newSearch)" />
-                <em class="text-midGray"> ({{ variant.lang}})</em>
+                <em class="text-midGray"> ({{ variant.lang }})</em>
               </div>
             </template>
-
-            <i class="fas fa-info-circle text-blue px-sm transition-color duration-300 hover:text-green"></i>
           </template>
 
           <!-- resources -->
@@ -90,12 +89,12 @@ const updateComponentsRef: number | undefined = $computed(() => props.updateComp
 const autocompleteType: string = $computed(() => props.fieldValue === 'aatSubjects' ? 'subjects' : 'resources');
 
 const getFieldHitLabels = (hits: string[]): string => {
-  return hits.map((field: string) => aggregationModule.getTitle(field)).join(', ');
+  return (utils.getSorted((hits ?? []).map((field: string) => aggregationModule.getTitle(field)), '') ?? []).join(', ');
 }
 
 const getAutoCompleteLabel = (label: string, searchString: any) => {
   if (label) {
-    return utils.getMarked(utils.sentenceCase(label), '')
+    return utils.getMarked(utils.sentenceCase(label), searchString);
   }
   return '*' + utils.escHtml(searchString) + '*';
 }
@@ -123,6 +122,10 @@ const doAutocomplete = () => {
 
     autocomplete = stored && stored.hits?.length ? stored : `No ${ autocompleteType } found..`;
   }, 300);
+}
+
+const getFilteredVariants = (variants: any) => {
+  return utils.getSorted(variants?.filter((variant: any) => variant && !/^zh/.test(variant.lang)), 'label');
 }
 
 const autocompleteClick = (e: any, hit: any) => {

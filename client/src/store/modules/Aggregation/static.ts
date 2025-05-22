@@ -1,16 +1,18 @@
 export const titles = {
   ariadneSubject: 'Resource Type',
   spatial: 'Place',
-  nativeSubject: 'Original subject',
-  derivedSubject: 'Getty AAT Subjects',
+  nativeSubject: 'Original Subject',
+  derivedSubject: 'Getty AAT Subject',
   temporal: 'Dating',
-  aatSubjects: 'Getty AAT Subjects',
+  aatSubjects: 'Getty AAT Subject',
   accessPolicy: 'Access Policy',
   accessRights: 'Access Rights',
   accrualPeriodicity: 'Accrual Periodicity',
   audience: 'Audince',
   contactPoint: 'Contact Point',
   contributor: 'Contributor',
+  country: 'Country',
+  dataType: 'Data Type',
   creator: 'Creator',
   description: 'Description',
   distribution: 'Distribution',
@@ -33,7 +35,7 @@ export const titles = {
   providerId: 'Provider ID',
   publisher: 'Publisher',
   rdfAbout: 'RDF About',
-  resourceType: 'Type',
+  resourceType: 'Category',
   rights: 'Rights',
   scientificResponsible: 'Scientific Responsible',
   technicalResponsible: 'Technical Responsible',
@@ -43,10 +45,12 @@ export const titles = {
 export const descriptions = {
   ariadneSubject: 'Broad resource type',
   nativeSubject: 'Subject defined by data provider',
-  derivedSubject: 'Getty AAT Subjects',
+  derivedSubject: 'Getty AAT Subject',
   temporal: 'Numerical date or date range, period name(s',
   publisher: 'Data provider',
   contributor: 'Organisation or individual contributing the resource',
+  country: 'Country for the resource',
+  dataType: 'Data Type for the resource',
   aatSubjects: 'Subject type classified according to the Getty Art and Architecture thesaurus',
 }
 
@@ -55,9 +59,10 @@ export const resultTitles = {
   ariadneSubject: 'Resource Type',
   spatial: 'Place',
   nativeSubject: 'Original Subject',
-  derivedSubject: 'Getty AAT Subjects',
+  derivedSubject: 'Getty AAT Subject',
   temporal: 'Dating',
-  aatSubjects: 'Getty AAT Subjects',
+  aatSubjects: 'Getty AAT Subject',
+  resourceType: 'Category',
 };
 
 export const types = [
@@ -69,6 +74,7 @@ export const types = [
   {
     id: 'spatial',
     prop: 'placeName',
+    sorted: true,
     always: true
   },
   {
@@ -80,14 +86,19 @@ export const types = [
   {
     id: 'nativeSubject',
     prop: 'prefLabel',
+    sorted: true,
     always: true
   },
   {
     id: 'derivedSubject',
-    prop: 'prefLabel'
+    prop: 'prefLabel',
+    sorted: true
   },
   {
     id: 'keyword'
+  },
+  {
+    id: 'resourceType'
   },
   {
     id: 'contributor',
@@ -95,12 +106,24 @@ export const types = [
     unformatted: true
   },
   {
+    id: 'country',
+    prop: 'name',
+    unformatted: true,
+    sorted: true
+  },
+  {
+    id: 'dataType',
+    prop: 'label',
+    sorted: true
+  },
+  {
     id: 'temporal',
     prop: 'periodName'
   },
   {
     id: 'aatSubjects',
-    prop: 'label'
+    prop: 'label',
+    sorted: true
   },
 ];
 

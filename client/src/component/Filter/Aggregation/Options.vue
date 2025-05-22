@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="options"
+    v-if="options && id !== 'resourceType'"
     class="xl:flex p-md"
   >
     <!-- filter by text -->

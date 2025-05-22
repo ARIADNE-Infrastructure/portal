@@ -27,7 +27,7 @@
 
       <div class="bg-darkGray-40 p-base text-white text-mmd w-full mt-mmd max-w-2xl m-auto"
         :class="(imageText ? 'opacity-1' : 'opacity-0') + (bgCounter > 0 ? ' transition-opacity duration-500 ease-linear' : '')">
-        <p class="font-bold mb-sm flex justify-between" v-if="imageText?.title">
+        <div class="font-bold mb-sm flex justify-between" v-if="imageText?.title">
           <div>{{ imageText.title }}</div>
           <div class="whitespace-nowrap">
             <i class="fas fa-chevron-left cursor-pointer px-sm hover:text-yellow transition-color duration-300" @click="setSlideDir(-2)"></i>
@@ -36,9 +36,9 @@
 
             <i class="cursor-pointer pl-sm hover:text-yellow transition-color duration-300"
               :class="'fas fa-' + (bgIsPaused ? 'play' : 'pause')"
-              @click="bgIsPaused = !bgIsPaused"></i>
+              @click="togglePaused()"></i>
           </div>
-        </p>
+        </div>
         <p>{{ imageText?.text }}</p>
       </div>
     </div>
@@ -66,7 +66,7 @@ const window = $computed(() => generalModule.getWindow);
 const assets: string = $computed(() => generalModule.getAssetsDir);
 const fieldsType: string = $computed(() => window.innerWidth < 568 ? 'select' : 'radio');
 
-const bgTime: number = 10000;
+const bgTime: number = 20000;
 let bgData: any = $ref(null);
 let bgTimeout: any = 0;
 let bgCounter: number = 0;
@@ -75,6 +75,7 @@ let activeBg: number = $ref(0);
 let bg1: number = $ref(0);
 let bg2: number = $ref(0);
 let imageText: any = $ref(null);
+const storageId = 'frontBgDataV2-';
 const bgTotalPics: number = $computed(() => generalModule.getFrontPageImageTotal);
 const frontPageImageTexts = $computed(() => generalModule.getFrontPageImageTexts);
 const bgStyle1 = $computed(() => ({ 'background-image': bg1 ? `url(${ assets }/frontpage/bg-${ bg1 }.jpg)` : '', opacity: activeBg !== 2 ? 1 : 0 }));
@@ -89,13 +90,14 @@ const setBgSlide = (callback?: Function) => {
 
   if (!bgData) {
     try {
-      bgData = JSON.parse(window.localStorage.getItem('frontBgDataV' + bgTotalPics));
+      bgData = JSON.parse(window.localStorage.getItem(storageId + bgTotalPics));
     } catch (ex) {}
   }
 
   if (!bgData) {
     bgData = {
       arr: utils.shuffle(Array.from(new Array(bgTotalPics)).map((n, i) => i + 1)),
+      paused: false,
       count: 0
     };
   } else if (bgData.count >= bgTotalPics - 1) {
@@ -108,7 +110,7 @@ const setBgSlide = (callback?: Function) => {
   }
 
   try {
-    window.localStorage.setItem('frontBgDataV' + bgTotalPics, JSON.stringify(bgData));
+    window.localStorage.setItem(storageId + bgTotalPics, JSON.stringify(bgData));
   } catch (ex) {}
 
   const num = bgData.arr[bgData.count];
@@ -123,22 +125,36 @@ const setBgSlide = (callback?: Function) => {
       } else {
         bg2 = num;
       }
-      bgCounter++;
+      if (bgData.paused) {
+        bgIsPaused = true;
+      } else {
+        bgCounter++;
+      }
     }
     if (typeof callback === 'function') {
       callback();
     }
     bgTimeout = setTimeout(setBgSlide, bgTime);
   }
-  img.src = `${ assets }/frontpage/bg-${ num }.jpg`
-}
+  img.src = `${ assets }/frontpage/bg-${ num }.jpg`;
+};
 
 // prev / next bg image from click
 const setSlideDir = (dir: number) => {
   bgData.count += dir;
   bgIsPaused = false;
+  bgData.paused = true;
   clearTimeout(bgTimeout);
   setBgSlide(() => bgIsPaused = true);
+};
+
+// toggles paused / playing
+const togglePaused = () => {
+  bgIsPaused = !bgIsPaused;
+  bgData.paused = bgIsPaused;
+  try {
+    window.localStorage.setItem(storageId + bgTotalPics, JSON.stringify(bgData));
+  } catch (ex) {}
 };
 
 onMounted(() => {

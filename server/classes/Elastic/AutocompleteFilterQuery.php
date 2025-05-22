@@ -33,6 +33,62 @@ class AutocompleteFilterQuery {
   }
 
   /**
+   * Autocomplete query for country field
+   */
+  public static function country($q, $currentQuery, $size) {
+    $query = [
+      'size' => 0,
+      'query' => $currentQuery,
+      'aggregations' => [
+        'filtered_agg' => [
+          'terms' => [
+            'field' => 'country.name.raw',
+            'size' => $size,
+            'order' => ['_count' => 'desc'],
+          ]
+        ],
+        'unique_agg_count' => [
+          'cardinality' => [
+            'field' => 'country.name.raw'
+          ]
+        ]
+      ],
+    ];
+    if ($q) {
+      $query['aggregations']['filtered_agg']['terms']['include'] = self::getIncludeRegexp($q);
+    }
+    return $query;
+  }
+
+  /**
+   * Autocomplete query for data type field
+   */
+  public static function dataType($q, $currentQuery, $size) {
+    $query = [
+      'size' => 0,
+      'query' => $currentQuery,
+      'aggregations' => [
+        'filtered_agg' => [
+          'terms' => [
+            'field' => 'dataType.label.raw',
+            'size' => $size,
+            'order' => ['_count' => 'desc'],
+          ]
+        ],
+        'unique_agg_count' => [
+          'cardinality' => [
+            'field' => 'dataType.label.raw'
+          ]
+        ]
+      ]
+    ];
+    if ($q) {
+      $query['aggregations']['filtered_agg']['terms']['include'] = self::getIncludeRegexp($q);
+    }
+    return $query;
+  }
+
+  /**
    * Autocomplete query for NativeSubject field
    */
   public static function nativeSubject($q, $currentQuery, $size) {

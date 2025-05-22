@@ -4,11 +4,8 @@
       <img :src="`${ assets }/eu-flag.png`" alt="eu flag" class="hidden md:block">
       <div class="text-white md:pl-base">
         <p class="inline sm:block mb-sm">
-          &copy; {{ new Date().getFullYear() }} the ARIADNEplus partners. All rights reserved, visit
-          <b-link href="https://www.ariadne-research-infrastructure.eu/legal/" target="_blank" class="underline">
-            this page
-          </b-link>
-          for further details.
+          &copy; {{ new Date().getFullYear() }} the ARIADNEplus partners &amp; ARIADNE RI AISBL members. All rights reserved.
+          <b-link href="https://www.ariadne-research-infrastructure.eu/legal/" target="_blank" class="underline">Details</b-link>.
         </p>
 
         <p class="inline sm:block mb-sm">
@@ -20,7 +17,7 @@
             <i class="fas fa-envelope mr-xs"></i> Contact
           </b-link>
           <span class="pl-xs pr-sm">|</span>
-          <b-link :href="`${assets}/about/using-the-ariadne-portal.pdf`" target="_blank" class="hover:underline">
+          <b-link href="https://ariadne-infrastructure.github.io/docs/Portal_User_Guide/Section-1_What" target="_blank" class="hover:underline">
             <i class="fas fa-file-pdf text-md mr-xs"></i> ARIADNE portal guide
           </b-link>
           <span class="pl-xs pr-sm">|</span>

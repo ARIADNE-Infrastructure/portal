@@ -256,16 +256,19 @@ const getMarker = (resourceId: any, spatial: any, markerType: any, markerLabel: 
       const wkt = new Wkt.Wkt();
       wkt.read(geoShape);
       const feature = wkt.toObject({ color: 'red' });
-      latLng = L.latLng(feature.getBounds().getCenter().lat, feature.getBounds().getCenter().lng );
+      if (feature.getBounds) {
+        latLng = L.latLng(feature.getBounds().getCenter().lat, feature.getBounds().getCenter().lng );
+      } else {
+        latLng = L.latLng({ lat: feature._latlng.lat, lng: feature._latlng.lat });
+      }
       markerType == null ? markerType = markerTypes.point.shape : markerType = markerType;
     }
   }
 
   if (latLng) {
     let marker = L.marker(latLng, getMarkerStyle(markerType));
-    if(markerLabel) {
-      //marker.bindTooltip(latLng.toString());
-      marker.bindTooltip(markerLabel);
+    if (markerLabel) {
+      marker.bindTooltip(markerLabel, { direction: 'top', offset: [0, -35] });
     }
     // Link all makrkers that are not current resource
     if (markerType != markerTypes.point.current) {

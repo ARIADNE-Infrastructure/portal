@@ -138,7 +138,7 @@ const setupClusterMarkers = async () => {
           { icon: getMarkerIconType(markerType.marker) }
         );
 
-        marker.bindTooltip(resourceTitle);
+        marker.bindTooltip(resourceTitle, { direction: 'top', offset: [0, -35] });
         marker.bindPopup(getMarkerPopup(resource));
 
         clusterMarkers!.addLayer(marker);
@@ -158,13 +158,18 @@ const setupClusterMarkers = async () => {
         //this.clusterMarkers.addLayer(feature);
 
         // Get center of current polygon
-        let polygonCenter = feature.getBounds().getCenter();
+        let polygonCenter;
+        if (feature.getBounds) {
+          polygonCenter = feature.getBounds().getCenter();
+        } else {
+          polygonCenter = L.latLng({ lat: feature._latlng.lat, lng: feature._latlng.lat });
+        }
         let polygonMarker = L.marker(
           new L.LatLng(polygonCenter.lat, polygonCenter.lng),
           { icon: getMarkerIconType(markerType.shape) }
         );
 
-        polygonMarker.bindTooltip(resourceTitle);
+        polygonMarker.bindTooltip(resourceTitle, { direction: 'top', offset: [0, -35] });
         polygonMarker.bindPopup(getMarkerPopup(resource));
 
         clusterMarkers!.addLayer(polygonMarker);

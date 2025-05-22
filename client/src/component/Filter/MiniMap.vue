@@ -11,14 +11,23 @@
       >
         <div class="p-sm items-center flex justify-between">
           <span class="text-md">{{ title }}</span>
-
-          <button
-            class="bg-yellow px-md py-sm text-center text-sm text-white cursor-pointer hover:bg-green transition-color duration-300"
-            @click.prevent="showResultInMapView()"
-          >
-            <i class="fas fa-search mr-xs" />
-            Advanced Search
-          </button>
+          <div class="flex overflow-hidden">
+            <button v-if="canSearch"
+              class="bg-blue-50 px-md py-sm text-center text-sm text-white hover:bg-blue transition-all duration-300 mr-md"
+              :class="showAreaSearch ? 'cursor-pointer opacity-100' : 'cursor-default opacity-0'"
+              @click.prevent="searchCurrentArea()"
+            >
+              <i class="fas fa-search mr-xs" />
+              Search area
+            </button>
+            <button
+              class="bg-yellow px-md py-sm text-center text-sm text-white cursor-pointer hover:bg-green transition-color duration-300"
+              @click.prevent="showResultInMapView()"
+            >
+              <i class="fas fa-search mr-xs" />
+              Advanced Search
+            </button>
+          </div>
         </div>
       </div>
     </transition>
@@ -28,7 +37,7 @@
       style="height: 250px;"
     >
       <div v-if="!mapHasHits"
-        class="absolute top-0 left-0 h-full w-full bg-lightGray z-20 text-darkGray text-xl flex items-center justify-center"
+        class="absolute top-0 left-0 h-full w-full bg-lightGray z-19 text-darkGray text-xl flex items-center justify-center"
       >
         {{ isLoading ? 'Loading..' : 'No locations found' }}
       </div>
@@ -111,6 +120,7 @@ defineProps<{
   title?: string,
   height?: string,
   noTopBar?: boolean,
+  canSearch?: boolean,
 }>();
 
 const route = useRoute();
@@ -121,11 +131,12 @@ let heatMap: L.HeatLayer | null = null;
 let drawLayer: any = null;
 let mapObj: any = null;
 let isUnmounted: boolean = false;
+let canAreaSearch: boolean = false;
 const markerTypes = utils.getMarkerTypes(generalModule);
-//const zoomControl = L.control.zoom();
 
 let showMarkerInfo = $ref(false);
 let mapHasHits = $ref(false);
+let showAreaSearch = $ref(false);
 
 const globalParams = $computed(() => searchModule.getParams);
 const miniMapSearchResult = $computed(() => searchModule.getMiniMapSearchResult);
@@ -135,34 +146,56 @@ const isOnlyLoadingMap = $computed(() => searchModule.getIsMapLoading && !genera
 const transitionEnter = (el: HTMLElement) => {
   el.style.height = `${ el.scrollHeight}px`;
 }
-
 const transitionLeave = (el: HTMLElement) => {
   el.style.height = '0px';
+}
+
+const setAreaSearch = (e: any) => {
+  showAreaSearch = canAreaSearch;
+  canAreaSearch = true;
+}
+const setShowAreaSearch = () => {
+  showAreaSearch = true;
+  canAreaSearch = true;
+}
+const resetAreaSearch = () => {
+  canAreaSearch = false;
+  showAreaSearch = false;
 }
 
 /**
  * Updates minimap accordning to route params
  * Fired by  @Watch('$route', { immediate: true })
  */
-const setMiniMapFromState = async () => {
+const setMiniMapFromState = async (noCenter: boolean = false) => {
   if (isUnmounted) {
     return;
   }
-  resetMiniMap();
+  resetAreaSearch();
+  if (drawLayer) {
+    mapObj.removeLayer(drawLayer);
+    drawLayer = null;
+  }
+  if (heatMap) {
+    mapObj.removeLayer(heatMap);
+    heatMap = null;
+  }
+  if (clusterMarkers) {
+    mapObj.removeLayer(clusterMarkers);
+    clusterMarkers = null;
+  }
   let resourceHitsCount = miniMapSearchResult.total?.value;
-
   if (resourceHitsCount <= markerThreshold) {
-    setClusterMarkers(miniMapSearchResult?.hits);
+    setClusterMarkers(miniMapSearchResult?.hits, noCenter);
     showMarkerInfo = true;
   } else {
-    // CENTROID HEATS - Run instead of above when centroids are loaded to public portal
-    setHeatMap(miniMapSearchResult.aggregations?.geogridCentroid?.grids.buckets);
+    setHeatMap(miniMapSearchResult.aggregations?.geogridCentroid?.grids.buckets, noCenter);
     showMarkerInfo = false;
   }
 }
 
 // sets cluster markers
-const setClusterMarkers = (markerResources: any) => {
+const setClusterMarkers = (markerResources: any, noCenter: boolean) => {
   clusterMarkers = new L.MarkerClusterGroup();
   let points: any = [];
 
@@ -188,7 +221,7 @@ const setClusterMarkers = (markerResources: any) => {
           { icon: getMarkerIconType(markerType.marker) }
         );
 
-        marker.bindTooltip(resource.data.title.text, { keepInView: true, noWrap: false, offset: [0, 0] } as L.TooltipOptions);
+        marker.bindTooltip(resource.data.title.text, { keepInView: true, direction: 'top', noWrap: false, offset: [0, -35] } as L.TooltipOptions);
 
         marker.on('click', () => {
           window.location.href = process.env.ARIADNE_PUBLIC_PATH+'resource/'+ resource.id;
@@ -206,14 +239,19 @@ const setClusterMarkers = (markerResources: any) => {
         const feature = wkt.toObject({color: 'red'});
 
         // Get center of current polygon
-        let polygonCenter = feature.getBounds().getCenter();
+        let polygonCenter;
+        if (feature.getBounds) {
+          polygonCenter = feature.getBounds().getCenter();
+        } else {
+          polygonCenter = L.latLng({ lat: feature._latlng.lat, lng: feature._latlng.lat });
+        }
 
         let polygonMarker = L.marker(
           new L.LatLng(polygonCenter.lat, polygonCenter.lng),
           { icon: getMarkerIconType(markerType.shape) }
         );
 
-        polygonMarker.bindTooltip(resource.data.title.text, { keepInView: true, noWrap: true, offset: [0, 0] } as L.TooltipOptions);
+        polygonMarker.bindTooltip(resource.data.title.text, { keepInView: true, direction: 'top', noWrap: true, offset: [0, -35] } as L.TooltipOptions);
 
         polygonMarker.on('click', () => {
           window.location.href = process.env.ARIADNE_PUBLIC_PATH+'resource/'+ resource.id;
@@ -225,24 +263,21 @@ const setClusterMarkers = (markerResources: any) => {
         clusterMarkers!.addLayer(polygonMarker);
       }
     });
-
-    /* Reset max zoom when in marker view.
-        Zoom has a max value when in heatmap. When the map
-        transistions from heat- to marker view it has to be reset */
-    mapObj.setMaxZoom();
   });
 
   // add markers to map layer
   mapObj.addLayer(clusterMarkers);
 
   // center mini map arround points
-  centerMiniMap(points);
-  points.length ? mapHasHits = true: mapHasHits = false;
+  if (!noCenter) {
+    centerMiniMap(points);
+    mapHasHits = !!points.length;
+  }
   points = null;
 }
 
 // sets heatmap with geogrids from agg
-const setHeatMap = (heatPoints: any) => {
+const setHeatMap = (heatPoints: any, noCenter: boolean) => {
   if (!heatPoints) {
     return;
   }
@@ -271,12 +306,11 @@ const setHeatMap = (heatPoints: any) => {
     minOpacity: 0.8,
   }).addTo(mapObj);
 
-  // there is no point in zooming beyond  this when in heatmap
-  mapObj.setMaxZoom(5);
-
   // center map arround heatpoints
-  centerMiniMap(points);
-  points.length ? mapHasHits=true: mapHasHits=false;
+  if (!noCenter) {
+    centerMiniMap(points);
+    mapHasHits = !!points.length;
+  }
   mapPoints = [];
   points = [];
 }
@@ -294,7 +328,6 @@ const getMarkerIconType = (type: any): L.Icon => {
 
 /**
  * Centers map arround given lat/lon points'
- * @param points - Array with lat lng
  */
 const centerMiniMap = (points: any[]) => {
   // center map arround heatpoints
@@ -304,25 +337,31 @@ const centerMiniMap = (points: any[]) => {
   points = [];
 }
 
-// clear heat and marker layers
-const resetMiniMap = () => {
-  // Reset draw layer
-  if (drawLayer) {
-    mapObj.removeLayer(drawLayer);
-    drawLayer = null;
+const searchCurrentArea = async () => {
+  if (!showAreaSearch) {
+    return;
   }
-
-  // Reset heat layer
-  if (heatMap) {
-    mapObj.removeLayer(heatMap);
-    heatMap = null;
+  resetAreaSearch();
+  const ghp = (mapObj.getZoom() || 10) + 2;
+  const northWest = mapObj.getBounds().getNorthWest();
+  const southEast = mapObj.getBounds().getSouthEast();
+  if (northWest.lat > 90) {
+    northWest.lat = 90;
   }
-
-  // Reset marker layer
-  if (clusterMarkers) {
-    mapObj.removeLayer(clusterMarkers);
-    clusterMarkers = null;
+  if (northWest.lng < -180) {
+    northWest.lng = -180;
   }
+  if (southEast.lat < -90) {
+    southEast.lat = -90;
+  }
+  if (southEast.lng > 180) {
+    southEast.lng = 180;
+  }
+  const bbox = [northWest.lat, northWest.lng, southEast.lat, southEast.lng].toString();
+  const query = { ...globalParams, bbox, ghp };
+  delete query.page;
+  searchModule.updateMiniMapNoCenter(true);
+  router.push({ path: '/search', query });
 }
 
 /**
@@ -344,12 +383,18 @@ onMounted(() => {
     tap: false
   });
 
+  mapObj.on('resize', resetAreaSearch);
+  mapObj.on('moveend', setAreaSearch);
+  mapObj.on('mousedown', setShowAreaSearch);
+  mapObj.zoomControl?._zoomInButton?.addEventListener('mousedown', setShowAreaSearch)
+  mapObj.zoomControl?._zoomOutButton?.addEventListener('mousedown', setShowAreaSearch)
+  mapObj.zoomControl?._zoomInButton?.addEventListener('touchstart', setShowAreaSearch)
+  mapObj.zoomControl?._zoomOutButton?.addEventListener('touchstart', setShowAreaSearch)
+
   mapObj.setMaxBounds(L.latLngBounds([-90,-180], [90,180]));
 
   const allTileLayers = utils.getTileLayers(L, true, false);
-
   allTileLayers.OSM.addTo(mapObj);
-
   L.control.layers(allTileLayers, undefined, { position: 'topleft' }).addTo(mapObj);
 });
 
@@ -360,12 +405,21 @@ watch(route, async () => {
   if (isUnmounted) {
     return;
   }
+  resetAreaSearch();
   await searchModule.setMiniMapSearch(globalParams);
-  setMiniMapFromState();
+  setMiniMapFromState(searchModule.getMiniMapNoCenter);
+  searchModule.updateMiniMapNoCenter(false);
 }, { immediate: true, deep: true });
 
 // clear some data when minimap is unmounted
 const clearMinimap = () => {
+  mapObj?.off('resize', resetAreaSearch);
+  mapObj?.off('moveend', setAreaSearch);
+  mapObj?.off('mousedown', setShowAreaSearch);
+  mapObj?.zoomControl?._zoomInButton?.removeEventListener('mousedown', setShowAreaSearch)
+  mapObj?.zoomControl?._zoomOutButton?.removeEventListener('mousedown', setShowAreaSearch)
+  mapObj?.zoomControl?._zoomInButton?.removeEventListener('touchstart', setShowAreaSearch)
+  mapObj?.zoomControl?._zoomOutButton?.removeEventListener('touchstart', setShowAreaSearch)
   mapObj?.off();
   mapObj = null;
   isUnmounted = true;

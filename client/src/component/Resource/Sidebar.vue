@@ -1,26 +1,27 @@
 <template>
   <div>
     <section
-      v-if="resource.collection && resource.collection.hits && resource.collection.hits.length"
+      v-if="collection?.hits?.length && collection.total"
       :class="sectionClass"
     >
       <h3 class="text-lg font-bold mb-lg">
         <i class="fas fa-copy mr-sm"></i>
-        Resource has {{ resource.collection.total }} records
+        Resource has {{ collection.total }} records
       </h3>
 
       <resource-filtered-items
-        :items="resource.collection.hits"
+        :items="getTitleSorted(collection.hits)"
         slotType="resource"
+        icon="fas mr-sm fa-database"
       />
 
       <b-link
-        v-if="resource.collection.total"
+        v-if="collection.total"
         :to="utils.paramsToString('/search', { isPartOf: resource.identifier, isPartOfLabel: resource.title ? resource.title.text : '' })"
         class="mb-sm block"
         :useDefaultStyle="true"
       >
-        <i class="fas fa-search mr-sm"></i>
+        <i class="fas fa-search mr-sm mt-md"></i>
         Show all records
       </b-link>
     </section>
@@ -44,7 +45,7 @@
     </section>
 
     <section
-      v-if="resource.partOf && resource.partOf.length"
+      v-if="resource.partOf?.length"
       :class="sectionClass"
     >
       <h3 class="text-lg font-bold mb-lg">
@@ -53,8 +54,9 @@
       </h3>
 
       <resource-filtered-items
-        :items="resource.partOf"
+        :items="getTitleSorted(resource.partOf)"
         slotType="resource"
+        icon="fas fa-copy mr-sm"
       />
     </section>
 
@@ -78,9 +80,9 @@
         </select>
       </p>
 
-      <div v-if="resource.similar && resource.similar.length">
+      <div v-if="resource.similar?.length">
         <div
-          v-for="(similar, key) in resource.similar" :key="key"
+          v-for="(similar, key) in getTitleSorted(resource.similar)" :key="key"
           class="mb-sm"
         >
           <b-link
@@ -96,7 +98,7 @@
                 >
                   <!-- style in img is for safari bug -->
                   <img
-                    :src="getResourceIconTemporary(similar)"
+                    :src="getResourceIcon(similar)"
                     style="width:20px;height:20px"
                     alt="icon"
                     width="20"
@@ -112,44 +114,6 @@
       <p v-else>
         No similar resources found.
       </p>
-    </section>
-
-    <section
-      v-if="(Array.isArray(resource.derivedSubject) && resource.derivedSubject.some(d => d.prefLabel)) ||
-      (Array.isArray(resource.temporal) && resource.temporal.some(t => t.periodName)) ||
-      (Array.isArray(resource.spatial) && resource.spatial.some(s => s.placeName))"
-      :class="sectionClass"
-    >
-      <h3 class="text-lg font-bold mb-lg">
-        <i class="fas fa-tags mr-sm"></i>
-        Tags
-      </h3>
-
-      <resource-filtered-items
-        :items="resource.derivedSubject"
-        slotType="prop"
-        filter="prefLabel"
-        query="derivedSubject"
-        icon="fas fa-tag mr-sm mb-xs"
-        class="mb-sm"
-      />
-
-      <resource-filtered-items
-        :items="resource.temporal"
-        slotType="prop"
-        filter="periodName"
-        query="temporal"
-        icon="far fa-clock mr-sm mb-xs"
-        class="mb-sm"
-      />
-
-      <resource-filtered-items
-        :items="resource.spatial"
-        slotType="prop"
-        filter="placeName"
-        query="placeName"
-        icon="fas fa-map-marker-alt mr-sm mb-xs"
-      />
     </section>
   </div>
 </template>
@@ -172,18 +136,21 @@ const resource = $computed(() => resourceModule.getResource);
 const thematicals = $computed(() => resourceModule.getThematicals);
 const resourceParams = $computed(() => resourceModule.getResourceParams);
 
+// Todo: support multiple collections later
+const collection = $computed(() => Array.isArray(resource.collection) ? resource.collection[0] : resource.collection);
+
 // reset thematical selection
 onUnmounted(() => resourceModule.setResourceParamsThematical(''));
+
+const getTitleSorted = (items: any) => {
+  return utils.getSorted(items.map((s: any) => ({ ...s, text: s.title?.text ?? '' })), 'text');
+}
 
 const getResourceTypeName = (item: any): string => {
   return item.type?.[0]?.prefLabel ?? '';
 }
 
 const getResourceIcon = (item: any): string => {
-  return resourceModule.getIconByTypeId(item.type.id);
-}
-
-const getResourceIconTemporary = (item: any): string => {
-  return resourceModule.getIconByTypeNameTemporary(item.type?.[0]?.prefLabel);
+  return resourceModule.getIconByTypeName(item.type?.[0]?.prefLabel);
 }
 </script>

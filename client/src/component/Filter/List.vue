@@ -32,6 +32,7 @@
 
     <filter-mini-map
       v-if="getShow('miniMap')"
+      :canSearch="true"
       title="Where"
       class="mb-lg"
     />
@@ -53,16 +54,43 @@
         :maxHeight="1000"
       />
     </template>
+
+    <div style="display:none;">
+      <b-link class="text-mmd hover:text-blue transition-color duration-200" :clickFn="() => advanced = !advanced">
+        <div class="pt-xs pb-md">
+          <i class="fas fa-chevron-right cursor-pointer mr-xs duration-200" :class="{ 'transform rotate-90': advanced }"></i>
+          Advanced filters
+        </div>
+      </b-link >
+    </div>
+    <div class="text-mmd" style="display:none;">
+      <transition v-on:before-enter="transitionLeave" v-on:enter="transitionEnter" v-on:before-leave="transitionEnter" v-on:leave="transitionLeave">
+        <div v-show="advanced" class="ease-out duration-200">
+          <div class="flex justify-between items-center py-sm px-md border-base border-gray">
+            <p>Filter and search operator:</p>
+            <b-select
+              :value="operator"
+              :options="operatorOptions"
+              :maxWidth="50"
+              color="blue"
+              @input="setOperator"
+            />
+          </div>
+        </div>
+      </transition>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { watch } from 'vue';
+import { watch, onMounted } from 'vue';
 import { $computed } from 'vue/macros';
 import { useRoute, onBeforeRouteLeave } from 'vue-router'
 import { searchModule, aggregationModule } from "@/store/modules";
 import utils from '@/utils/utils';
 import router from '@/router';
+import BLink from '@/component/Base/Link.vue';
+import BSelect from '@/component/Base/Select.vue';
 import FilterSearch from '@/component/Filter/Search.vue';
 import FilterYearsAndPeriods from '@/component/Filter/YearsAndPeriods.vue';
 import FilterClear from '@/component/Filter/Clear.vue';
@@ -78,10 +106,16 @@ let isUnmounted: boolean = false;
 const route = useRoute();
 const result = $computed(() => searchModule.getResult);
 const sortedAggs = $computed(() => aggregationModule.getSorted);
+const operatorOptions = $computed(() => searchModule.getOperatorOptions);
+const operator = $computed(() => searchModule.getOperator);
+let advanced: boolean = $ref(false);
 
-const getShow = (component: string): boolean => {
-  return !!props.show?.includes(component);
-}
+const getShow = (component: string): boolean => !!props.show?.includes(component);
+const setOperator = (val: string) => searchModule.setSearch({ operator: val });
+const transitionEnter = (el: HTMLElement) => el.style.opacity = '1';
+const transitionLeave = (el: HTMLElement) => el.style.opacity = '0';
+
+onMounted(() => advanced = operator === 'or');
 
 watch(route, () => {
   if (!isUnmounted && router.currentRoute.value.path !== '/browse/where') {

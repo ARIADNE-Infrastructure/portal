@@ -64,7 +64,7 @@ const getFilterValue = (filter: iKeyVal): string => {
   if (filter.key === 'isPartOf') {
     return params.isPartOfLabel || filterVal
   }
-  if (filter.key === 'temporalRegion') {
+  if (filter.key === 'temporalRegion' || filter.key === 'dataType' || filter.key === 'placeName') {
     return utils.sentenceCase(filterVal);
   }
   if (filter.key === 'culturalPeriods' && params.culturalLabels) {
@@ -86,8 +86,9 @@ const removeFilter = (filter: iKeyVal) => {
   if (filter.key === 'isPartOf') {
       delete params.isPartOfLabel;
       searchModule.updateParams(params);
-  } else if (filter.key === 'culturalPeriods') {
-
+  } else if (filter.key === 'bbox') {
+    delete params.ghp;
+    searchModule.updateParams(params);
   }
   aggregationModule.setActive({
     key: filter.key,

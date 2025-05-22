@@ -17,7 +17,7 @@
     <h2 class="text-lg mb-md">Guide</h2>
     <p class="mb-3x">
       Have a look at the
-      <b-link :href="`${assets}/about/using-the-ariadne-portal.pdf`" target="_blank" :useDefaultStyle="true">
+      <b-link href="https://ariadne-infrastructure.github.io/docs/Portal_User_Guide/Section-1_What" target="_blank" :useDefaultStyle="true">
         ARIADNE portal guide
       </b-link>
       for information and help on how to search and navigate the portal or download the PDF version which is far more detailed and contains some examples.
@@ -37,9 +37,5 @@
 </template>
 
 <script setup lang="ts">
-import { $computed } from 'vue/macros';
-import { generalModule } from "@/store/modules";
 import BLink from '@/component/Base/Link.vue';
-
-const assets: string = $computed(() => generalModule.getAssetsDir);
 </script>

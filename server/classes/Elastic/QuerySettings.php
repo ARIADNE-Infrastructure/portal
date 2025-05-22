@@ -23,13 +23,13 @@ class QuerySettings {
   /**
    * Multimatch query with valid searchable fields
    */
-  public static function getMultiMatchQuery($searchString = '') {
+  public static function getMultiMatchQuery($searchString = '', $operator = 'and') {
     $fieldPath = array_column(self::getValidSearchableFields(), 'fieldPath');
     $matchQuery = [
       'multi_match' => [
         'query' => $searchString,
         'fields' =>  array_values($fieldPath),
-        'operator' => 'AND'
+        'operator' => $operator
       ]
     ];
     return $matchQuery;
@@ -40,7 +40,7 @@ class QuerySettings {
    * NOTICE: These fields are the only fields allowed to be searchable by user
    * input in combo with or without q-param.
    */
-  public static function getValidSearchableFields($searchString = ''): array {
+  public static function getValidSearchableFields($searchString = '', $operator = 'and'): array {
     return [
       'title' => [
         'fieldPath' => 'title.text^4',
@@ -48,7 +48,7 @@ class QuerySettings {
           'match' => [
             'title.text' => [
               'query' => $searchString,
-              'operator' => 'and'
+              'operator' => $operator
             ]
           ]
         ]
@@ -59,7 +59,7 @@ class QuerySettings {
           'match' => [
             'description.text' => [
               'query' => $searchString,
-              'operator' => 'and'
+              'operator' => $operator
             ]
           ]
         ]
@@ -70,7 +70,7 @@ class QuerySettings {
           'match' => [
             'nativeSubject.prefLabel' => [
               'query' => $searchString,
-              'operator' => 'and'
+              'operator' => $operator
             ]
           ]
         ]
@@ -81,7 +81,7 @@ class QuerySettings {
           'match' => [
             'derivedSubject.prefLabel' => [
               'query' => $searchString,
-              'operator' => 'and'
+              'operator' => $operator
             ]
           ]
         ]
@@ -96,7 +96,7 @@ class QuerySettings {
                 'match' => [
                   'spatial.placeName' => [
                     'query' => $searchString,
-                    'operator' => 'and'
+                    'operator' => $operator
                   ]
                 ]
               ]
@@ -114,7 +114,7 @@ class QuerySettings {
                 'match' => [
                   'temporal.periodName' => [
                     'query' => $searchString,
-                    'operator' => 'and'
+                    'operator' => $operator
                   ]
                 ]
               ]
@@ -128,7 +128,7 @@ class QuerySettings {
           'match_phrase' => [
             'originalId' => [
               'query' => $searchString,
-              'operator' => 'and'
+              'operator' => $operator
             ]
           ]
         ]
@@ -139,7 +139,7 @@ class QuerySettings {
           'match_phrase' => [
             'otherId' => [
               'query' => $searchString,
-              'operator' => 'and'
+              'operator' => $operator
             ]
           ]
         ]
@@ -209,11 +209,10 @@ class QuerySettings {
     return $filters;
   }
 
-
   /**
    * Get filter query metadata
    */
-  public static function getValidFilter($filterName, $filterValue) {
+  private static function getValidFilter($filterName, $filterValue) {
     $validFilters = [
       'bbox' => [
         'fieldPath' => 'temporal',
@@ -235,6 +234,16 @@ class QuerySettings {
         'fieldPath' => 'contributor',
         'isNested' => false,
         'innerQuery' => ['term' => ['contributor.name.raw' => $filterValue]]
+      ],
+      'country' => [
+        'fieldPath' => 'country',
+        'isNested' => false,
+        'innerQuery' => ['term' => ['country.name.raw' => $filterValue]]
+      ],
+      'dataType' => [
+        'fieldPath' => 'dataType',
+        'isNested' => false,
+        'innerQuery' => ['term' => ['dataType.label.raw' => $filterValue]]
       ],
       'publisher' => [
         'fieldPath' => 'publisher',
@@ -316,6 +325,18 @@ class QuerySettings {
           'size' => self::AGGS_BUCKET_SIZE
         ]
       ],
+      'country' => [
+        'terms' => [
+          'field' => 'country.name.raw',
+          'size' => self::AGGS_BUCKET_SIZE
+        ]
+      ],
+      'dataType' => [
+        'terms' => [
+          'field' => 'dataType.label.raw',
+          'size' => self::AGGS_BUCKET_SIZE
+        ]
+      ],
       'publisher' => [
         'terms' => [
           'field' => 'publisher.name.raw',
@@ -362,7 +383,7 @@ class QuerySettings {
    * Get filters for query for bbox param in $_GET
    *
    */
-  public static function getBoundingboxFilter() {
+  private static function getBoundingboxFilter() {
     if( isset($_GET['bbox']) ) {
       $bbox = explode(',', $_GET['bbox']);
       // Geopoints
@@ -427,16 +448,13 @@ class QuerySettings {
    * Get AAT term descendants for given id from OpenSearch index
    */
   private static function getDerivedSubjectDescendats($filterName, $term) {
-
-    if($filterName === 'derivedSubject') {
-
+    if ($filterName === 'derivedSubject') {
       // get descendants from AAT-descendats index.
       $aat = new AATDescendants();
       $result = $aat->getDescendants($term);
       $descendants = [];
-
-      if(!empty($result)) {
-        foreach($result as $val) {
+      if (!empty($result)) {
+        foreach ($result as $val) {
           // TODO: when ariadne index has derivedSubject.id as keyword type, remove
           // substr(strrchr($val['uri'], "/"), 1) below, just search for the whole key
           $descendants[] = substr(strrchr($val['uri'], "/"), 1);
@@ -469,15 +487,12 @@ class QuerySettings {
             ]
           ];
       }
-
       return [
         'terms' => [
           //'derivedSubject.prefLabel.raw' => $descendants
           'derivedSubject.id' => $descendants
         ]
       ];
-
     }
   }
-
 }

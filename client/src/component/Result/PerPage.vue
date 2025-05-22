@@ -1,10 +1,11 @@
 <template>
   <div class="flex items-center">
     <h3 class="font-bold mr-md text-mmd">Per page</h3>
-    <div style="max-width:70px">
+    <div>
       <b-select
         :value="perPage"
         :options="options"
+        :maxWidth="45"
         color="blue"
         @input="setPerPage"
       />

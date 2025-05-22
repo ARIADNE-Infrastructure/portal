@@ -58,14 +58,14 @@ const onTabChange = (title: string) => currentTab = title;
 
 const activeYearsFilterWarning: string = $computed(() => {
   if (params?.range) {
-    return 'Your current search is filtering on Years. This filter will be reseted if you use the filters below.';
+    return 'Your current search is filtering on Years. This filter will be reset if you use the filters below.';
   }
   return '';
 });
 
 const activePeriodFiltersWarning: string = $computed(() => {
   if (params?.temporalRegion || params?.culturalPeriods) {
-    return 'Your current search is filtering on Time Periods. These filters will be reseted if you use the fields below.';
+    return 'Your current search is filtering on Time Periods. These filters will be reset if you use the fields below.';
   }
   return '';
 });
