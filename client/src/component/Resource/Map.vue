@@ -97,6 +97,7 @@ let mapSize: string = $ref('small');
 
 const nearbyMarkersGroup = L.featureGroup();
 const resourceMarkersGroup = L.featureGroup();
+const polygonsGroup = L.featureGroup();
 const mapZoomPadding = { padding: [20,20] };
 const markerTypes = utils.getMarkerTypes(generalModule);
 
@@ -129,13 +130,13 @@ const getMapSize = (): string => {
  */
 const toggleNearby = (): void => {
   showNearby = !showNearby;
-  if(showNearby) {
-    let allLayers = resourceMarkersGroup.getLayers().concat(nearbyMarkersGroup.getLayers());
+  if (showNearby) {
+    let allLayers = resourceMarkersGroup.getLayers().concat(polygonsGroup.getLayers()).concat(nearbyMarkersGroup.getLayers());
     mapObj.addLayer(nearbyMarkersGroup);
-    mapObj.fitBounds(L.featureGroup(allLayers).getBounds(),mapZoomPadding);
+    mapObj.fitBounds(L.featureGroup(allLayers).getBounds(), mapZoomPadding);
   } else {
     mapObj.removeLayer(nearbyMarkersGroup);
-    mapObj.fitBounds(resourceMarkersGroup.getBounds(),mapZoomPadding);
+    mapObj.fitBounds(L.featureGroup(resourceMarkersGroup.getLayers().concat(polygonsGroup.getLayers())).getBounds(), mapZoomPadding);
   }
 }
 
@@ -164,13 +165,9 @@ const setMap = async () => {
   let marker: any = null;
   isPolygonSpatial = false;
 
-  // Pane allows for settings z-index. All other documented approaches fail!
-  mapObj.createPane('resourceMarkersPane');
-  mapObj.getPane('resourceMarkersPane').style.zIndex = 20;
-
   // Get locations from resource and create markers
   resource.spatial?.forEach((spatial: any, i: number) => {
-    if (spatial.spatialPrecision || spatial.coordinatePrecision ) {
+    if (spatial.spatialPrecision || spatial.coordinatePrecision) {
       // If either of these props are set, means that resource location is apporoximate!
       locationIsApproximate = true;
     }
@@ -193,17 +190,17 @@ const setMap = async () => {
       wkt.read(shape);
       // Add to custom pane to be able to set z-index for geoshapes
       // Interactive: false => because we must be able to show tooltips for nearby markers under the geoshape
-      let feature = wkt.toObject({color: 'red', pane: 'resourceMarkersPane', interactive: false});
+      let feature = wkt.toObject({color: 'red', interactive: false});
 
       // Add polygon for fitbounds
       //feature.bringToFront();
-      feature.addTo(resourceMarkersGroup);
+      feature.addTo(polygonsGroup);
       isPolygonSpatial = true;
     }
   });
 
   // No locations found means no map needed, return.
-  if (!resourceMarkersGroup?.getLayers().length) {
+  if (!resourceMarkersGroup?.getLayers().length && !polygonsGroup?.getLayers().length) {
     // Set map null to hide!
     mapObj = null;
     hasMapData = false;
@@ -223,15 +220,16 @@ const setMap = async () => {
   }
 
   // Set nearby layers Z-index way back
-  bringLayersToBack(nearbyMarkersGroup);
+  nearbyMarkersGroup.eachLayer((layer: any) => layer.setZIndexOffset(-2000));
+  polygonsGroup.addTo(mapObj);
   nearbyMarkersGroup.addTo(mapObj);
   resourceMarkersGroup.addTo(mapObj);
 
   // fitBounds for polygons needs delay!!
   await utils.delay(50);
-  let allLayers = resourceMarkersGroup.getLayers().concat(nearbyMarkersGroup.getLayers());
+  let allLayers = resourceMarkersGroup.getLayers().concat(polygonsGroup.getLayers()).concat(nearbyMarkersGroup.getLayers());
   const group = L.featureGroup(allLayers);
-  mapObj.fitBounds(group.getBounds(),mapZoomPadding);
+  mapObj.fitBounds(group.getBounds(), mapZoomPadding);
 
   nextTick(() => {
     mapObj.invalidateSize();
@@ -257,7 +255,7 @@ const getMarker = (resourceId: any, spatial: any, markerType: any, markerLabel: 
       wkt.read(geoShape);
       const feature = wkt.toObject({ color: 'red' });
       if (feature.getBounds) {
-        latLng = L.latLng(feature.getBounds().getCenter().lat, feature.getBounds().getCenter().lng );
+        latLng = L.latLng(feature.getBounds().getCenter().lat, feature.getBounds().getCenter().lng);
       } else {
         latLng = L.latLng({ lat: feature._latlng.lat, lng: feature._latlng.lat });
       }
@@ -279,15 +277,6 @@ const getMarker = (resourceId: any, spatial: any, markerType: any, markerLabel: 
     return marker;
   }
   return null;
-}
-
-/**
- * Bring all layers in group to back
- */
-const bringLayersToBack = (layerGroup: any) => {
-  layerGroup.eachLayer((layer: any) => {
-    layer.setZIndexOffset(-2000);
-  });
 }
 
 /**

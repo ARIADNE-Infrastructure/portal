@@ -27,7 +27,7 @@ class AppSettings {
    * Returns if valid secret get param is set for update actions
    */
   public static function hasValidSecret () {
-    return !empty($_GET['id']) && $_GET['id'] === self::getSettings()->environment->portalUpdateSecret;
+    return !empty($_GET['id']) && $_GET['id'] === self::getSettings()->environment->portalUpdateSecret && self::getSettings()->environment->portalUpdateSecret !== 'xxx';
   }
 
   /**

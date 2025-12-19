@@ -1,6 +1,7 @@
 // store/modules/MyStoreModule.ts
 import { frontPageLinks, mainNavigation, frontPageImagesTotal, frontPageImageTexts } from './General/static';
 import axios from 'axios';
+import utils from '@/utils/utils';
 
 export enum LoadingStatus { None, Locked, Background };
 
@@ -14,6 +15,7 @@ export class GeneralModule {
   frontPageImagesTotal: number = frontPageImagesTotal;
   frontPageImageTexts: any = frontPageImageTexts;
   publishers: any[] = [];
+  noFormats: any = {};
   window: any = {};
   waiting: Function[] = [];
   loaded: boolean = false;
@@ -43,9 +45,13 @@ export class GeneralModule {
 
   async setServicesAndPublishers() {
     try {
-      const url = process.env.apiUrl + '/getAllServicesAndPublishers';
-      const res: any = await axios.get(url);
-      this.updateServicesAndPublishers(res?.data)
+      const res: any = await axios.get(process.env.apiUrl + '/getAllServicesAndPublishers');
+      this.updateServicesAndPublishers(res?.data);
+      const noFormatPublishers = this.publishers.filter(p => p.noFormat).map(p => p.title);
+      if (noFormatPublishers.length) {
+        const res2: any = await axios.get(process.env.apiUrl + utils.paramsToString('/getAllNoFormats', { publishers: noFormatPublishers.join('|') }));
+        this.updateNoFormats(res2?.data);
+      }
     } catch (ex) {}
   }
 
@@ -58,7 +64,7 @@ export class GeneralModule {
   }
 
   updateServicesAndPublishers(data: any) {
-    this.publishers = Array.isArray(data?.publishers) ? data.publishers.sort((a: any, b: any) => a.id - b.id) : [];
+    this.publishers = Array.isArray(data?.publishers) ? data.publishers.sort((a: any, b: any) => a.id - b.id).map((p: any) => ({ ...p, noFormat: p.noFormat || p.title.includes('xxNoFormatxx'), title: p.title.replaceAll('xxNoFormatxx', '') })) : [];
     this.services = Array.isArray(data?.services) ? data.services.sort((a: any, b: any) => a.id - b.id) : [];
     this.loaded = true;
     this.waiting.forEach((cb: Function) => cb());
@@ -76,6 +82,12 @@ export class GeneralModule {
 
   updateMeta(meta: any) {
     this.meta = meta;
+  }
+
+  updateNoFormats(payload: any) {
+    const noFormats = {}
+    payload?.forEach(s => noFormats[s] = true);
+    this.noFormats = noFormats;
   }
 
   updateFormPw(formPw: string) {
@@ -119,6 +131,14 @@ export class GeneralModule {
       key = (key || '').trim().toLowerCase()
       return this.publishers.find((p: any) => p.title.trim().toLowerCase() === key) || null;
     }
+  }
+
+  get getNoFormat() {
+    return (publishers: any) => (Array.isArray(publishers) ? publishers : [publishers]).some(p => this.findPublisher(p?.name)?.noFormat);
+  }
+
+  get isNoFormat() {
+    return (title: string) => this.noFormats[title?.toLowerCase()];
   }
 
   get getAssetsDir(): string {

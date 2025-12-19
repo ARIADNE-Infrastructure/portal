@@ -37,13 +37,13 @@ class Contact {
     if (!$fromName) {
       $error = 'Please enter your name';
 
-    } else if (!filter_var($fromEmail, FILTER_VALIDATE_EMAIL)) {
+    } elseif (!filter_var($fromEmail, FILTER_VALIDATE_EMAIL)) {
       $error = 'Please enter a valid email';
 
-    } else if (!$message) {
+    } elseif (!$message) {
       $error = 'Please enter a message';
 
-    } else if (!$captcha || !$this->validCaptcha($captcha)) {
+    } elseif (!$captcha || !$this->validCaptcha($captcha)) {
       $error = 'Invalid captcha. Reload and try again';
 
     } else {

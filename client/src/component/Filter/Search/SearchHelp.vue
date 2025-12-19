@@ -41,7 +41,7 @@
             <b-link
               target="_blank"
               href="https://www.getty.edu/research/tools/vocabularies/aat/about.html"
-              class="word-break"
+              class="break-word"
               :useDefaultStyle="true">
               https://www.getty.edu/research/tools/vocabularies/aat/about.html
             </b-link>

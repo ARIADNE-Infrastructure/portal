@@ -59,7 +59,7 @@ class AATDescendants {
       file_put_contents($this->dataFolder . '/term-descendants.json', json_encode($this->tree));
       echo 'Stage 1 done.';
 
-    } else if ($stage === 2) {
+    } elseif ($stage === 2) {
       // Index resources with created termDescendants.json data
       $this->indexTermDescendants();
       echo 'Stage 2 done.';

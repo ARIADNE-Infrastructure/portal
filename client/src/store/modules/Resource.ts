@@ -58,9 +58,13 @@ export class ResourceModule {
     } catch (ex) {}
 
     this.updateResource(data);
-
     this.generalModule.updateLoadingStatus(LoadingStatus.None);
+  }
 
+  async checkCors(url: string) {
+    const res = await axios.get(url);
+
+    return false;
   }
 
   updateResourceParamsThematical(value: string) {
@@ -201,22 +205,85 @@ export class ResourceModule {
     }
   }
 
+  // audio
+  get getAudioUrls() {
+    return (resource: any) => {
+      let urls: any[] = [];
+      if (Array.isArray(resource?.digitalMedia)) {
+        resource.digitalMedia.forEach((it: any) => {
+          if (it?.url && it.type === 'audio' && utils.validUrl(it.url) && !urls.some(u => u.url === it.url) && it.url.startsWith('https://')) {
+            urls.push({ url: it.url, name: utils.urlName(it.url) });
+          }
+        });
+      }
+      return urls;
+    }
+  }
+
+  // video
+  get getVideoUrls() {
+    return (resource: any) => {
+      let urls: any[] = [];
+      if (Array.isArray(resource?.digitalMedia)) {
+        resource.digitalMedia.forEach((it: any) => {
+          if (it?.url && it.type === 'video' && utils.validUrl(it.url) && !urls.some(u => u.url === it.url) && it.url.startsWith('https://')) {
+            urls.push({ url: it.url, name: utils.urlName(it.url) });
+          }
+        });
+      }
+      return urls;
+    }
+  }
+
   // images
   get getDigitalImages() {
     return (resource: any, onlyPrimary?: boolean) => {
-      let imgs: string[] = [];
-
+      const imgs: string[] = [];
+      const addImg = (img: any, prop: string) => {
+        if (img && utils.validUrl(img[prop]) && !imgs.includes(img[prop]) && (!onlyPrimary || img.primary)) {
+          const media = Array.isArray(resource.digitalMedia) ? resource.digitalMedia.find((it: any) => it.url === img[prop]) : null;
+          if (!media || (media && (!media.type || media.type === 'image'))) {
+            imgs.push(img[prop]);
+          }
+        }
+      };
       if (Array.isArray(resource?.digitalImage)) {
-        resource.digitalImage.forEach((img: any) => {
-          ['ariadneUri', 'providerUri'].forEach((prop: string) => {
-            if (img && utils.validUrl(img[prop]) && !imgs.includes(img[prop]) && (!onlyPrimary || img.primary)) {
-              imgs.push(img[prop]);
-            }
-          });
+        resource.digitalImage.forEach((img: any) => ['ariadneUri', 'providerUri'].forEach(prop => addImg(img, prop)));
+      }
+      if (Array.isArray(resource?.digitalMedia)) {
+        resource.digitalMedia.forEach((it: any) => it?.url && (!it.type || it.type === 'image') ? addImg(it, 'url') : null)
+      }
+      return imgs;
+    }
+  }
+
+  // Iiif manifest urls
+  get getIiifUrls() {
+    return (resource: any) => {
+      const urls: any[] = [];
+      if (Array.isArray(resource?.digitalMedia)) {
+        resource.digitalMedia.forEach((it: any) => {
+          if (it?.url && it.type === 'iiif' && utils.validUrl(it.url) && !urls.some(u => u.url === it.url)) {
+            urls.push({ url: it.url, name: it.url, download: (new URLSearchParams('?' + (it.url.split('?')[1] ?? ''))).get('manifests') });
+          }
         });
       }
+      return urls;
+    }
+  }
 
-      return imgs;
+  // 3d data urls
+  get get3dObjectUrls() {
+    return (resource: any) => {
+      const objectUrls: any[] = [];
+      if (Array.isArray(resource?.digitalMedia)) {
+        resource.digitalMedia.forEach((it: any) => {
+          if (it?.url && (it.type === 'iframe' || it.type === 'periscope') && utils.validUrl(it.url) && !objectUrls.some(u => u.url === it.url) && it.url.startsWith('https://')) {
+            objectUrls.push({ url: it.url, type: it.type, name: utils.urlName(it.url) });
+          }
+        });
+      }
+      return objectUrls;
     }
   }
 

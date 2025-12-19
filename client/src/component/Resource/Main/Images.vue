@@ -16,12 +16,14 @@
       >
         <slide v-for="(url, key) in validDigitalImages" :key="key">
           <div class="cursor-pointer hover:opacity-80 duration-300 px-sm pb-md" @click.prevent="activeUrl = url">
-            <img :src="url" class="max-w-full">
+            <img :src="url" class="max-w-full" style="max-height: 350px">
           </div>
         </slide>
-        <template #addons v-if="validDigitalImages.length > amountToShow">
-          <navigation />
-          <pagination />
+        <template #addons>
+          <div v-if="validDigitalImages.length > amountToShow">
+            <navigation />
+            <pagination />
+          </div>
         </template>
       </carousel>
 
@@ -39,15 +41,18 @@
 
 <script setup lang="ts">
 import 'vue3-carousel/dist/carousel.css';
-import { $computed, $ref } from 'vue/macros';
+import { watch } from 'vue';
+import { $computed, $ref, $$ } from 'vue/macros';
+import { onBeforeRouteLeave } from 'vue-router'
 import { Carousel, Slide, Pagination, Navigation } from 'vue3-carousel';
-import { resourceModule } from "@/store/modules";
+import { generalModule, resourceModule } from "@/store/modules";
 import utils from '@/utils/utils';
 
+const emit = defineEmits(['error']);
+const window = $computed(() => generalModule.getWindow);
 const resource = $computed(() => resourceModule.getResource);
 const digitalImages: Array<string> = $computed(() => resourceModule.getDigitalImages(resource));
-
-const amountToShow: number = utils.isMobile() ? 2 : 3;
+let amountToShow: number = $ref(utils.isMobile() ? 1 : 3);
 let validDigitalImages: Array<string> = $ref([]);
 let isValidating: boolean = $ref(true);
 let activeUrl: string = $ref('');
@@ -62,6 +67,7 @@ digitalImages.forEach((url: string, index: number) => {
     if (++count >= digitalImages.length) {
       validDigitalImages = validDigitalImages.filter((url: string) => url);
       isValidating = false;
+      emit('error', !validDigitalImages.length);
     }
   }
   img.onload = () => {
@@ -72,6 +78,7 @@ digitalImages.forEach((url: string, index: number) => {
   img.src = url;
 });
 
+onBeforeRouteLeave(watch($$(window), () => amountToShow = utils.isMobile() ? 1 : 3));
 </script>
 
 <style>
@@ -81,5 +88,8 @@ digitalImages.forEach((url: string, index: number) => {
 }
 .carousel__next:hover, .carousel__prev:hover{
   opacity: 0.8;
+}
+.carousel__slide{
+  height: inherit !important;
 }
 </style>

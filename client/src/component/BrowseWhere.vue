@@ -19,6 +19,10 @@
           <div v-else>
             <b>{{ totals }}</b>
             resources in the current view
+            <div v-if="mapTotal >= 0 && mapTotal < hitsResult?.total?.value">
+              <b>{{ hitsResult.total.value - mapTotal }}</b>
+              resources that cover a larger area than your current view may also be relevant to your search
+            </div>
           </div>
         </div>
       </div>
@@ -100,6 +104,8 @@ const data = $ref(null);
 const inMarkerView: boolean = $ref(false);
 const params = $computed(() => searchModule.getParams);
 const result = $computed(() => searchModule.getAggsResult);
+const hitsResult = $computed(() => searchModule.getResult);
+const mapTotal = $computed(() => searchModule.getMapTotal);
 const markerTypes = utils.getMarkerTypes(generalModule);
 
 onMounted(() => {
@@ -123,11 +129,13 @@ const markerViewLeave = (el: HTMLElement): void => {
 }
 
 const totals: string = $computed(() => {
-  let total = data ? (data?.result?.total) : (result?.total);
-  let val = total?.value || 0;
-
-  if (val && total?.relation !== 'eq') {
-    val += '+';
+  let val: any = mapTotal;
+  if (val < 0) {
+    let total = data ? (data?.result?.total) : hitsResult?.total;
+    val = total?.value || 0;
+    if (val && total?.relation !== 'eq') {
+      val += '+';
+    }
   }
   return String(val).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 });

@@ -7,21 +7,18 @@ use Elastic\QuerySettings;
 use Elastic\Timeline;
 use Elastic\Utils;
 use Elastic\GeoUtils;
-use Elastic\DataNormalizer;
 use Elasticsearch\ClientBuilder;
 use Periodo\Periodo;
 
 class Query {
   private static $inst = null;
   private $settings;
-  private $normalizer;
   private $elasticEnv;
   private $client = null;
   private $aggregationsReqFilter = []; // Aggregation filters from uri
 
   public function __construct() {
     $this->settings = AppSettings::getSettings();
-    $this->normalizer = new DataNormalizer($this->settings);
     $this->elasticEnv = AppSettings::getSettingsEnv();
   }
 
@@ -39,6 +36,11 @@ class Query {
       $this->client = ClientBuilder::create()->setHosts([$this->elasticEnv->host])->build();
     }
     return $this->client;
+  }
+
+  // returns default language from settings
+  public function getDefaultLanguage() {
+    return $this->settings->environment->defaultLanguage;
   }
 
   /**
@@ -59,7 +61,6 @@ class Query {
     $query['size'] = $this->getSize();
     $query['from'] = $this->getFrom();
     $query['sort'] = $this->getSort();
-
     $operator = !empty($_GET['operator']) && $_GET['operator'] === 'or' ? 'or' : 'and';
     $filters = [];
     $innerQuery = [];
@@ -69,16 +70,79 @@ class Query {
     }
 
     // Handle incoming user input query string
-    if (!empty($_GET['q'])) {
-      $validFields = QuerySettings::getValidSearchableFields(Utils::escapeLuceneValue($_GET['q'], false), $operator);
-      $searchInField = !empty($_GET['fields']) ? trim($_GET['fields']) : null;
-      if ($searchInField && !empty($validFields[$searchInField])) {
-        $innerQuery['bool']['must'] = $validFields[$searchInField]['query'];
-      } else {
-        $innerQuery['bool']['must'][] = QuerySettings::getMultiMatchQuery(Utils::escapeLuceneValue($_GET['q']), $operator);
-      }
+    if (empty($_GET['q'])) {
+      $innerQuery['bool']['should'] = ['match_all' => new \stdClass()];
+
     } else {
-      $innerQuery['bool']['should'] = array('match_all'=> new \stdClass());
+      $raw = Utils::escapeLuceneValue($_GET['q'], false);
+      $search = sprintf('%s | "%s"', $raw, $raw);
+      $searchField = !empty($_GET['fields']) ? trim($_GET['fields']) : null;
+      $fields = QuerySettings::getValidSearchableFields();
+
+      if ($searchField && !empty($fields[$searchField])) {
+        $fieldQuery = [
+          'simple_query_string' => [
+            'default_operator' => $operator,
+            'fields' => [explode('^', $fields[$searchField]['fieldPath'])[0]],
+            'query' => $searchField === 'title' ? sprintf('%s | %s*', $search, $raw) : $search,
+          ],
+        ];
+        if (!empty($fields[$searchField]['nested'])) {
+          $innerQuery['bool']['must'] = ['nested' => ['path' => $fields[$searchField]['nested'], 'query' => $fieldQuery]];
+        } else {
+          $innerQuery['bool']['must'] = $fieldQuery;
+        }
+
+      } else {
+        $searchFields = [];
+        $nestedFields = [];
+        foreach ($fields as $key => $val) {
+          $nested = $val['query'][0]['nested'] ?? null;
+          if (empty($nested)) {
+            $searchFields[] = $val['fieldPath'];
+          } else {
+            $nestedFields[] = [
+              'nested' => [
+                'path' => $nested['path'],
+                'query' => [
+                  'simple_query_string' => [
+                    'default_operator' => $operator,
+                    'fields' => [$val['fieldPath']],
+                    'query' => $search,
+                  ],
+                ],
+              ],
+            ];
+          }
+        }
+        $innerQuery['bool'] = [
+          'minimum_should_match' => 1,
+          'should' => array_merge([
+            [
+              'simple_query_string' => [
+                'default_operator' => $operator,
+                'fields' => $searchFields,
+                'query' => $search,
+              ],
+            ],
+            [
+              'simple_query_string' => [
+                'default_operator' => $operator,
+                'query' => $search,
+              ],
+            ],
+            [
+              'simple_query_string' => [
+                'default_operator' => $operator,
+                'fields' => [
+                  $fields['title']['fieldPath'] . '0',
+                ],
+                'query' => $raw . '*',
+              ],
+            ],
+          ], $nestedFields),
+        ];
+      }
     }
 
     // push inner query to main query
@@ -88,11 +152,23 @@ class Query {
     $filters = QuerySettings::getFilters($_GET);
 
     // Push filters to main query
-    foreach ($filters as $filter) {
-      if ($operator === 'or') {
-        $query['query']['bool']['filter']['bool']['should'][] = $filter;
-      } else {
-        $query['query']['bool']['filter'][] = $filter;
+    if (!empty($filters)) {
+      $musts = [];
+      foreach ($filters as $filter) {
+        switch ($_GET['operator'] ?? '') {
+          case 'or': $query['query']['bool']['filter']['bool']['should'][] = $filter; break;
+          case 'and': $query['query']['bool']['filter'][] = $filter; break;
+          default:
+            $term = $filter['term'] ?? $filter['terms'] ?? $filter['nested']['query']['bool']['must'][0]['term'] ?? null;
+            if (!empty($term)) {
+              $musts[array_key_first($term)][] = $filter;
+            } else {
+              $query['query']['bool']['filter']['bool']['must'][] = $filter;
+            }
+        }
+      }
+      foreach ($musts as $key => $val) {
+        $query['query']['bool']['filter']['bool']['must'][] = ['bool' => ['should' => $val]];
       }
     }
 
@@ -122,27 +198,19 @@ class Query {
     ];
 
     // Filter result. Get only resources with spatial data
-    $geoFilter = [
+    $filterType = empty($_GET['operator']) || $_GET['operator'] === 'or' ? 'must' : 'filter';
+    $mainQuery['query']['bool'][$filterType][] = [
       'nested' => [
         'path' => 'spatial',
         'query' => [
           'bool' => [
             'should' => [
               ['exists' => ['field' => 'spatial.geopoint']], // remove when centroids are uploaded to public
-              ['exists' => ['field' => 'spatial.polygon']], // remove when centroids are uploaded to public
-              ['exists' => ['field' => 'spatial.boundingbox']], // remove when centroids are uploaded to public
-              ['exists' => ['field' => 'spatial.centroid']]
             ]
           ]
         ]
       ]
     ];
-
-    if (!empty($_GET['operator']) && $_GET['operator'] === 'or') {
-      $mainQuery['query']['bool']['must'][] = $geoFilter;
-    } else {
-      $mainQuery['query']['bool']['filter'][] = $geoFilter;
-    }
 
     /* Do roundtrip to ES to see if result is more than 500. If result count is more
        than 500 the map doesn't need records data because it's rendering heatmap with
@@ -160,10 +228,15 @@ class Query {
       }
     }
     if ($count <= $this->settings->environment->mapMarkerThreshhold) { // Render markers - records needed to render markers
-      $mainQuery['size'] = $count;
+      $mainQuery['size'] = $this->settings->environment->mapMarkerThreshhold;
     } else {
       $mainQuery['size'] = 0;
     }
+    array_push($mainQuery['query']['bool']['must'][count($mainQuery['query']['bool'][$filterType]) - 1]['nested']['query']['bool']['should'],
+      ['exists' => ['field' => 'spatial.polygon']], // remove when centroids are uploaded to public
+      ['exists' => ['field' => 'spatial.boundingbox']], // remove when centroids are uploaded to public
+      ['exists' => ['field' => 'spatial.centroid']]
+    );
     return $mainQuery;
   }
 
@@ -173,30 +246,62 @@ class Query {
   public function getSearchAggregationData() {
     $query = $this->getCurrentQuery();
     $query['aggregations'] = QuerySettings::getSearchAggregations();
+    $operator = $_GET['operator'] ?? '';
     $query['size'] = 0;
     unset($query['_source']);
     unset($query['sort']);
     unset($query['from']);
 
-    // This is the map search requesting data. Push map specific queri attributes to main query
-    if (isset($_GET['mapq'])) {
-      $query = $this->getMapQuery($query);
-    } else {
-      unset($query['aggregations']['geogridCentroid']);
-    }
-
-    // unset filters if it's "or" search
-    if (!empty($_GET['operator']) && $_GET['operator'] === 'or' && isset($query['query']['bool']['filter'])) {
-      unset($query['query']['bool']['filter']);
-    }
-
     // timeline specific query
     if (!empty($_GET['timeline'])) {
-      if (!empty($_GET['onlyTimeline'])) {
-        $query['aggregations'] = [];
-      }
       $range = empty($_GET['range']) ? null : explode(',', $_GET['range']);
-      $query['aggregations']['range_buckets'] = Timeline::prepareRangeBucketsAggregation($range);
+      $query['aggregations'] = ['range_buckets' => Timeline::prepareRangeBucketsAggregation($range)];
+
+    // This is the map search requesting data. Push map specific queri attributes to main query
+    } elseif (isset($_GET['mapq']) && !isset($_GET['mapqAggs'])) {
+      $query = $this->getMapQuery($query);
+
+    } else {
+      unset($query['aggregations']['geogridCentroid']);
+
+      // unset filters if it's "or" search
+      if (empty($operator) || $operator === 'or') {
+        unset($query['query']['bool']['filter']);
+      }
+
+      // logic for "and + or" filters
+      if (empty($operator)) {
+        $musts = [];
+        foreach (QuerySettings::getFilters($_GET) as $filter) {
+          $term = $filter['term'] ?? $filter['terms'] ?? $filter['nested']['query']['bool']['must'][0]['term'] ?? null;
+          if (!empty($term)) {
+            $musts[array_key_first($term)][] = $filter;
+          } elseif (isset($_GET['range']) && (!empty($filter['bool']['should'][0]['nested']['query']['bool']['must'][0]['range'] ?? null))) {
+            $musts['range'][] = $filter;
+          } elseif (isset($_GET['range']) && (!empty($filter['bool']['should'][0]['nested']['query']['geo_bounding_box'] ?? null))) {
+            $musts['bbox'][] = $filter;
+          } elseif (isset($_GET['culturalPeriods']) && (!empty($filter['bool']['should']['nested']['query']['bool']['should']['terms']['temporal.uri'] ?? null))) {
+            $musts['periods'][] = $filter;
+          }
+        }
+        foreach ($query['aggregations'] as $aggKey => &$agg) {
+          $has = false;
+          foreach ($musts as $key => $val) {
+            $field = $agg['terms']['field'] ?? $agg['aggs'][$aggKey]['terms']['field'] ?? null;
+            if (!empty($field) && $key !== $field) {
+              $agg['filter']['bool']['must'][] = ['bool' => ['should' => $val]];
+              $has = true;
+            }
+          }
+          if ($has) {
+            if (!empty($agg['nested'])) {
+              $agg = ['aggregations' => [$aggKey => ['nested' => $agg['nested'], 'aggregations' => $agg['aggs']]], 'filter' => $agg['filter']];
+            } else {
+              $agg = ['aggregations' => [$aggKey => ['terms' => $agg['terms']]], 'filter' => $agg['filter']];
+            }
+          }
+        }
+      }
     }
 
     return $this->resultToFrontend($this->elasticDoSearch($query));
@@ -245,81 +350,79 @@ class Query {
     $record['isAboutResource'] = $this->getIsAboutResources($record);
     $record['periodo'] = $this->getPeriodsForRecord($record);
 
-    return $this->normalizer->splitLanguages($record);
+    return Utils::splitLanguages($record, $this->getDefaultLanguage());
   }
 
   /**
    * Gets autocomplete values
    */
   public function autocomplete() {
-    $fields = trim($_GET['fields'] ?? '');
-    $isAllFields = empty($fields) || $fields === 'all';
-    $q = trim($_GET['q'] ?? '');
+    $q = strtolower(trim($_GET['q'] ?? ''));
 
     if (!$q) {
       return null;
     }
 
-    if ($fields !== 'aatSubjects') {
-      $innerQuery =  null;
+    $fields = trim($_GET['fields'] ?? '');
+    $isAllFields = empty($fields) || $fields === 'all';
 
-      if ($isAllFields) {
-        // fields to query on autocomplete "all"
-        // in addition also below are added: "title", "location" & "time"
-        $fieldTypes = [
-          //'is_about' => 'label',
-          'ariadneSubject' => 'prefLabel',
-          //'contributor' => 'name',
-          'country' => 'name',
-          'dataType' => 'label',
-          //'creator' => 'name',
-          'derivedSubject' => 'prefLabel',
-          'description' => 'text',
-          //'nativePeriod' => 'periodName',
-          'nativeSubject' => 'prefLabel',
-          //'owner' => 'name',
-          //'publisher' => 'name',
-        ];
-        foreach ($fieldTypes as $key => $val) {
-          $innerQuery['bool']['should'][] = [
-            'match_bool_prefix' => [
-              ($key . '.' . $val) => Utils::escapeLuceneValue($q),
-            ],
-          ];
-        }
-      }
+    if ($fields !== 'aatSubjects') {
+      $q = sprintf('%1$s | %1$s*', Utils::escapeLuceneValue($q));
+      $innerQuery = [];
+      $nested = [];
+      $fieldTypes = $isAllFields ? [
+        'ariadneSubject.prefLabel.raw',
+        'country.name.raw',
+        'dataType.label.raw',
+        'derivedSubject.prefLabel.raw',
+        'description.text.raw',
+        'nativeSubject.prefLabel.raw',
+        'ariadneSubject.prefLabel^2',
+        'country.name^2',
+        'dataType.label^2',
+        'derivedSubject.prefLabel^2',
+        'description.text^2',
+        'nativeSubject.prefLabel^2',
+      ] : [];
       if ($isAllFields || $fields === 'title') {
+        $fieldTypes[] = 'title.text.raw^3';
+        $fieldTypes[] = 'title.text^4';
+      }
+      if (!empty($fieldTypes)) {
         $innerQuery['bool']['should'][] = [
-          'match_bool_prefix' => [
-            'title.text' => Utils::escapeLuceneValue($q),
+          'simple_query_string' => [
+            'default_operator' => 'and',
+            'fields' => $fieldTypes,
+            'query' => $q,
           ],
         ];
       }
       if ($isAllFields || $fields === 'location') {
-        $innerQuery['bool']['should'][] = [
-          'nested' => [
-            'path' => 'spatial',
-            'query' => [
-              'match_bool_prefix' => [
-                'spatial.placeName' => Utils::escapeLuceneValue($q)
-              ],
-            ],
-          ],
+        $nested['spatial'] = [
+          'spatial.placeName.raw',
+          'spatial.placeName^2'
         ];
       }
       if ($isAllFields || $fields === 'time') {
+        $nested['temporal'] = [
+          'temporal.periodName.raw',
+          'temporal.periodName^2'
+        ];
+      }
+      foreach ($nested as $key => $val) {
         $innerQuery['bool']['should'][] = [
           'nested' => [
-            'path' => 'temporal',
+            'path' => $key,
             'query' => [
-              'match_bool_prefix' => [
-                'temporal.periodName' => Utils::escapeLuceneValue($q)
+              'simple_query_string' => [
+                'default_operator' => 'and',
+                'fields' => $val,
+                'query' => $q,
               ],
             ],
           ],
         ];
       }
-
       $query = [
         '_source' => ['title'],
         'query' => $innerQuery,
@@ -339,7 +442,7 @@ class Query {
       $result['hits'] = [];
       foreach ($search['hits']['hits'] as $key => $value) {
 
-        $nValue = $this->normalizer->splitLanguages($value['_source']);
+        $nValue = Utils::splitLanguages($value['_source'], $this->getDefaultLanguage());
         $result['hits'][$key] = [
           'id' => $value['_id'],
           'label' => $nValue['title'],
@@ -373,7 +476,7 @@ class Query {
             'query' => [
               'bool' => [
                 'must' => [
-                  ['match_phrase_prefix' => ['prefLabels.label' => Utils::escapeLuceneValue($q).'*']]
+                  ['match_phrase_prefix' => ['prefLabels.label' => Utils::escapeLuceneValue($q) . '*']]
                 ],
               ],
             ],
@@ -418,10 +521,17 @@ class Query {
   public function autocompleteFilter() {
     $q = Utils::escapeLuceneValue($_GET['filterQuery'] ?? '');
     $filterName = trim($_GET['filterName'] ?? '');
-    $query = '';
+    $query = null;
 
     if ((!$q && empty($_GET['filterSize'])) || !$filterName) {
       return null;
+    }
+
+    if (isset($_GET[$filterName])) {
+      unset($_GET[$filterName]);
+    }
+    if (isset($_GET['bbox'])) {
+      unset($_GET['bbox']);
     }
 
     $currentQuery = $this->getCurrentQuery()['query'];
@@ -431,54 +541,236 @@ class Query {
 
     switch (strtolower($filterName)) {
       case 'contributor':
-        $query = AutocompleteFilterQuery::contributor($q, $currentQuery, $size);
+        $query = [
+          'size' => 0,
+          'query' => $currentQuery,
+          'aggregations' => [
+            'filtered_agg' => [
+              'terms' => [
+                'field' => 'contributor.name.raw',
+                'size' => $size,
+                'order' => ['_count' => 'desc'],
+              ]
+            ],
+            'unique_agg_count' => ['cardinality' => ['field' => 'contributor.name.raw']]
+          ],
+        ];
+        if ($q) {
+          $query['aggregations']['filtered_agg']['terms']['include'] = $this->getIncludeRegexp($q);
+        }
         break;
 
       case 'country':
-        $query = AutocompleteFilterQuery::country($q, $currentQuery, $size);
+        $query = [
+          'size' => 0,
+          'query' => $currentQuery,
+          'aggregations' => [
+            'filtered_agg' => [
+              'terms' => [
+                'field' => 'country.name.raw',
+                'size' => $size,
+                'order' => ['_count' => 'desc'],
+              ]
+            ],
+            'unique_agg_count' => ['cardinality' => ['field' => 'country.name.raw']]
+          ],
+        ];
+        if ($q) {
+          $query['aggregations']['filtered_agg']['terms']['include'] = $this->getIncludeRegexp($q);
+        }
         break;
 
       case 'datatype':
-        $query = AutocompleteFilterQuery::dataType($q, $currentQuery, $size);
+        $query = [
+          'size' => 0,
+          'query' => $currentQuery,
+          'aggregations' => [
+            'filtered_agg' => [
+              'terms' => [
+                'field' => 'dataType.label.raw',
+                'size' => $size,
+                'order' => ['_count' => 'desc'],
+              ]
+            ],
+            'unique_agg_count' => ['cardinality' => ['field' => 'dataType.label.raw']]
+          ]
+        ];
+        if ($q) {
+          $query['aggregations']['filtered_agg']['terms']['include'] = $this->getIncludeRegexp($q);
+        }
         break;
 
       case 'nativesubject':
-        $query = AutocompleteFilterQuery::nativeSubject($q, $currentQuery, $size);
+        $query = [
+          'size' => 0,
+          'query' => $currentQuery,
+          'aggregations' => [
+            'filtered_agg' => [
+              'terms' => [
+                'field' => 'nativeSubject.prefLabel.raw',
+                'size' => $size,
+                'order' => ['_count' => 'desc'],
+              ]
+            ],
+            'unique_agg_count' => ['cardinality' => ['field' => 'nativeSubject.prefLabel.raw']
+            ]
+          ],
+        ];
+        if ($q) {
+          $query['aggregations']['filtered_agg']['terms']['include'] = '(.*' . strtolower($q) . '.*)';
+        }
         break;
 
       case 'ariadnesubject':
-        $query = AutocompleteFilterQuery::ariadneSubject($q, $currentQuery, $size);
+        $query = [
+          'size' => 0,
+          'query' => $currentQuery,
+          'aggregations' => [
+            'filtered_agg' => [
+              'terms' => [
+                'field' => 'ariadneSubject.prefLabel.raw',
+                'size' => $size,
+                'order' => ['_count' => 'desc'],
+              ]
+            ],
+            'unique_agg_count' => ['cardinality' => ['field' => 'ariadneSubject.prefLabel.raw']]
+          ],
+        ];
+        if ($q) {
+          $query['aggregations']['filtered_agg']['terms']['include'] = $this->getIncludeRegexp($q);
+        }
         break;
 
       case 'derivedsubject':
-        $query = AutocompleteFilterQuery::derivedSubject($q, $currentQuery, $size);
+        $query = [
+          'size' => 0,
+          'query' => $currentQuery,
+          'aggregations' => [
+            'filtered_agg' => [
+              'terms' => [
+                'field' => 'derivedSubject.prefLabel.raw',
+                'size' => $size,
+                'order' => ['_count' => 'desc'],
+              ]
+            ],
+            'unique_agg_count' => ['cardinality' => ['field' => 'derivedSubject.prefLabel.raw']]
+          ],
+        ];
+        if ($q) {
+          $query['aggregations']['filtered_agg']['terms']['include'] = '(.*' . strtolower($q) . '.*)';
+        }
         break;
 
       case 'publisher':
-        $query = AutocompleteFilterQuery::publisher($q, $currentQuery, $size);
+        $query = [
+          'size' => 0,
+          'query' => $currentQuery,
+          'aggregations' => [
+            'filtered_agg' => [
+              'terms' => [
+                'field' => 'publisher.name.raw',
+                'size' => $size,
+                'order' => ['_count' => 'desc'],
+              ]
+            ],
+            'unique_agg_count' => ['cardinality' => ['field' => 'publisher.name.raw']]
+          ],
+        ];
+        if ($q) {
+          $query['aggregations']['filtered_agg']['terms']['include'] = $this->getIncludeRegexp($q);
+        }
         break;
 
       case 'temporal':
-        $query = AutocompleteFilterQuery::temporal($q, $currentQuery, $size);
+        $query = [
+          'size' => 0,
+          'query' => $currentQuery,
+          'aggregations' => [
+            'temporal_agg' => [
+              'nested' => [ 'path' => 'temporal'],
+              'aggs' => [
+                'filtered_agg' => [
+                  'terms' => [
+                    'field' => 'temporal.periodName.raw',
+                    'size' => $size,
+                    'order' => ['_count' => 'desc'],
+                  ]
+                ],
+                'unique_agg_count' => ['cardinality' => ['field' => 'temporal.periodName.raw']]
+              ]
+            ]
+          ],
+        ];
+        if ($q) {
+          $query['aggregations']['temporal_agg']['aggs']['filtered_agg']['terms']['include'] = '(.*' . strtolower($q) . '.*)';
+        }
         return $this->elasticDoSearch($query, $this->elasticEnv->index)['aggregations']['temporal_agg'];
 
       case 'temporalregion':
-        $query = AutocompleteFilterQuery::temporalRegion($q, $currentQuery, $size);
-        $result = $this->elasticDoSearch($query, $this->elasticEnv->periodIndex)['aggregations'];
-        return $result;
+        $query = [
+          'size' => 0,
+          'aggregations' => [
+            'filtered_agg' => [
+              'terms' => [
+                'field' => 'spatialCoverage.label.raw',
+                'size' => $size,
+                'order' => ['_count' => 'desc'],
+              ]
+            ]
+          ],
+        ];
+        if ($q) {
+          $query['aggregations']['filtered_agg']['terms']['include'] = '(' . strtolower($q). '.*)';
+        }
+        return $this->elasticDoSearch($query, $this->elasticEnv->periodIndex)['aggregations'];
 
-      case 'culturalperiods':
-        // Special for periods is periodCountry param to filter on user selected country
+      case 'culturalperiods': // Special for periods is periodCountry param to filter on user selected country
         $temporalRegion = trim($_GET['temporalRegion'] ?? '');
-        $query = AutocompleteFilterQuery::periods($q, $temporalRegion, $size);
+        $filterRegionQuery = null;
+        foreach (explode('|', $temporalRegion) as $region) {
+          if (empty($region)) {
+            $filterRegionQuery['bool']['should'] = ['match_all' => new \stdClass()];
+            break;
+          }
+          $filterRegionQuery['bool']['should'][] = ['term' => ['spatialCoverage.label.raw' => Utils::escapeLuceneValue($region)]];
+        }
+        $query['size'] = $size;
+        $query['sort'] = ['start.year' => ['order' => 'asc']];
+        $query['query']['bool']['must'] = [
+          'nested' => [
+            'path' => 'localizedLabels',
+            'query' => [
+              'bool' => [
+                'must' => [
+                  ['wildcard' => ['localizedLabels.label.raw' => $q . '*']],
+                  ['match' => ['localizedLabels.language' => 'en']]
+                ]
+              ]
+            ]
+          ]
+        ];
+        if ($filterRegionQuery) {
+          $query['query']['bool']['filter'] = $filterRegionQuery;
+        }
         return $this->periodsToAggs($this->elasticDoSearch($query, $this->elasticEnv->periodIndex));
 
       default:
         return null;
-
     }
 
     return $this->elasticDoSearch($query, $this->elasticEnv->index)['aggregations'];
+  }
+
+  /**
+   * Build regular expression for include clause in Elastic query
+   */
+  private function getIncludeRegexp($q) {
+    $q = preg_split('/[\s]+/', $q);
+    $regexpInclude = '';
+    foreach ($q as $key => $value) {
+      $regexpInclude .= '(.*' . strtolower($value) . '.*|.*' . ucfirst($value) . '.*|.*' . strtoupper($value) . '.*)';
+    }
+    return $regexpInclude;
   }
 
 
@@ -573,10 +865,9 @@ class Query {
     $hits = [];
     if (!empty($result['hits']['hits'])) {
       foreach ($result['hits']['hits'] as $hitMeta=>$hit) {
-        $hitNormalized = $this->normalizer->splitLanguages($hit['_source']);
         $hits[] = [
           'id' => $hit['_id'],
-          'data' => $hitNormalized
+          'data' => Utils::splitLanguages($hit['_source'], $this->getDefaultLanguage()),
         ];
       }
     }
@@ -636,8 +927,7 @@ class Query {
    * Get spatial nearby from given record
    */
   public function getNearbySpatialResources($record) {
-    $gUtils = new GeoUtils($this);
-    return $gUtils->getNearbyResources($record);
+    return GeoUtils::getNearbyResources($record);
   }
 
   /**
@@ -679,7 +969,7 @@ class Query {
     $ret = [];
 
     foreach ($result as $hit) {
-      $nHit = $this->normalizer->splitLanguages($hit['_source']);
+      $nHit = Utils::splitLanguages($hit['_source'], $this->getDefaultLanguage());
       $ret[] = [
         'id' => $hit['_id'],
         'title' => $nHit['title'] ?? [],
@@ -739,7 +1029,7 @@ class Query {
           ];
         }
       }
-    } else if ($type === 'location') {
+    } elseif ($type === 'location') {
 
       if (!empty($record['spatial'])) {
         $spatialMatches = [];
@@ -766,7 +1056,7 @@ class Query {
         }
       }
 
-    } else if ($type === 'subject') {
+    } elseif ($type === 'subject') {
       if (!empty($record['nativeSubject'])) {
         foreach ($record['nativeSubject'] as $subject) {
           if (!empty($subject['prefLabel'])) {
@@ -778,7 +1068,7 @@ class Query {
           }
         }
       }
-    } else if ($type === 'temporal') {
+    } elseif ($type === 'temporal') {
 
       if (!empty($record['temporal'])) {
         $temporalMatches = [];
@@ -871,7 +1161,7 @@ class Query {
     $ret = [];
 
     foreach ($result as $res) {
-      $nRes = $this->normalizer->splitLanguages($res['_source']);
+      $nRes = Utils::splitLanguages($res['_source'], $this->getDefaultLanguage());
       $ret[] = [
         'id' => $res['_id'],
         'type' => $res['_source']['ariadneSubject'] ?? null,
@@ -886,16 +1176,11 @@ class Query {
    */
   private function getItemsPartOf ($record, $recordId) {
     if (empty($record['isPartOf'])) {
-      return [];
+      return null;
     }
 
     $parts = [];
     foreach ($record['isPartOf'] as $part) {
-      /*if (is_string($part)) {
-        $part = explode('/', $part);
-        $part = end($part);
-      }*/
-      //$parts[] = ['match' => ['_id' => $part]];
       $parts[] = ['match' => ['identifier' => $part]];
     }
 
@@ -907,7 +1192,7 @@ class Query {
       '_source' => ['title'],
       'query' => [
         'bool' => [
-          'must' => $parts
+          'should' => $parts
         ]
       ]
     ];
@@ -916,10 +1201,10 @@ class Query {
     $res = [];
 
     foreach ($result as $hit) {
-      $nHit = $this->normalizer->splitLanguages($hit['_source']);
+      $nHit = Utils::splitLanguages($hit['_source'], $this->getDefaultLanguage());
       $res[] = [
         'id' => $hit['_id'],
-        'title' => $nHit['title'] ?? [],
+        'title' => $nHit['title'] ?? '',
       ];
     }
     return $res;
@@ -949,7 +1234,7 @@ class Query {
 
     if ($total > 0) {
       foreach ($result['hits']['hits'] as $hit) {
-        $nHit = $this->normalizer->splitLanguages($hit['_source']);
+        $nHit = Utils::splitLanguages($hit['_source'], $this->getDefaultLanguage());
         $hits[] = [
           'id' => $hit['_id'],
           'title' => $nHit['title'] ?? [],
@@ -1043,11 +1328,6 @@ class Query {
     return $ret;
   }
 
-  // Get method for normalizer (used in geoutils)
-  public function getNormalizer() {
-    return $this->normalizer;
-  }
-
   // Returns all period regions
   // Get countries aggregation query from periods index
   public function getPeriodRegions() {
@@ -1125,6 +1405,59 @@ class Query {
     ];
   }
 
+  // Returns all global no format strings from publishers
+  public function getNoFormats () {
+    $ret = [];
+    if (!empty($_GET['publishers'])) {
+      $parts = [];
+      foreach (explode('|', $_GET['publishers']) as $publisher) {
+        $parts[] = [
+          'match' => [
+            'publisher.name.raw' => Utils::escapeLuceneValue($publisher),
+          ],
+        ];
+      }
+      $query = [
+        'size' => 0,
+        'query' => [
+          'bool' => [
+            'must' => [
+              'bool' => [
+                'should' => $parts,
+              ],
+            ],
+          ],
+        ],
+        'aggregations' => [
+          'subject' => [
+            'terms' => [
+              'size' => 10000,
+              'field' => 'nativeSubject.prefLabel.raw',
+            ],
+          ],
+          'temporal' => [
+            'nested' => [ 'path' => 'temporal'],
+            'aggs' => [
+              'temporal' => [
+                'terms' => [
+                  'size' => 10000,
+                  'field' => 'temporal.periodName.raw',
+                ],
+              ],
+            ],
+          ],
+        ],
+      ];
+      $res = $this->elasticDoSearch($query);
+      foreach (array_keys($query['aggregations']) as $key) {
+        foreach (($res['aggregations'][$key][$key]['buckets'] ?? $res['aggregations'][$key]['buckets']) as $item) {
+          $ret[] = $item['key'];
+        }
+      }
+    }
+    return $ret;
+  }
+
   /**
    * Get total records count in main index
    */
@@ -1165,7 +1498,6 @@ class Query {
    */
   public function elasticDoSearch ($searchParams, $index = null) {
     $searchParams['track_total_hits'] = true;
-
     $params = [
       'index' => $index ?: $this->elasticEnv->index,
       'body'  => $searchParams,
@@ -1177,7 +1509,7 @@ class Query {
         AppSettings::debugLog('Request URI: '. $_SERVER['REQUEST_URI']);
         AppSettings::debugLog(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'] . ' - ' . json_encode($searchParams, JSON_UNESCAPED_SLASHES));
       }
-      return $this->normalizer->normalizeAggs($result, $this->aggregationsReqFilter);
+      return Utils::normalizeAggs($result, $this->aggregationsReqFilter);
 
     } catch (\Exception $e) {
       if (AppSettings::isLogging()) {

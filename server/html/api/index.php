@@ -34,13 +34,14 @@ switch ($uriParts[0]) {
   case 'getPeriodsForCountry': echo json_encode(Query::instance()->getPeriodsForCountry()); break;
   case 'getTotalRecordsCount': echo json_encode(Query::instance()->getTotalRecordsCount()); break;
   case 'getAllServicesAndPublishers': echo json_encode(Query::instance()->getServicesAndPublishers()); break;
+  case 'getAllNoFormats': echo json_encode(Query::instance()->getNoFormats()); break;
   case 'maybeUpdatePeriods': Query::instance()->maybeUpdatePeriods(); break;
 
   case 'getRecord':
     if (($uriParts[2] ?? '') === 'xml') {
       header('Content-Type: application/xml');
       echo Utils::getRecordAsXML(Query::instance()->getRecord($uriParts[1]));
-    } else if (!empty($uriParts[1])) {
+    } elseif (!empty($uriParts[1])) {
       echo json_encode(Query::instance()->getRecord($uriParts[1]), JSON_PRETTY_PRINT);
     }
     break;

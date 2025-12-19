@@ -13,7 +13,8 @@ export const sortOptions = [
 ];
 
 export const operatorOptions = [
-  { val: '', text: 'And', group: 'default' },
+  { val: '', text: 'And / Or', group: 'default' },
+  { val: 'and', text: 'And', group: 'default' },
   { val: 'or', text: 'Or', group: 'default' },
 ];
 

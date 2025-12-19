@@ -65,8 +65,8 @@
                 <i class="fa-times fas align-middle transition-color duration-300 text-sm" />
               </span>
 
-              <span v-if="bucket.doc_count" class="rounded-lg bg-lightGray py-xs px-sm text-blue text-sm font-bold ml-sm">
-                {{ bucket.doc_count }}
+              <span v-if="bucket.doc_count !== undefined" class="rounded-lg bg-lightGray py-xs px-sm text-blue text-sm font-bold ml-sm">
+                {{ bucket.doc_count || 0 }}
               </span>
             </div>
 
@@ -176,6 +176,7 @@ const { id, item, shortSortNames, sortKey, sortOrder, sentenceCaseFilterText = t
 
 const fields = $computed(() => resourceModule.getFields);
 const aggType = $computed(() => aggregationModule.getTypes.find(type => type.id === id));
+const isNoFormat = $computed(() => generalModule.isNoFormat);
 const resultAggTitle: string = $computed(() => aggregationModule.getTitle(id));
 const resultAggDescription: string = $computed(() => aggregationModule.getDescription(id));
 const resultAggAnyActive: boolean = $computed(() => aggregationModule.getAnyActive(id, item?.buckets));
@@ -232,7 +233,7 @@ const resultAggIsActive = (key: string, bucketKey: string): boolean => {
 };
 
 const getFilterText = (text: string ): string => {
-  if (aggType?.unformatted || !sentenceCaseFilterText ) {
+  if (aggType?.unformatted || !sentenceCaseFilterText || isNoFormat(text)) {
     return text;
   }
   return utils.sentenceCase(text);

@@ -128,11 +128,11 @@ const isLoading: boolean = $computed(() => generalModule.getIsLoading);
 const validPrimaryImages: any = $ref({});
 
 const getTitle = (data: any): string => {
-  return  getMarked( data?.title?.text ) || 'No title';
+  return getMarked(data?.title?.text, data) || 'No title';
 }
 
 const getDescription = (data: any): string => {
-  const t = getMarked(data?.description?.text);
+  const t = getMarked(data?.description?.text, data);
   return utils.cleanText(t, false).slice(0, 400) + '..';
 }
 
@@ -163,7 +163,7 @@ const getAggregations = (data: any): Array<any> => {
       }
       if (Array.isArray(d) && d.length) {
         if (!agg.prop || d.some((p: any) => p[agg.prop])) {
-          let str = getMarked(joinMatching(d, agg));
+          let str = getMarked(joinMatching(d, agg, data), data);
           if (agg.always || str.includes('<span class="bg-')) {
             return {
               id: agg.id,
@@ -202,7 +202,7 @@ const hasValidPrimaryImage = (data: any): boolean => {
   return url && validPrimaryImages[url];
 }
 
-const joinMatching = (data: any, agg: any): string => {
+const joinMatching = (data: any, agg: any, resData: any): string => {
   let q = (params.q || '').trim().toLowerCase(),
       a = (params[agg.param || agg.id] || '').trim().toLowerCase(),
       newDataFirst: any[] = [],
@@ -234,20 +234,19 @@ const joinMatching = (data: any, agg: any): string => {
   }
 
   return newDataFirst.concat(newData).slice(0, max).map((s: string) => {
-    if (agg.unformatted) {
+    if (agg.unformatted || noFormat(agg.id, resData.publisher)) {
       return data.find((d: any) => d.toLowerCase() === s);
     }
     return utils.sentenceCase(s);
   }).join(', ');
 }
 
-const getMarked = (text: string): string => {
+const getMarked = (text: string, data: any): string => {
   let q = [];
   let valid = [
     'q', 'isPartOf', 'placeName', 'temporal', 'range', 'ariadneSubject', 'resourceType', 'derivedSubject', 'nativeSubject', 'country', 'dataType',
     'keyword', 'publisher', 'contributor', 'owner', 'responsible', 'creator', 'geogrid', 'isPartOfLabel', 'culturalLabels'
   ];
-
   for (let key in params) {
     let val = params[key];
     if (val && valid.includes(key) && val.trim()) {
@@ -255,14 +254,14 @@ const getMarked = (text: string): string => {
         val.split('|').forEach((v: string) => {
           if (v && v.trim()) {
             if (key === 'culturalLabels') {
-              v = utils.sentenceCase((v.split(':')[1] || '').split('(')[0].trim());
+              v = utils.sentenceCase((v.split(':')[1] || '').split('(')[0]?.trim() || '', noFormat(key, data?.publisher));
             }
             q.push(v.trim());
           }
         });
       } else {
         if (key === 'culturalLabels') {
-          val = utils.sentenceCase((val.split(':')[1] || '').split('(')[0].trim());
+          val = utils.sentenceCase((val.split(':')[1] || '').split('(')[0]?.trim() || '', noFormat(key, data?.publisher));
         }
         q.push(val.trim());
       }
@@ -270,5 +269,12 @@ const getMarked = (text: string): string => {
   }
   q.sort((a: string, b: string) => b.length - a.length);
   return utils.getMarked(text, q.join('|'));
+}
+
+const noFormat = (key: string, publisher: any) => {
+  if (key === 'placeName' || key === 'spatial' || key === 'nativeSubject' || key === 'temporal' || key === 'country' || key === 'location') {
+    return generalModule.getNoFormat(publisher);
+  }
+  return false;
 }
 </script>

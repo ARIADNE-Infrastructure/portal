@@ -29,7 +29,7 @@
       <b-link
         target="_blank"
         href="https://www.ariadne-research-infrastructure.eu"
-        class="word-break"
+        class="break-word"
         :useDefaultStyle="true"
       >https://www.ariadne-research-infrastructure.eu</b-link>.
     </p>

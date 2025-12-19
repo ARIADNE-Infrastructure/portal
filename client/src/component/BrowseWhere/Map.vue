@@ -43,7 +43,6 @@ const emit = defineEmits(['markerViewUpdate']);
 const markerTypes = utils.getMarkerTypes(generalModule);
 
 // Render cluster markers when this limit is reached
-const markerThreshold: number = 500;
 let clusterMarkers: L.MarkerClusterGroup | null = null;
 let heatMap: L.HeatLayer | null = null;
 let drawLayer: any = null;
@@ -79,7 +78,6 @@ const setMap = async () => {
     return;
   }
   resetMap();
-  let resourceHitsCount = currentResultState?.total?.value;
   let inMarkerView: boolean = false;
 
   if (first) {
@@ -89,8 +87,11 @@ const setMap = async () => {
     }
   }
 
-  if (resourceHitsCount <= markerThreshold) {
+  if (currentResultState?.hits?.length) {
     inMarkerView = !inMarkerView;
+    if (!currentMapBounds) {
+      centerMap();
+    }
     setupClusterMarkers();
   } else {
     setupHeatMap();
@@ -113,38 +114,34 @@ const setMap = async () => {
 /**
  * Creates clusters and markers and add to map as new layer.
  */
-const setupClusterMarkers = async () => {
-  let resources = currentResultState.hits;
+const setupClusterMarkers = () => {
+  const mapBounds = mapObj.getBounds();
+  let total = 0;
+
   clusterMarkers = new L.MarkerClusterGroup();
-
-  resources.forEach((resource: any) => {
-
+  currentResultState.hits.forEach((resource: any) => {
     let resourceTitle = 'No title';
-    if(resource.data?.title?.text) {
+    if (resource.data?.title?.text) {
       resourceTitle = resource.data?.title?.text
     }
 
     resource.data.spatial.forEach((spatial: any) => {
-
       let markerType: any = markerTypes.point;
-      if(spatial.spatialPrecision || spatial.coordinatePrecision ) {
+      if (spatial.spatialPrecision || spatial.coordinatePrecision) {
         markerType = markerTypes.approx;
       }
 
       if (spatial?.geopoint) {
+        const position = new L.LatLng(spatial.geopoint.lat, spatial.geopoint.lon)
+        if (mapBounds.contains(position)) {
+          let marker = L.marker(position, { icon: getMarkerIconType(markerType.marker) });
+          marker.bindTooltip(resourceTitle, { direction: 'top', offset: [0, -35] });
+          marker.bindPopup(getMarkerPopup(resource));
+          clusterMarkers!.addLayer(marker);
+          total++
+        }
 
-        let marker = L.marker(
-          new L.LatLng(spatial.geopoint.lat, spatial.geopoint.lon),
-          { icon: getMarkerIconType(markerType.marker) }
-        );
-
-        marker.bindTooltip(resourceTitle, { direction: 'top', offset: [0, -35] });
-        marker.bindPopup(getMarkerPopup(resource));
-
-        clusterMarkers!.addLayer(marker);
-
-      } else if( spatial?.polygon || spatial?.boundingbox ) {
-
+      } else if (spatial?.polygon || spatial?.boundingbox) {
         // Create a new Wicket instance
         // DOCS: http://arthur-e.github.io/Wicket/doc/out/Wkt.Wkt.html
         const wkt = new Wkt.Wkt();
@@ -152,10 +149,7 @@ const setupClusterMarkers = async () => {
         let shape = spatial?.polygon || spatial?.boundingbox;
         wkt.read(shape);
 
-        const feature = wkt.toObject({ color: 'red' });
-
-        // Add polygon to map, if needed
-        //this.clusterMarkers.addLayer(feature);
+        const feature = wkt.toObject({ color: 'red' }); //, fill: false });
 
         // Get center of current polygon
         let polygonCenter;
@@ -164,22 +158,15 @@ const setupClusterMarkers = async () => {
         } else {
           polygonCenter = L.latLng({ lat: feature._latlng.lat, lng: feature._latlng.lat });
         }
-        let polygonMarker = L.marker(
-          new L.LatLng(polygonCenter.lat, polygonCenter.lng),
-          { icon: getMarkerIconType(markerType.shape) }
-        );
 
-        polygonMarker.bindTooltip(resourceTitle, { direction: 'top', offset: [0, -35] });
-        polygonMarker.bindPopup(getMarkerPopup(resource));
-
-        clusterMarkers!.addLayer(polygonMarker);
-
-      } else {
-        // Not Geopoint or Polygon
-        return;
-
+        if (mapBounds.contains(polygonCenter)) {
+          let polygonMarker = L.marker(new L.LatLng(polygonCenter.lat, polygonCenter.lng), { icon: getMarkerIconType(markerType.shape) });
+          polygonMarker.bindTooltip(resourceTitle, { direction: 'top', offset: [0, -35] });
+          polygonMarker.bindPopup(getMarkerPopup(resource));
+          clusterMarkers!.addLayer(polygonMarker);
+          total++;
+        }
       }
-
     });
   });
 
@@ -187,7 +174,7 @@ const setupClusterMarkers = async () => {
   // Current version is 7.4 and it doesn't support geo_bounds for geoshapes
   mapObj.addLayer(clusterMarkers);
   currentMapBounds = clusterMarkers.getBounds();
-
+  searchModule.updateMapTotal(total);
 }
 
   // Render cluster markers when this limit is reached
@@ -200,10 +187,9 @@ const getIsAboveMaxNativeZoom: boolean = $computed(() => {
  * Build marker popup
  */
 const getMarkerPopup = (resource: any): string => {
-
   // Some records are missing title
   let resourceTitle = 'No Title';
-  if(resource.data?.title?.text) {
+  if (resource.data?.title?.text) {
     resourceTitle = resource.data?.title?.text;
   }
 
@@ -216,7 +202,7 @@ const getMarkerPopup = (resource: any): string => {
   let publishers = "";
 
   // Resource description
-  if(description) {
+  if (description) {
     if (description?.length > 100) {
       description = description.slice(0, 100) + '...';
     }
@@ -226,18 +212,20 @@ const getMarkerPopup = (resource: any): string => {
   description = "<p>"+utils.escHtml(description)+"</p>"
 
   // Resource publishers
-  for (let currentPublisher of resource.data.publisher) {
-    publishers += utils.escHtml(currentPublisher.name) + "<br>";
+  if (resource.data.publisher?.length) {
+    for (let currentPublisher of resource.data.publisher) {
+      publishers += utils.escHtml(currentPublisher.name) + "<br>";
+    }
+    publishers = "<p><strong>Publisher:</strong><br/>"+publishers+"</p>";
   }
-  publishers = "<p><strong>Publisher:</strong><br/>"+publishers+"</p>";
 
   // Resource location
   for (let resourceLocations of resource.data.spatial) {
-    if(resourceLocations.geopoint) {
+    if (resourceLocations.geopoint) {
       resourceLocationsLatLon += utils.escHtml(resourceLocations.geopoint.lat + ":" + resourceLocations.geopoint.lon) + "<br>";
     }
   }
-  if(!resourceLocationsLatLon) {
+  if (!resourceLocationsLatLon) {
     resourceLocation = '<p><strong>Resource location:</strong><br>Resource location is a geo-shape, see details on resource page.</p>';
   } else {
     resourceLocation = "<p><strong>Resource location:</strong><br>" + resourceLocationsLatLon + "</p>";
@@ -283,8 +271,8 @@ const setupHeatMap = async () => {
   // return bounds for centering arround this heatmap
   // NOTICE: As soon as we have Elastic >= 7.14 we can pick bounds from geobounds aggregation
   // Current version is 7.4 and it doesn't support geo_bounds for geoshapes
-  currentMapBounds = L.latLngBounds(boundsPoints)
-
+  currentMapBounds = L.latLngBounds(boundsPoints);
+  searchModule.updateMapTotal(-1);
 }
 
 

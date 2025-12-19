@@ -125,7 +125,6 @@ defineProps<{
 
 const route = useRoute();
 
-const markerThreshold: number = 500; // Render cluster markers when this limit is reached
 let clusterMarkers: L.MarkerClusterGroup | null = null;
 let heatMap: L.HeatLayer | null = null;
 let drawLayer: any = null;
@@ -184,9 +183,8 @@ const setMiniMapFromState = async (noCenter: boolean = false) => {
     mapObj.removeLayer(clusterMarkers);
     clusterMarkers = null;
   }
-  let resourceHitsCount = miniMapSearchResult.total?.value;
-  if (resourceHitsCount <= markerThreshold) {
-    setClusterMarkers(miniMapSearchResult?.hits, noCenter);
+  if (miniMapSearchResult?.hits?.length) {
+    setClusterMarkers(miniMapSearchResult.hits, noCenter);
     showMarkerInfo = true;
   } else {
     setHeatMap(miniMapSearchResult.aggregations?.geogridCentroid?.grids.buckets, noCenter);
@@ -221,7 +219,7 @@ const setClusterMarkers = (markerResources: any, noCenter: boolean) => {
           { icon: getMarkerIconType(markerType.marker) }
         );
 
-        marker.bindTooltip(resource.data.title.text, { keepInView: true, direction: 'top', noWrap: false, offset: [0, -35] } as L.TooltipOptions);
+        marker.bindTooltip(resource.data?.title?.text || 'Unknown', { keepInView: true, direction: 'top', noWrap: false, offset: [0, -35] } as L.TooltipOptions);
 
         marker.on('click', () => {
           window.location.href = process.env.ARIADNE_PUBLIC_PATH+'resource/'+ resource.id;
@@ -251,7 +249,7 @@ const setClusterMarkers = (markerResources: any, noCenter: boolean) => {
           { icon: getMarkerIconType(markerType.shape) }
         );
 
-        polygonMarker.bindTooltip(resource.data.title.text, { keepInView: true, direction: 'top', noWrap: true, offset: [0, -35] } as L.TooltipOptions);
+        polygonMarker.bindTooltip(resource.data?.title?.text || 'Unknown', { keepInView: true, direction: 'top', noWrap: true, offset: [0, -35] } as L.TooltipOptions);
 
         polygonMarker.on('click', () => {
           window.location.href = process.env.ARIADNE_PUBLIC_PATH+'resource/'+ resource.id;

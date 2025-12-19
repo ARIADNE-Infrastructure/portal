@@ -21,128 +21,35 @@ class QuerySettings {
   }
 
   /**
-   * Multimatch query with valid searchable fields
-   */
-  public static function getMultiMatchQuery($searchString = '', $operator = 'and') {
-    $fieldPath = array_column(self::getValidSearchableFields(), 'fieldPath');
-    $matchQuery = [
-      'multi_match' => [
-        'query' => $searchString,
-        'fields' =>  array_values($fieldPath),
-        'operator' => $operator
-      ]
-    ];
-    return $matchQuery;
-  }
-
-  /**
    * Valid searchable fields with metadata for constructing Elastic querys.
    * NOTICE: These fields are the only fields allowed to be searchable by user
    * input in combo with or without q-param.
    */
-  public static function getValidSearchableFields($searchString = '', $operator = 'and'): array {
+  public static function getValidSearchableFields(): array {
     return [
       'title' => [
-        'fieldPath' => 'title.text^4',
-        'query' => [
-          'match' => [
-            'title.text' => [
-              'query' => $searchString,
-              'operator' => $operator
-            ]
-          ]
-        ]
+        'fieldPath' => 'title.text^40',
+        'nested' => null,
       ],
       'description' => [
-        'fieldPath' => 'description.text^3',
-        'query' => [
-          'match' => [
-            'description.text' => [
-              'query' => $searchString,
-              'operator' => $operator
-            ]
-          ]
-        ]
+        'fieldPath' => 'description.text^10',
+        'nested' => null,
       ],
       'nativeSubject' => [
-        'fieldPath' => 'nativeSubject.prefLabel^2',
-        'query' => [
-          'match' => [
-            'nativeSubject.prefLabel' => [
-              'query' => $searchString,
-              'operator' => $operator
-            ]
-          ]
-        ]
+        'fieldPath' => 'nativeSubject.prefLabel^5',
+        'nested' => null,
       ],
       'derivedSubject' => [
-        'fieldPath' => 'derivedSubject.prefLabel^2',
-        'query' => [
-          'match' => [
-            'derivedSubject.prefLabel' => [
-              'query' => $searchString,
-              'operator' => $operator
-            ]
-          ]
-        ]
+        'fieldPath' => 'derivedSubject.prefLabel^5',
+        'nested' => null,
       ],
       'location' => [
-        'fieldPath' => 'spatial.placeName',
-        'query' => [
-          [
-            'nested' => [
-              'path' => 'spatial',
-              'query' => [
-                'match' => [
-                  'spatial.placeName' => [
-                    'query' => $searchString,
-                    'operator' => $operator
-                  ]
-                ]
-              ]
-            ]
-          ]
-        ]
+        'fieldPath' => 'spatial.placeName^2',
+        'nested' => 'spatial',
       ],
       'time' => [
-        'fieldPath' => 'temporal.periodName',
-        'query' => [
-          [
-            'nested' => [
-              'path' => 'temporal',
-              'query' => [
-                'match' => [
-                  'temporal.periodName' => [
-                    'query' => $searchString,
-                    'operator' => $operator
-                  ]
-                ]
-              ]
-            ]
-          ]
-        ]
-      ],
-      'originalId' => [
-        'fieldPath' => 'originalId',
-        'query' => [
-          'match_phrase' => [
-            'originalId' => [
-              'query' => $searchString,
-              'operator' => $operator
-            ]
-          ]
-        ]
-      ],
-      'otherId' => [
-        'fieldPath' => 'otherId',
-        'query' => [
-          'match_phrase' => [
-            'otherId' => [
-              'query' => $searchString,
-              'operator' => $operator
-            ]
-          ]
-        ]
+        'fieldPath' => 'temporal.periodName^2',
+        'nested' => 'temporal',
       ],
     ];
   }
@@ -384,7 +291,7 @@ class QuerySettings {
    *
    */
   private static function getBoundingboxFilter() {
-    if( isset($_GET['bbox']) ) {
+    if (isset($_GET['bbox'])) {
       $bbox = explode(',', $_GET['bbox']);
       // Geopoints
       $boundingBoxFilters[] = [

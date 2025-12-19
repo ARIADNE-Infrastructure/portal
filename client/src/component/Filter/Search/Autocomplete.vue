@@ -39,7 +39,7 @@
           <template v-else>
             <strong
               class="py-xs inline-block"
-              v-html="utils.getMarked(utils.sentenceCase(hit.label.text), newSearch)"
+              v-html="utils.getMarked(hit.label.text, newSearch)"
             />
 
             <!-- fields -->

@@ -52,6 +52,9 @@ class Services {
         $data['url'] = trim(strip_tags($_POST['url'] ?? ''));
         $data['img'] = trim(strip_tags($_POST['img'] ?? ''));
         $data['text'] = trim(strip_tags($_POST['text'] ?? ''));
+        if (!empty($_POST['noFormat']) && !empty($data['title'])) {
+          $data['title'] .= 'xxNoFormatxx'; // temporary hack
+        }
       }
 
       // error if empty fields

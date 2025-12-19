@@ -28,7 +28,7 @@
 
 <script setup lang="ts">
 import { $computed } from 'vue/macros';
-import { searchModule, aggregationModule } from "@/store/modules";
+import { generalModule, searchModule, aggregationModule } from "@/store/modules";
 import { iKeyVal } from '@/store/modules/Aggregation';
 import utils from '@/utils/utils';
 
@@ -40,6 +40,7 @@ const params = $computed(() => searchModule.getParams);
 const result = $computed(() => searchModule.getResult);
 const perPage = $computed(() => parseInt(searchModule.getPerPage));
 const activeFilters = $computed(() => aggregationModule.activeFilters);
+const isNoFormat = $computed(() => generalModule.isNoFormat);
 const searchQuery: string = $computed(() => activeFilters.find((f: any) => f.key === 'q')?.val || '');
 
 const currentPage: number = $computed(() => {
@@ -63,6 +64,9 @@ const getFilterValue = (filter: iKeyVal): string => {
   }
   if (filter.key === 'isPartOf') {
     return params.isPartOfLabel || filterVal
+  }
+  if (isNoFormat(filterVal) && (filter.key === 'placeName' || filter.key === 'spatial' || filter.key === 'nativeSubject' || filter.key === 'temporal' || filter.key === 'country' || filter.key === 'location')) {
+    return filterVal;
   }
   if (filter.key === 'temporalRegion' || filter.key === 'dataType' || filter.key === 'placeName') {
     return utils.sentenceCase(filterVal);

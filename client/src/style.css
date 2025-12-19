@@ -14,6 +14,14 @@ body {
   @apply text-darkGray;
 }
 
+img, video{
+  max-width: 100%;
+  height: auto;
+}
+audio{
+  max-width: 100%;
+}
+
 input::placeholder, textarea::placeholder {
   opacity: 1;
   color: #777;

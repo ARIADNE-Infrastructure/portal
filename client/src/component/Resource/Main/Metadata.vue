@@ -80,7 +80,7 @@
           <b-link
             :to="utils.paramsToString('/search', { [item.isCountry ? 'country' : 'placeName']: item.placeName })"
           >
-            {{ item.isCountry ? utils.ucFirst(item.placeName) : utils.sentenceCase(item.placeName) }}
+            {{ item.isCountry && !noFormat(resource.publisher) ? utils.ucFirst(item.placeName) : utils.sentenceCase(item.placeName, noFormat(resource.publisher)) }}
           </b-link>
         </span>
       </template>
@@ -97,6 +97,7 @@
 
     <resource-filtered-items
       :items="utils.getSorted(resource.nativeSubject, 'prefLabel')"
+      :noFormat="noFormat(resource.publisher)"
       :class="itemClass"
       filter="prefLabel"
       title="Original Subject"
@@ -149,6 +150,7 @@
 
     <resource-filtered-items
       :items="resource.temporal"
+      :noFormat="noFormat(resource.publisher)"
       :class="itemClass"
       filter="periodName,from,until"
       title="Dating"
@@ -191,7 +193,7 @@
           v-if="item.periodName"
           :to="utils.paramsToString('/search', { temporal: item.periodName })"
         >
-          {{ utils.sentenceCase(item.periodName) }}
+          {{ utils.sentenceCase(item.periodName, noFormat(resource.publisher)) }}
         </b-link>
         <span v-if="item.from && item.until">
           {{ ': ' + item.from + ' to ' +  item.until }}
@@ -276,7 +278,7 @@
 
 <script setup lang="ts">
 import { $computed } from 'vue/macros';
-import { resourceModule } from "@/store/modules";
+import { generalModule, resourceModule } from "@/store/modules";
 import utils from '@/utils/utils';
 import BLink from '@/component/Base/Link.vue';
 import HelpTooltip from '@/component/Help/Tooltip.vue';
@@ -310,4 +312,6 @@ const toggleTooltip = (e: any, show: boolean) => {
 const getResourceIcon = (item: any): string => {
   return resourceModule.getIconByTypeName(item.prefLabel);
 }
+
+const noFormat = (publisher: any) => generalModule.getNoFormat(publisher);
 </script>

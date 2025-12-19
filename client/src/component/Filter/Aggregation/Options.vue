@@ -95,6 +95,9 @@ const getFilterPlaceholder = (title: string | undefined): string => {
   title = (title || '').trim();
 
   if (title && title[title.length - 1] !== 's') {
+    if (title[title.length - 1] === 'y') {
+      title = title.slice(0, -1) + 'ie';
+    }
     title += 's';
   }
   return 'Enter text to filter on' + (title ? ' ' + title : '') + '.';

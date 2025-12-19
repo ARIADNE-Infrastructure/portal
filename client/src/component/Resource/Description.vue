@@ -7,7 +7,7 @@
     </h3>
 
     <!-- main description -->
-    <span class="whitespace-pre-line">{{ mainDescription }}</span>
+    <span class="whitespace-pre-line break-word">{{ mainDescription }}</span>
 
     <!-- other lang description -->
     <multi-lang-info

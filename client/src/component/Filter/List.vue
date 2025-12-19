@@ -115,10 +115,10 @@ const setOperator = (val: string) => searchModule.setSearch({ operator: val });
 const transitionEnter = (el: HTMLElement) => el.style.opacity = '1';
 const transitionLeave = (el: HTMLElement) => el.style.opacity = '0';
 
-onMounted(() => advanced = operator === 'or');
+onMounted(() => advanced = !!operator);
 
 watch(route, () => {
-  if (!isUnmounted && router.currentRoute.value.path !== '/browse/where') {
+  if (!isUnmounted) {
     searchModule.setAggregationSearch(router.currentRoute.value.query);
   }
 }, { immediate: true })

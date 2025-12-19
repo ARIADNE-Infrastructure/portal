@@ -8,12 +8,12 @@
 
     <b-link
       v-if="resource.landingPage"
-      class="block pb-md md:pb-none md:pr-md leading-1 hover:text-black group mb-lg"
+      class="inline-block border-base border-blue p-sm hover:text-black hover:border-black group mb-lg transition-all duration-300"
       :useDefaultStyle="true"
       target="_blank"
       :href="resource.landingPage"
     >
-      <i class="fas fa-external-link-alt mr-sm text-blue group-hover:text-black"></i>View resource at provider
+      <i class="fas fa-external-link-alt mr-sm text-blue group-hover:text-black transition-all duration-300"></i>View resource at provider
     </b-link>
 
     <div class="md:flex justify-between items-center md:pb-lg mb-md" :class="resource.landingPage ? '' : 'mt-md'">
@@ -22,10 +22,10 @@
           <b-link
             :href="`${ apiUrl }/getRecord/${ encodeURIComponent(resource.id) }`"
             target="_blank"
-            class="block pb-md md:pb-none md:pr-md leading-1 hover:text-black group"
+            class="block pb-md md:pb-none md:pr-md leading-1 hover:text-black group transition-all duration-300"
           >
-            <i class="fas fa-cloud-download-alt mr-sm text-blue group-hover:text-black"></i>
-            Json
+            <i class="fas fa-cloud-download-alt mr-sm text-blue group-hover:text-black transition-all duration-300"></i>
+            <span class="group-hover:underline">Json</span>
           </b-link>
         </li>
 
@@ -33,10 +33,10 @@
           <b-link
             :href="`${ apiUrl }/getRecord/${ encodeURIComponent(resource.id) }/xml`"
             target="_blank"
-            class="block py-md md:py-none md:px-md leading-1 hover:text-black group"
+            class="block py-md md:py-none md:px-md leading-1 hover:text-black group transition-all duration-300"
           >
-            <i class="fas fa-code mr-sm text-blue group-hover:text-black"></i>
-            Xml
+            <i class="fas fa-code mr-sm text-blue group-hover:text-black transition-all duration-300"></i>
+            <span class="group-hover:underline">Xml</span>
           </b-link>
         </li>
 
@@ -44,10 +44,10 @@
           <b-link
             :href="resource.identifier"
             target="_blank"
-            class="block py-md md:py-none md:px-md leading-1 hover:text-black group"
+            class="block py-md md:py-none md:px-md leading-1 hover:text-black group transition-all duration-300"
           >
-            <i class="fas fa-share-alt mr-sm text-blue group-hover:text-black"></i>
-            Rdf
+            <i class="fas fa-share-alt mr-sm text-blue group-hover:text-black transition-all duration-300"></i>
+            <span class="group-hover:underline">Rdf</span>
           </b-link>
         </li>
         <template v-if="utils.validUrl(resource.landingPage)">
@@ -57,19 +57,19 @@
             @click="toggleCiting"
           >
             <span
-              class="block py-md md:py-none md:px-md cursor-pointer hover:text-black group"
+              class="block py-md md:py-none md:px-md cursor-pointer hover:text-black group transition-all duration-300"
             >
-              <i class="fas fa-link mr-sm text-blue group-hover:text-black"></i>
-              Cite
+              <i class="fas fa-link mr-sm text-blue group-hover:text-black transition-all duration-300"></i>
+              <span class="group-hover:underline">Cite</span>
             </span>
           </li>
         </template>
 
         <li class="border-gray border-b-base md:border-b-0 last:border-b-0">
-          <a class="block py-md md:py-none md:pl-md leading-1 hover:text-black group" href="#"
+          <a class="block py-md md:py-none md:pl-md leading-1 hover:text-black group transition-all duration-300" href="#"
             v-on:click.prevent="reportIssue">
-            <i class="far fa-envelope mr-sm text-blue group-hover:text-black"></i>
-            Report an issue
+            <i class="far fa-envelope mr-sm text-blue group-hover:text-black transition-all duration-300"></i>
+            <span class="group-hover:underline">Report an issue</span>
           </a>
         </li>
       </ul>
@@ -81,7 +81,7 @@
         type="text"
         :value="citationLink"
         style="width:100%"
-        class="w-full border-base py-sm px-md block border-yellow outline-none shadow-bottom"
+        class="w-full border-base py-sm px-md block border-yellow outline-none"
       >
     </div>
   </div>

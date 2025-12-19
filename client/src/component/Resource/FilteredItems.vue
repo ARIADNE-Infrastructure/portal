@@ -36,7 +36,7 @@
           </span>
 
           <span v-else-if="slotType === 'prop' || slotType === 'subject'">
-            {{ utils.sentenceCase(item[prop || filter]) }}
+            {{ utils.sentenceCase(item[prop || filter], noFormat) }}
           </span>
 
           <span v-else-if="slotType === 'link'">
@@ -49,7 +49,7 @@
           </span>
 
           <span v-else>
-            {{ utils.sentenceCase(item) }}
+            {{ utils.sentenceCase(item, noFormat) }}
           </span>
         </b-link>
 
@@ -102,6 +102,7 @@ const props = defineProps<{
   query?: string,
   icon?: string,
   fields?: string,
+  noFormat?: any,
 }>();
 
 const assets: string = $computed(() => generalModule.getAssetsDir);

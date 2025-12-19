@@ -43,6 +43,10 @@
       <label class="mb-md block">Url <input type="text" class="w-full p-xs border-base" v-model="data.url"></label>
       <label class="mb-md block">Img <input type="text" class="w-full p-xs border-base" v-model="data.img"></label>
       <label class="mb-md block">Text <textarea class="block w-full p-xs border-base" rows="10" v-model="data.text"></textarea></label>
+      <label class="mb-md flex align-middle">
+        <input name="noFormat" type="checkbox" v-model="data.noFormat">
+        <span class="pl-xs">No format</span>
+      </label>
     </div>
 
     <!-- error & ok text -->
@@ -117,7 +121,7 @@ const sendRequest = async (cmd: string) => {
   sending = true;
   const d = new FormData();
   for (let key in data) {
-    d.append(key, data[key] || '');
+    d.append(key, (key === 'noFormat' ? (data[key] ? 'yes' : '') : data[key]) || '');
   }
   d.append('cmd', cmd);
   d.append('id', select.toString());

@@ -30,6 +30,7 @@ export class SearchModule {
   aggsLoading: boolean = false;
   timelineLoading: boolean = false;
   mapLoading: boolean = false;
+  mapTotal: number = -1;
   miniMapSearchResult: any = {};
   miniMapNoCenter: boolean = false;
 
@@ -195,13 +196,6 @@ export class SearchModule {
         time: Math.round(((Date.now() - time) / 1000) * 100) / 100,
         aggs: data.aggregations
       });
-      if (currentPath === '/browse/where') {
-        this.updateAggsResult({
-          total: data.total,
-          hits: data.hits,
-          aggs: data.aggregations,
-        });
-      }
     } else if (data?.error && data?.error.msg == 'Scrolling exceeded maximum') {
       this.updateResult({ error: 'Scrolling exceeded maximum. Please use filters and/or search to narrow down your search.' });
     } else {
@@ -226,18 +220,20 @@ export class SearchModule {
     try {
       const url = process.env.apiUrl + '/getSearchAggregationData';
       sendParams = { ...sendParams, ...this.getDefaultSort() }
-      if (currentPath === '/browse/when') {
-        sendParams.timeline = 'true';
-      }
       if (sendParams.ariadneSubject?.includes('Dating')) {
         sendParams.ariadneSubject = sendParams.ariadneSubject.replace('Dating', 'Date')
+      }
+      if (sendParams.mapq) {
+        sendParams.mapqAggs = true;
       }
       axios.get(utils.paramsToString(url, sendParams)).then(res => {
         if (reqId === this.reqMap.aggs) {
           let data = res?.data;
           if (utils.objectIsNotEmpty(data?.aggregations)) {
-            if (data.aggregations.temporal?.temporal) {
-              data.aggregations.temporal = data.aggregations.temporal.temporal;
+            for (let key in data.aggregations) {
+              while (data.aggregations[key]?.[key]) {
+                data.aggregations[key] = data.aggregations[key][key];
+              }
             }
             if (Array.isArray(data?.aggregations?.ariadneSubject?.buckets)) {
               data?.aggregations.ariadneSubject.buckets.forEach(b => {
@@ -246,7 +242,7 @@ export class SearchModule {
                 }
               });
             }
-            if (currentPath === '/search') {
+            if (currentPath === '/search' || currentPath === '/browse/when') {
               if (this.timelineLoading) {
                 data.aggregations.range_buckets = {};
               } else {
@@ -277,7 +273,7 @@ export class SearchModule {
       }
     }
 
-    if (currentPath === '/search') {
+    if (currentPath === '/search' || currentPath === '/browse/when') {
       this.setTimelineSearch({ sendParams, reqId });
     }
   }
@@ -291,7 +287,7 @@ export class SearchModule {
 
     try {
       const url = process.env.apiUrl + '/getSearchAggregationData';
-      const res = await axios.get(utils.paramsToString(url, { ...params, ...{ timeline: 'true', onlyTimeline: 'true' }}));
+      const res = await axios.get(utils.paramsToString(url, { ...params, ...{ timeline: 'true' }}));
 
       if (reqId === this.reqMap.aggs && res?.data?.aggregations?.range_buckets) {
         if (this.aggsLoading) {
@@ -378,6 +374,10 @@ export class SearchModule {
     this.mapLoading = loading;
   }
 
+  updateMapTotal(value: number) {
+    this.mapTotal = value;
+  }
+
   updateAutocomplete(res: any) {
     this.autocomplete[res.type + res.q] = res.data;
   }
@@ -416,6 +416,10 @@ export class SearchModule {
 
   get getIsMapLoading(): boolean {
     return this.mapLoading;
+  }
+
+  get getMapTotal(): number {
+    return this.mapTotal || 0;
   }
 
   get getAutoComplete(): any {
@@ -460,7 +464,7 @@ export class SearchModule {
   }
 
   get getOperator(): string {
-    return this.params?.operator === 'and' ? '' : (this.params?.operator || '');
+    return this.params?.operator || '';
   }
 
   get getHelpTexts(): helpText[] {
