@@ -210,6 +210,32 @@ const filteredAndSortedBuckets: Array<any> = $computed(() => {
   if (params) {
     params.split('|').forEach((val: string) => {
       const lcVal = val.trim().toLowerCase();
+      const filter = list.find((b: any) => (b.key || '').trim().toLowerCase() === lcVal);
+      if (!filter && item?.buckets) {
+        let found = false;
+        for (let key in item.buckets) {
+          if (item.buckets[key].key.trim().toLowerCase() === lcVal) {
+            list = list.concat([{ key: val, doc_count: item.buckets[key].doc_count || 0 }]);
+            found = true;
+            break;
+          }
+        }
+        const pinned = searchModule.getAggsResult.pinned;
+        if (!found && pinned?.buckets) {
+          for (let key in pinned.buckets) {
+            if (id === pinned.buckets[key].type && pinned.buckets[key].key.toLowerCase() === lcVal) {
+              item.buckets.push({ key: val, doc_count: pinned.buckets[key].doc_count || 0 });
+              list = list.concat(item.buckets.at(-1));
+              break;
+            }
+          }
+        }
+      }
+    });
+  }
+  if (params) {
+    params.split('|').forEach((val: string) => {
+      const lcVal = val.trim().toLowerCase();
       if (!list.some((b: any) => (b.key || '').trim().toLowerCase() === lcVal)) {
         list = list.concat([{ key: val, doc_count: 0 }]);
       }
@@ -265,7 +291,10 @@ const getResourceIcon = (name: string): string => {
   return resourceModule.getIconByTypeName(name);
 };
 
-watch($$(filteredAndSortedBuckets), setBucketListHeight, { deep: true });
+const unwatch = watch($$(filteredAndSortedBuckets), setBucketListHeight, { deep: true });
 
-onBeforeRouteLeave(() => aggregationModule.setOptionsToDefault());
+onBeforeRouteLeave(() => {
+  aggregationModule.setOptionsToDefault();
+  unwatch();
+});
 </script>

@@ -228,33 +228,42 @@ export class SearchModule {
       }
       axios.get(utils.paramsToString(url, sendParams)).then(res => {
         if (reqId === this.reqMap.aggs) {
-          let data = res?.data;
+          const data = res?.data;
           if (utils.objectIsNotEmpty(data?.aggregations)) {
-            for (let key in data.aggregations) {
-              while (data.aggregations[key]?.[key]) {
-                data.aggregations[key] = data.aggregations[key][key];
-              }
+            const pinned = data.aggregations.pinned;
+            if (pinned) {
+              delete data.aggregations.pinned;
             }
-            if (Array.isArray(data?.aggregations?.ariadneSubject?.buckets)) {
-              data?.aggregations.ariadneSubject.buckets.forEach(b => {
-                if (b?.key === 'Date') {
-                  b.key = 'Dating';
+            if (utils.objectIsNotEmpty(data?.aggregations)) {
+              for (let key in data.aggregations) {
+                while (data.aggregations[key]?.[key]) {
+                  data.aggregations[key] = data.aggregations[key][key];
                 }
-              });
-            }
-            if (currentPath === '/search' || currentPath === '/browse/when') {
-              if (this.timelineLoading) {
-                data.aggregations.range_buckets = {};
-              } else {
-                data.aggregations.range_buckets = this.reqWaiting[reqId];
-                this.clearReqWaiting();
               }
+              if (Array.isArray(data?.aggregations?.ariadneSubject?.buckets)) {
+                data?.aggregations.ariadneSubject.buckets.forEach(b => {
+                  if (b?.key === 'Date') {
+                    b.key = 'Dating';
+                  }
+                });
+              }
+              if (currentPath === '/search' || currentPath === '/browse/when') {
+                if (this.timelineLoading) {
+                  data.aggregations.range_buckets = {};
+                } else {
+                  data.aggregations.range_buckets = this.reqWaiting[reqId];
+                  this.clearReqWaiting();
+                }
+              }
+              this.updateAggsResult({
+                total: data.total,
+                hits: data.hits,
+                aggs: data.aggregations,
+                pinned,
+              });
+            } else {
+              this.updateAggsResult({});
             }
-            this.updateAggsResult({
-              total: data.total,
-              hits: data.hits,
-              aggs: data.aggregations,
-            });
           } else {
             this.updateAggsResult({});
           }
@@ -299,6 +308,7 @@ export class SearchModule {
             total: this.aggsResult.total,
             hits: this.aggsResult.hits,
             aggs: this.aggsResult.aggs,
+            pinned: this.aggsResult.pinned,
           });
         }
       }

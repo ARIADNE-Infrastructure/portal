@@ -17,7 +17,7 @@ class Query {
   private $client = null;
   private $aggregationsReqFilter = []; // Aggregation filters from uri
 
-  public function __construct() {
+  public function __construct () {
     $this->settings = AppSettings::getSettings();
     $this->elasticEnv = AppSettings::getSettingsEnv();
   }
@@ -31,7 +31,7 @@ class Query {
   }
 
   // get elastic client
-  public function getClient() {
+  public function getClient () {
     if (!$this->client) {
       $this->client = ClientBuilder::create()->setHosts([$this->elasticEnv->host])->build();
     }
@@ -39,14 +39,14 @@ class Query {
   }
 
   // returns default language from settings
-  public function getDefaultLanguage() {
+  public function getDefaultLanguage () {
     return $this->settings->environment->defaultLanguage;
   }
 
   /**
    * Search Elastic db with given URI parameters
    */
-  public function search() {
+  public function search () {
     if (isset($_GET['mapq'])) {
       return $this->getSearchAggregationData();
     }
@@ -88,22 +88,22 @@ class Query {
           ],
         ];
         if (!empty($fields[$searchField]['nested'])) {
-          $innerQuery['bool']['must'] = ['nested' => ['path' => $fields[$searchField]['nested'], 'query' => $fieldQuery]];
+          $innerQuery['bool'] = ['minimum_should_match' => 1, 'should' => ['nested' => ['path' => $fields[$searchField]['nested'], 'query' => $fieldQuery]]];
         } else {
-          $innerQuery['bool']['must'] = $fieldQuery;
+          $innerQuery['bool'] = ['minimum_should_match' => 1, 'should' => $fieldQuery];
         }
 
       } else {
         $searchFields = [];
         $nestedFields = [];
         foreach ($fields as $key => $val) {
-          $nested = $val['query'][0]['nested'] ?? null;
+          $nested = $val['nested'] ?? null;
           if (empty($nested)) {
             $searchFields[] = $val['fieldPath'];
           } else {
             $nestedFields[] = [
               'nested' => [
-                'path' => $nested['path'],
+                'path' => $nested,
                 'query' => [
                   'simple_query_string' => [
                     'default_operator' => $operator,
@@ -179,8 +179,8 @@ class Query {
    * Map specific query.
    * Adds additional map parameters to main query
    */
-  private function getMapQuery($mainQuery) {
-    $mainQuery['_source'] = ['title','description','resourceType','publisher','ariadneSubject','spatial'];
+  private function getMapQuery ($mainQuery) {
+    $mainQuery['_source'] = ['title', 'description', 'resourceType', 'publisher', 'ariadneSubject', 'spatial'];
 
     // // Viewport
     $mainQuery['aggregations']['viewport'] = [
@@ -229,6 +229,25 @@ class Query {
     }
     if ($count <= $this->settings->environment->mapMarkerThreshhold) { // Render markers - records needed to render markers
       $mainQuery['size'] = $this->settings->environment->mapMarkerThreshhold;
+      $center = [25.3167, 54.9000]; // default value if no boudning box - center of europe
+      if (isset($_GET['bbox'])) {
+        $bbox = explode(',', $_GET['bbox']);
+        $aLat = floatval($bbox[0] ?? 0);
+        $aLon = floatval($bbox[1] ?? 0);
+        $bLat = floatval($bbox[2] ?? 0);
+        $bLon = floatval($bbox[3] ?? 0);
+        $center = [($aLon + $bLon) / 2, ($aLat + $bLat) / 2];
+      }
+      $mainQuery['sort'] = [
+        '_geo_distance' => [
+          'spatial.geopoint' => $center,
+          'order' => 'asc',
+          'mode' => 'min',
+          'nested' => [
+            'path' => 'spatial',
+          ],
+        ],
+      ];
     } else {
       $mainQuery['size'] = 0;
     }
@@ -243,10 +262,11 @@ class Query {
   /**
    * Get data specific for aggregations / filters
    */
-  public function getSearchAggregationData() {
+  public function getSearchAggregationData () {
     $query = $this->getCurrentQuery();
     $query['aggregations'] = QuerySettings::getSearchAggregations();
     $operator = $_GET['operator'] ?? '';
+    $pinned = [];
     $query['size'] = 0;
     unset($query['_source']);
     unset($query['sort']);
@@ -301,20 +321,52 @@ class Query {
             }
           }
         }
+        if (!empty($musts)) {
+          foreach ($musts as $pinKey => $pinAggs) {
+            $key = explode('.', $pinKey)[0];
+            if (!empty($query['aggregations'][$key])) {
+              $count = 0;
+              $nested = $key === 'temporal';
+              foreach ($pinAggs as $pinAgg) {
+                $pinId = $pinKey;
+                $pinVal = $nested ? '' : ($pinAgg['term'] ?? $pinAgg['terms'])[$pinKey];
+                if ($nested || is_array($pinVal)) {
+                  $pinId = $key . ($nested ? '.periodName.raw' : '.prefLabel.raw');
+                  $pinVal = explode('|', $_GET[$key])[$count] ?? '';
+                }
+                $pinned[$key . '_' . $count] = $pinVal;
+                $query['aggregations']['pinned']['filters']['filters'][$key . '_' . ($count++)] = ['bool' => ['must' => array_merge($query['aggregations'][$key]['filter']['bool']['must'] ?? [], [['bool' => ['should' => ($nested ? [['nested' => ['path' => $key, 'query' => ['bool' => ['must' => [['term' => [$pinId => $pinVal]]]]]]]] : ['term' => [$pinId => $pinVal]])]]])]];
+              }
+            }
+          }
+        }
       }
     }
-
-    return $this->resultToFrontend($this->elasticDoSearch($query));
+    $result = $this->elasticDoSearch($query);
+    if (!empty($pinned) && !empty($result['aggregations']['pinned']['buckets'])) {
+      $pins = [];
+      foreach ($pinned as $key => $val) {
+        $pins[] = ['key' => $val, 'type' => explode('_', $key)[0], 'doc_count' => $result['aggregations']['pinned']['buckets'][$key]['doc_count']];
+      }
+      $result['aggregations']['pinned']['buckets'] = $pins;
+    }
+    if (!empty($result['aggregations']['temporal']['temporal']['buckets'] ?? null)) {
+      $this->mergeRootCount($result['aggregations']['temporal']['temporal']['buckets']);
+    } elseif (!empty($result['aggregations']['temporal']['temporal']['temporal']['buckets'] ?? null)) {
+      $this->mergeRootCount($result['aggregations']['temporal']['temporal']['temporal']['buckets']);
+    }
+    return $this->resultToFrontend($result);
   }
 
   /**
    * Get data specific for mini map
    */
-  public function getMiniMapData() {
-    $query = $this->getMapQuery($this->getCurrentQuery());
-    $query['_source'] = ['title', 'spatial'];
+  public function getMiniMapData () {
+    $query = $this->getCurrentQuery();
     unset($query['sort']);
     unset($query['from']);
+    $query = $this->getMapQuery($query);
+    $query['_source'] = ['title', 'spatial'];
 
     if ($query['size'] <= $this->settings->environment->mapMarkerThreshhold) {
       // mini map renders heatmap, query only aggs needed for heatmap
@@ -356,7 +408,7 @@ class Query {
   /**
    * Gets autocomplete values
    */
-  public function autocomplete() {
+  public function autocomplete () {
     $q = strtolower(trim($_GET['q'] ?? ''));
 
     if (!$q) {
@@ -518,7 +570,7 @@ class Query {
   /**
    * Gets autocomplete filters
    */
-  public function autocompleteFilter() {
+  public function autocompleteFilter () {
     $q = Utils::escapeLuceneValue($_GET['filterQuery'] ?? '');
     $filterName = trim($_GET['filterName'] ?? '');
     $query = null;
@@ -764,7 +816,7 @@ class Query {
   /**
    * Build regular expression for include clause in Elastic query
    */
-  private function getIncludeRegexp($q) {
+  private function getIncludeRegexp ($q) {
     $q = preg_split('/[\s]+/', $q);
     $regexpInclude = '';
     foreach ($q as $key => $value) {
@@ -779,7 +831,7 @@ class Query {
    * Disguise query response as an aggregation formated array before returning
    * to frontend since the frontend Aggregation filter can only handle aggregations.
    */
-  private function periodsToAggs($periodsResult) {
+  private function periodsToAggs ($periodsResult) {
     $buckets = [];
 
     if (!empty($periodsResult['hits']['hits'])) {
@@ -841,6 +893,18 @@ class Query {
     $size = is_int($size) ? ($size * 20) + 20 : 20;
     $aggs['filtered_agg']['sum_other_doc_count'] = !$size || $size < $periodsResult['hits']['total']['value'] ? $periodsResult['hits']['total']['value'] : 0;
     return $aggs;
+  }
+
+  /**
+   * Replaces buckets doc_count with root_count if any
+   */
+  private function mergeRootCount (&$buckets) {
+    foreach ($buckets as $key => $val) {
+      if (isset($buckets[$key]['root_count']['doc_count'])) {
+        $buckets[$key]['doc_count'] = $buckets[$key]['root_count']['doc_count'] ?? $buckets[$key]['doc_count'];
+        unset($buckets[$key]['root_count']);
+      }
+    }
   }
 
   /**
@@ -926,7 +990,7 @@ class Query {
   /**
    * Get spatial nearby from given record
    */
-  public function getNearbySpatialResources($record) {
+  public function getNearbySpatialResources ($record) {
     return GeoUtils::getNearbyResources($record);
   }
 
@@ -1330,7 +1394,7 @@ class Query {
 
   // Returns all period regions
   // Get countries aggregation query from periods index
-  public function getPeriodRegions() {
+  public function getPeriodRegions () {
     $query = [
       'size' => 0,
       'aggregations' => [
@@ -1347,7 +1411,7 @@ class Query {
   }
 
   // Get periods for country - default any countries
-  public function getPeriodsForCountry() {
+  public function getPeriodsForCountry () {
     $temporalRegion = trim($_GET['temporalRegion'] ?? '');
     $query = [
       '_source' => ['authority', 'label', 'languageTag', 'spatialCoverage', 'localizedLabels', 'start', 'stop', 'total', 'timestamp'],
@@ -1379,7 +1443,7 @@ class Query {
   }
 
   // Automatically update periods once a day
-  public function maybeUpdatePeriods() {
+  public function maybeUpdatePeriods () {
     $result = $this->elasticDoSearch([
       'size' => 1,
       '_source' => ['timestamp'],
@@ -1461,7 +1525,7 @@ class Query {
   /**
    * Get total records count in main index
    */
-  public function getTotalRecordsCount() {
+  public function getTotalRecordsCount () {
     try {
       return $this->getClient()->count(['index' => $this->elasticEnv->index])['count'] ?? 0;
     } catch (\Exception $ex) {

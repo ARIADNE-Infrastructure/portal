@@ -34,12 +34,12 @@ class GeoUtils {
 
   /** Alias */
   private static function getTopLeftCorner ($lat, $lon) {
-    return self::getExtendedGeoPoint($lat, $lon, self::TOP_LEFT, self::POINT_EXTEND_KM );
+    return self::getExtendedGeoPoint($lat, $lon, self::TOP_LEFT, self::POINT_EXTEND_KM);
   }
 
   /** Alias */
   private static function getBottomRightCorner ($lat, $lon) {
-    return self::getExtendedGeoPoint($lat, $lon, self::BOTTOM_RIGHT, self::POINT_EXTEND_KM );
+    return self::getExtendedGeoPoint($lat, $lon, self::BOTTOM_RIGHT, self::POINT_EXTEND_KM);
   }
 
   /**

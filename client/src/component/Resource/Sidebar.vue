@@ -6,7 +6,7 @@
     >
       <h3 class="text-lg font-bold mb-lg">
         <i class="fas fa-copy mr-sm"></i>
-        Resource has {{ collection.total }} records
+        Resource has {{ collection.total }} {{ collection.total === 1 ? 'record' : 'records' }}
       </h3>
 
       <resource-filtered-items

@@ -79,35 +79,28 @@ const setMap = async () => {
   }
   resetMap();
   let inMarkerView: boolean = false;
-
   if (first) {
     first = false;
     if (params?.bbox && !currentMapBounds) {
       centerMap();
     }
   }
-
   if (currentResultState?.hits?.length) {
     inMarkerView = !inMarkerView;
-    if (!currentMapBounds) {
-      centerMap();
-    }
     setupClusterMarkers();
   } else {
     setupHeatMap();
   }
-
-  // Tell ui that map is in makrer view to show info abut the different marker icons
-  emit('markerViewUpdate', inMarkerView);
-
   // Undefined mapZoom means that user has landed on map directly without filters
   if (!mapObj.getZoom()) {
     centerMap();
   }
-
+  if (currentResultState?.hits?.length) {
+    setClusterMarkersTotal();
+  }
+  emit('markerViewUpdate', inMarkerView);
   setupDrawCreated();
   setupOnMove();
-
   currentZoom = mapObj?.getZoom() ?? 0;
 }
 
@@ -115,32 +108,23 @@ const setMap = async () => {
  * Creates clusters and markers and add to map as new layer.
  */
 const setupClusterMarkers = () => {
-  const mapBounds = mapObj.getBounds();
-  let total = 0;
-
   clusterMarkers = new L.MarkerClusterGroup();
   currentResultState.hits.forEach((resource: any) => {
     let resourceTitle = 'No title';
     if (resource.data?.title?.text) {
       resourceTitle = resource.data?.title?.text
     }
-
     resource.data.spatial.forEach((spatial: any) => {
       let markerType: any = markerTypes.point;
       if (spatial.spatialPrecision || spatial.coordinatePrecision) {
         markerType = markerTypes.approx;
       }
-
       if (spatial?.geopoint) {
         const position = new L.LatLng(spatial.geopoint.lat, spatial.geopoint.lon)
-        if (mapBounds.contains(position)) {
-          let marker = L.marker(position, { icon: getMarkerIconType(markerType.marker) });
-          marker.bindTooltip(resourceTitle, { direction: 'top', offset: [0, -35] });
-          marker.bindPopup(getMarkerPopup(resource));
-          clusterMarkers!.addLayer(marker);
-          total++
-        }
-
+        let marker = L.marker(position, { icon: getMarkerIconType(markerType.marker) });
+        marker.bindTooltip(resourceTitle, { direction: 'top', offset: [0, -35] });
+        marker.bindPopup(getMarkerPopup(resource));
+        clusterMarkers!.addLayer(marker);
       } else if (spatial?.polygon || spatial?.boundingbox) {
         // Create a new Wicket instance
         // DOCS: http://arthur-e.github.io/Wicket/doc/out/Wkt.Wkt.html
@@ -148,9 +132,7 @@ const setupClusterMarkers = () => {
         // Read in any kind of WKT string
         let shape = spatial?.polygon || spatial?.boundingbox;
         wkt.read(shape);
-
         const feature = wkt.toObject({ color: 'red' }); //, fill: false });
-
         // Get center of current polygon
         let polygonCenter;
         if (feature.getBounds) {
@@ -158,26 +140,46 @@ const setupClusterMarkers = () => {
         } else {
           polygonCenter = L.latLng({ lat: feature._latlng.lat, lng: feature._latlng.lat });
         }
-
-        if (mapBounds.contains(polygonCenter)) {
-          let polygonMarker = L.marker(new L.LatLng(polygonCenter.lat, polygonCenter.lng), { icon: getMarkerIconType(markerType.shape) });
-          polygonMarker.bindTooltip(resourceTitle, { direction: 'top', offset: [0, -35] });
-          polygonMarker.bindPopup(getMarkerPopup(resource));
-          clusterMarkers!.addLayer(polygonMarker);
-          total++;
-        }
+        let polygonMarker = L.marker(new L.LatLng(polygonCenter.lat, polygonCenter.lng), { icon: getMarkerIconType(markerType.shape) });
+        polygonMarker.bindTooltip(resourceTitle, { direction: 'top', offset: [0, -35] });
+        polygonMarker.bindPopup(getMarkerPopup(resource));
+        clusterMarkers!.addLayer(polygonMarker);
       }
     });
   });
-
   // NOTICE: As soon as we have Elastic >= 7.14 we can pick bounds from geobounds aggregation
   // Current version is 7.4 and it doesn't support geo_bounds for geoshapes
   mapObj.addLayer(clusterMarkers);
   currentMapBounds = clusterMarkers.getBounds();
+}
+
+// Sets cluster markers count - very slow solution & double work, but has to be done after leaflet center map to be correct
+const setClusterMarkersTotal = () => {
+  const mapBounds = mapObj.getBounds();
+  let total = 0;
+  currentResultState.hits.forEach((resource: any) => {
+    resource.data.spatial.forEach((spatial: any) => {
+      if (spatial?.geopoint) {
+        total += mapBounds.contains(new L.LatLng(spatial.geopoint.lat, spatial.geopoint.lon)) ? 1 : 0;
+      } else if (spatial?.polygon || spatial?.boundingbox) {
+        const wkt = new Wkt.Wkt();
+        let shape = spatial?.polygon || spatial?.boundingbox;
+        wkt.read(shape);
+        const feature = wkt.toObject({ color: 'red' });
+        let polygonCenter;
+        if (feature.getBounds) {
+          polygonCenter = feature.getBounds().getCenter();
+        } else {
+          polygonCenter = L.latLng({ lat: feature._latlng.lat, lng: feature._latlng.lat });
+        }
+        total += mapBounds.contains(polygonCenter) ? 1 : 0;
+      }
+    });
+  });
   searchModule.updateMapTotal(total);
 }
 
-  // Render cluster markers when this limit is reached
+// Render cluster markers when this limit is reached
 const getIsAboveMaxNativeZoom: boolean = $computed(() => {
   const maxNativeZoom: number = currentTileLayer.options.maxNativeZoom ?? 0;
   return currentZoom > maxNativeZoom ? true : false;
@@ -238,13 +240,9 @@ const getMarkerPopup = (resource: any): string => {
  * Setup heatmap with geogrids from aggs
  */
 const setupHeatMap = async () => {
-
-  //const currentHeatPoints = currentResultState.aggs?.geogrid?.grids.buckets;
   // CENTROID HEATS - Run instead of above when centroids are loaded to public portal
   const currentHeatPoints = currentResultState.aggs?.geogridCentroid?.grids.buckets;
-
   let max = currentHeatPoints ? Math.max.apply(null, currentHeatPoints.map((hp: any) => hp.doc_count || 0)) : 0;
-
   let mapPoints: any[] = [];
   let boundsPoints: any[] = [];
 
@@ -253,7 +251,6 @@ const setupHeatMap = async () => {
     mapPoints.push([decoded.lat, decoded.lon, hp["doc_count"]]);
     boundsPoints.push([decoded.lat, decoded.lon]);
   });
-
   heatMap = L.heatLayer(mapPoints, {
     radius: 10,
     max: max,
@@ -267,7 +264,6 @@ const setupHeatMap = async () => {
     },
     minOpacity: 0.8,
   }).addTo(mapObj);
-
   // return bounds for centering arround this heatmap
   // NOTICE: As soon as we have Elastic >= 7.14 we can pick bounds from geobounds aggregation
   // Current version is 7.4 and it doesn't support geo_bounds for geoshapes

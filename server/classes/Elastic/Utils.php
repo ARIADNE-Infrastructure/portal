@@ -4,8 +4,8 @@ namespace Elastic;
 
 class Utils {
   /**
-    * Escape lucene special chars
-    */
+   * Escape lucene special chars
+   */
   public static function escapeLuceneValue ($str, $slashes = true) {
     $lucene = '<>{}[]=&|!^?\\' . ($slashes ? '/' : '');
     $str = str_replace(str_split($lucene), ' ', $str);

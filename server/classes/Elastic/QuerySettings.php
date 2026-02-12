@@ -259,6 +259,11 @@ class QuerySettings {
             'terms' => [
               'field' => 'temporal.periodName.raw',
               'size' => self::AGGS_BUCKET_SIZE
+            ],
+            'aggs' => [
+              'root_count' => [
+                'reverse_nested' => new \stdClass()
+              ]
             ]
           ]
         ]
